@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"Antrian"},{"l":"Auth"},{"l":"Components"},{"l":"Dashboard"},{"l":"DataBase"},{"l":"Global"},{"l":"Helpers"},{"l":"Main"},{"l":"mapotek"},{"l":"Obat"},{"l":"Pasien"},{"l":"Pembukuan"},{"l":"Pemeriksaan"},{"l":"Pengeluaran"},{"l":"TransaksiDiagnosa"},{"l":"User"}];updateSearchResults();
