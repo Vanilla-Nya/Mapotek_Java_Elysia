@@ -227,7 +227,7 @@ public class TransaksiDiagnosa extends JFrame {
             String uuid = (String) cache.getUUID();
             String diagnosis = diagnosisTextArea.getText();
             int rowCount = model.getRowCount();
-            Object[][] row = new Object[rowCount][6];  // 6 columns (name, type, jumlah, harga, usage, signa)
+            Object[][] row = new Object[rowCount][6];  // 6 columns (name, type, jumlah, harga, signa, signa)
             boolean isDone = false;
             boolean isFinal = false;
             String getIdQuery = "SELECT id_detail_pemeriksaan FROM detail_pemeriksaan ORDER BY id_detail_pemeriksaan DESC LIMIT 1";
@@ -247,8 +247,7 @@ public class TransaksiDiagnosa extends JFrame {
                 Object type = model.getValueAt(i, 1);  // Get value at (row, column 1)
                 Object jumlah = model.getValueAt(i, 2); // Get value at (row, column 2)
                 Object harga = model.getValueAt(i, 3);  // Get value at (row, column 3)
-                Object usage = model.getValueAt(i, 4);  // Get value at (row, column 4)
-                Object signa = model.getValueAt(i, 5);  // Get value at (row, column 5)
+                Object signa = model.getValueAt(i, 4);  // Get value at (row, column 4)
                 int hargaJasaText = 0;
                 if (!hargaJasa.getText().isEmpty()) {
                     try {
@@ -262,7 +261,7 @@ public class TransaksiDiagnosa extends JFrame {
                     return;
                 }
                 // insert into pemeriksaan obat id, jumlah get id pemeriksaan_obat
-                String insertObatQuery = "INSERT INTO pemeriksaan_obat (id_obat, jumlah) VALUES (?,?,?)";
+                String insertObatQuery = "INSERT INTO pemeriksaan_obat (id_obat, signa, jumlah) VALUES (?,?,?)";
                 Object[] parameter = new Object[]{id, signa, jumlah};
                 Long insertObat = QueryExecutor.executeInsertQueryWithReturnID(insertObatQuery, parameter);
                 if (insertObat != 404L) {
@@ -282,7 +281,7 @@ public class TransaksiDiagnosa extends JFrame {
                 System.out.println("Inserting into detail_pembayaran with id_antrian: " + idAntrian);
 
                 // Store the data in the row array
-                row[i] = new Object[]{name, type, jumlah, harga, usage, signa};
+                row[i] = new Object[]{name, type, jumlah, harga, signa};
             }
             if (isDone) {
                 try {
@@ -442,20 +441,20 @@ public class TransaksiDiagnosa extends JFrame {
         return 0;  // If drug doesn't exist, return 0 as the default stock value
     }
 
-    public void addOrUpdateDrug(int id, String name, String type, int quantity, double price, String usageInstructions) {
+    public void addOrUpdateDrug(int id, String name, String type, int quantity, double price, String signa) {
         // Check if the drug already exists in the table
         if (isDrugExists(name)) {
             // If the drug exists, check if the new quantity is less than or equal to the current stock
             if (quantity <= getCurrentStock(name)) {
-                // If stock input is less than or equal to the current stock, display an error message and return
+                // If stock input is less than or equal to the existing stock, display an error message and return
                 JOptionPane.showMessageDialog(this, "The stock input is less than or equal to the existing stock.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;  // Stop the process here, don't add the drug again
             }
             // If the drug exists and the quantity is more, update the stock
             updateDrugStock(name, quantity);
         } else {
-            // If the drug doesn't exist, add it as a new row with the specified stock, price, and usage instructions
-            Object[] newRow = {name, type, quantity, price, usageInstructions, ""};  // Default price 0.0 for new drug
+            // If the drug doesn't exist, add it as a new row with the specified stock, price, and signa
+            Object[] newRow = {name, type, quantity, price, signa, ""};  // Default price 0.0 for new drug
             idList.add(id);
             model.addRow(newRow);
         }
@@ -492,6 +491,45 @@ public class TransaksiDiagnosa extends JFrame {
             total += price;  // Total = price * quantity
         }
         totalLabel.setText("Total: Rp." + total);
+    }
+
+    private Object[] getPatientData(int row) {
+        Object[] patientData = new Object[11];
+        patientData[1] = model.getValueAt(row, 2); // Name
+        patientData[2] = model.getValueAt(row, 2); // Age (assuming it's in the same column for simplicity)
+        patientData[9] = model.getValueAt(row, 2); // Gender (assuming it's in the same column for simplicity)
+        return patientData;
+    }
+
+    private List<Object[]> getDrugData(int row) {
+        List<Object[]> drugData = new ArrayList<>();
+        QueryExecutor executor = new QueryExecutor();
+        String query = "SELECT nama_obat, jenis_obat, jumlah, harga, signa FROM detail_pembayaran WHERE id_antrian = ?";
+        Object[] parameter = new Object[]{idList.get(row)};
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+
+        for (Map<String, Object> result : results) {
+            Object[] drug = new Object[]{
+                result.get("nama_obat"),
+                result.get("jenis_obat"),
+                result.get("jumlah"),
+                result.get("harga"),
+                result.get("signa")
+            };
+            drugData.add(drug);
+        }
+        return drugData;
+    }
+
+    private double calculateTotal(List<Object[]> drugData) {
+        double total = 0;
+        for (Object[] drug : drugData) {
+            int quantity = (int) drug[2];
+            Number priceNumber = (Number) drug[3]; // Cast to Number to handle both Integer and Double
+            double price = priceNumber.doubleValue(); // Convert to double
+            total += quantity * price;
+        }
+        return total;
     }
 
     // Editor for "AKSI" column

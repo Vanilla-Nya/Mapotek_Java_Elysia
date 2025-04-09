@@ -1,9 +1,14 @@
 package Components.CustomTable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.util.List;
-import javax.swing.*;
-import javax.swing.table.*;
+
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import javax.swing.table.TableCellRenderer;
 
 public class ActionCellRenderer extends JPanel implements TableCellRenderer {
 

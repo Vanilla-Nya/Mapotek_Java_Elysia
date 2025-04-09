@@ -29,6 +29,8 @@ import Components.Dropdown;
 import Components.RoundedButton;
 import Components.RoundedPanel;
 import DataBase.QueryExecutor;
+import Global.UserSessionCache;
+import Utils.TableUtils;
 
 public class TambahkanAntrian extends JFrame {
 
@@ -46,8 +48,12 @@ public class TambahkanAntrian extends JFrame {
     private Integer idPasien;
     Object[][] data = new Object[][]{};
     java.util.List namaPasienOption = new ArrayList<>();
+    private DefaultTableModel model;
+    UserSessionCache cache = new UserSessionCache();
+    String uuid = cache.getUUID();
 
-    public TambahkanAntrian(DefaultTableModel model) {
+    public TambahkanAntrian(DefaultTableModel model, AntrianPasien antrianPasien) {
+        this.model = model;
         QueryExecutor namapasien = new QueryExecutor();
         namaPasienDropdown = new CustomTextField("Masukkan NIK Atau Nama", 0, 0, Optional.empty());
 
@@ -124,7 +130,6 @@ public class TambahkanAntrian extends JFrame {
         // Action for the save button
         simpanButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                // Check if no data is entered
                 if (namaPasienDropdown.getText().isEmpty()) {
                     JOptionPane.showMessageDialog(
                             null,
@@ -132,10 +137,9 @@ public class TambahkanAntrian extends JFrame {
                             "Peringatan",
                             JOptionPane.WARNING_MESSAGE
                     );
-                    return;  // Exit the action if data is not entered
+                    return;
                 }
 
-                // Check if patient data has been found
                 if (idPasien == null) {
                     JOptionPane.showMessageDialog(
                             null,
@@ -143,10 +147,9 @@ public class TambahkanAntrian extends JFrame {
                             "Peringatan",
                             JOptionPane.WARNING_MESSAGE
                     );
-                    return;  // Exit the action if patient data is not found
+                    return;
                 }
 
-                // Continue with saving the data if the checks pass
                 String tanggalSekarang = LocalDate.now().toString();
                 String jamSekarang = LocalTime.now().toString().split("\\.")[0];
                 String jenisPasien = "UMUM";
@@ -154,19 +157,15 @@ public class TambahkanAntrian extends JFrame {
 
                 QueryExecutor executor = new QueryExecutor();
                 String query = "CALL tambah_antrian(?, ?, ?, ?, ?, ?)";
-                Object[] parameter = new Object[]{idPasien, jenisPasien, tanggalSekarang, jamSekarang, Status, "79f82701-9e35-11ef-944a-fc34974a9138"};
+                Object[] parameter = new Object[]{idPasien, jenisPasien, tanggalSekarang, jamSekarang, Status, uuid};
                 java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
                 if (!results.isEmpty()) {
-                    for (Map<String, Object> result : results) {
-                        System.out.println(result);
-                        String tanggalAntrian = (String) result.get("tanggal_antrian").toString();
-                        String noAntrian = (String) result.get("no_antrian");
-                        model.addRow(new Object[]{tanggalAntrian, noAntrian, namaPasien, Status, ""});
-//                        new AntrianPasien().refreshTableData();
-                    }
+                    // Refresh the table in AntrianPasien
+                    antrianPasien.refreshTableData();
                 }
-                dispose(); // Close the frame after saving
+
+                dispose(); // Close the TambahkanAntrian window
             }
         });
 
@@ -251,7 +250,15 @@ public class TambahkanAntrian extends JFrame {
         }
     }
 
-    
+    public void refreshTableData() {
+        String query = "CALL all_antrian(?)";
+        Object[] parameters = new Object[]{uuid};
+        String[] columnNames = {"tanggal_antrian", "no_antrian", "nama_pasien", "status_antrian", "aksi"};
+
+        // Refresh the table data
+        TableUtils.refreshTable(model, query, parameters, columnNames);
+    }
+
     // Getter methods to access the text from the text fields
     public String getIdPasienText() {
         return (String) idPasienDropdown.getSelectedItem();

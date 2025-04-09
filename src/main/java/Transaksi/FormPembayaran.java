@@ -1,6 +1,7 @@
 package Transaksi;
 
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -38,6 +39,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
+import Antrian.AntrianPasien;
 import Components.CustomTextField;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
@@ -55,7 +57,7 @@ public class FormPembayaran extends JFrame {
     private List<Object[]> drugData;
     private String userLoginName;
 
-    public FormPembayaran(Object[] patientData, String idAntrian, String status) {
+    public FormPembayaran(Object[] patientData, String idAntrian, String status, AntrianPasien antrianPasien) {
         this.patientData = patientData;
 
         // Retrieve the logged-in user's name from UserSessionCache
@@ -135,28 +137,26 @@ public class FormPembayaran extends JFrame {
         // Payment Button
         payButton = new JButton("Pay");
         payButton.addActionListener((ActionEvent e) -> {
-            // Handle payment logic here
             try {
                 BigDecimal payment = new BigDecimal(paymentField.getText());
                 BigDecimal change = payment.subtract(total);
+
                 if (payment.compareTo(BigDecimal.ZERO) <= 0) {
                     JOptionPane.showMessageDialog(this, "Payment amount must be greater than zero!", "Error", JOptionPane.ERROR_MESSAGE);
                 } else if (change.compareTo(BigDecimal.ZERO) < 0) {
                     JOptionPane.showMessageDialog(this, "Insufficient payment!", "Error", JOptionPane.ERROR_MESSAGE);
                 } else {
                     changeLabel.setText("Rp. " + change);
+
                     JOptionPane.showMessageDialog(this, "Payment Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
 
-                    // Print bill
-                    try {
-                        String filePath = "bill.txt";
-                        printBill(filePath, payment, change);
-                        printBillToPrinter(filePath);
-                        JOptionPane.showMessageDialog(this, "Bill printed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    } catch (IOException | PrinterException ex) {
-                        JOptionPane.showMessageDialog(this, "Error printing bill: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    // Update the status to "Selesai"
+                    updateStatusToSelesai(idAntrian);
 
+                    // Refresh the table in AntrianPasien
+                    antrianPasien.refreshTableData();
+
+                    // Close the payment form
                     dispose();
                 }
             } catch (NumberFormatException ex) {
@@ -178,7 +178,11 @@ public class FormPembayaran extends JFrame {
         mainPanel.add(paymentPanel, BorderLayout.CENTER);
         add(mainPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
-        add(payButton, BorderLayout.SOUTH);
+
+        // Add both buttons (Pay and Refresh) to the bottom
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(payButton);
+        add(buttonPanel, BorderLayout.SOUTH);
 
         setLocationRelativeTo(null);
         setVisible(true);
@@ -195,7 +199,7 @@ public class FormPembayaran extends JFrame {
         for (Map<String, Object> result : results) {
             Object[] drug = new Object[]{
                 result.get("nama_obat"),
-                result.get("id_obat"),
+                result.get("nama_jenis_obat"),
                 result.get("jumlah"),
                 result.get("total"),
                 result.get("signa"),
@@ -368,6 +372,18 @@ public class FormPembayaran extends JFrame {
             }
 
             return PAGE_EXISTS;
+        }
+    }
+
+    private void updateStatusToSelesai(String idAntrian) {
+        try {
+            QueryExecutor executor = new QueryExecutor();
+            // Use the correct column name (e.g., id_antrian)
+            String query = "UPDATE antrian SET status_antrian = 'Selesai' WHERE id_antrian = ?";
+            Object[] parameters = new Object[]{idAntrian};
+            executor.executeUpdateQuery(query, parameters);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error updating status: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

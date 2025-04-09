@@ -180,10 +180,21 @@ public class Absensi extends JFrame {
         // Add action listeners to the buttons
         btnCheckIn.addActionListener(e -> {
             if (!ijinClickedToday && !checkInClickedToday) {
-                Date checkInDate = new Date();
-                lblCheckInTime.setText("Check In Today: " + formatter.format(checkInDate));
-                updateAbsensi(uuid, "masuk");
-                checkInClickedToday = true; // Set the flag to true after clicking "Check In"
+                // Show a warning dialog before proceeding
+                int response = JOptionPane.showConfirmDialog(
+                        this,
+                        "Are you sure you want to Check In? This action will be recorded.",
+                        "Warning",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if (response == JOptionPane.OK_OPTION) {
+                    Date checkInDate = new Date();
+                    lblCheckInTime.setText("Check In Today: " + formatter.format(checkInDate));
+                    updateAbsensi(uuid, "masuk");
+                    checkInClickedToday = true; // Set the flag to true after clicking "Check In"
+                }
             } else if (ijinClickedToday) {
                 JOptionPane.showMessageDialog(this, "You cannot check in after taking leave (Ijin) today.");
             } else {
@@ -192,11 +203,30 @@ public class Absensi extends JFrame {
         });
 
         btnCheckOut.addActionListener(e -> {
-            if (!ijinClickedToday && !checkOutClickedToday) {
-                Date checkOutDate = new Date();
-                lblCheckOutTime.setText("Check Out Today: " + formatter.format(checkOutDate));
-                updateAbsensi(uuid, "pulang");
-                checkOutClickedToday = true; // Set the flag to true after clicking "Check Out"
+            if (!checkInClickedToday) {
+                // Show a warning if trying to check out before checking in
+                JOptionPane.showMessageDialog(
+                        this,
+                        "You must Check In before you can Check Out.",
+                        "Warning",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            } else if (!ijinClickedToday && !checkOutClickedToday) {
+                // Show a warning dialog before proceeding
+                int response = JOptionPane.showConfirmDialog(
+                        this,
+                        "Are you sure you want to Check Out? This action will be recorded.",
+                        "Warning",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if (response == JOptionPane.OK_OPTION) {
+                    Date checkOutDate = new Date();
+                    lblCheckOutTime.setText("Check Out Today: " + formatter.format(checkOutDate));
+                    updateAbsensi(uuid, "pulang");
+                    checkOutClickedToday = true; // Set the flag to true after clicking "Check Out"
+                }
             } else if (ijinClickedToday) {
                 JOptionPane.showMessageDialog(this, "You cannot check out after taking leave (Ijin) today.");
             } else {
