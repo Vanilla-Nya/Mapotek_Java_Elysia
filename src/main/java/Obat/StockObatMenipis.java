@@ -365,20 +365,15 @@ public class StockObatMenipis extends JPanel {
             editButton.setFocusPainted(false);
             editButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    // Ensure row index is valid before attempting to edit
                     if (row >= 0) {
-                        // Get data from the selected row
                         String namaObat = (String) model.getValueAt(row, 1);  // NAMA OBAT
-                        String jenisObat = (String) model.getValueAt(row, 2);  // JENIS OBAT
-                        String harga = (String) String.valueOf(model.getValueAt(row, 3));      // HARGA
-                        String stock = (String) String.valueOf(model.getValueAt(row, 4));      // STOCK
+                        String jenisObat = (String) model.getValueAt(row, 2); // JENIS OBAT
+                        String stock = String.valueOf(model.getValueAt(row, 3)); // STOCK
+                        String idObat = "idObatValue"; // Replace with actual ID retrieval logic
 
-                        // Launch the EditObat form with the selected data
-                        new EditObat(namaObat, jenisObat, harga, stock, "additionalParameter", obatTable, row);
+                        new EditObat(namaObat, jenisObat, "", stock, "", obatTable, row, idObat);
 
-                        stopCellEditing();  // Stop editing after opening the edit window
-                    } else {
-                        System.out.println("Invalid row index for editing: " + row);
+                        stopCellEditing();
                     }
                 }
             });

@@ -8,7 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,7 +23,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import Components.CustomDatePicker;
-import Components.CustomDialog;
 import Components.CustomTextField;
 import Components.Dropdown;
 import Components.RoundedButton;
@@ -39,7 +37,7 @@ class RegisterObat extends JFrame {
 
     private OnObatAddedListener listener;
     private OnObatUpdateListener updateListener;
-    private CustomTextField txtNamaObat, txtHarga, txtStock, txtExpired;
+    private CustomTextField txtNamaObat, txtHarga, txtStock, txtExpired, txtHargaJual;
     private Dropdown txtJenisObat, txtBentukObat;
     private CustomDatePicker customDatePicker;
     private CustomTextField txtBarcode;
@@ -65,7 +63,7 @@ class RegisterObat extends JFrame {
         LOGGER.info("Unique jenisObatList: " + jenisObatList);
 
         setTitle("Tambah Obat");
-        setSize(400, 300);
+        setSize(500, 500);
         setLocationRelativeTo(null);
         setLayout(new GridBagLayout());
 
@@ -109,9 +107,17 @@ class RegisterObat extends JFrame {
         txtHarga = new CustomTextField("Masukkan Harga", 20, 15, Optional.empty());
         formPanel.add(txtHarga, gbc);
 
+        // Harga Jual
+        gbc.gridx = 0;
+        gbc.gridy = 4; // Adjust the row index to fit the new field
+        formPanel.add(new JLabel("Harga Jual:"), gbc);
+        gbc.gridx = 1;
+        txtHargaJual = new CustomTextField("Masukkan Harga Jual", 20, 15, Optional.empty());
+        formPanel.add(txtHargaJual, gbc);
+
         // Stock Obat
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5; // Adjust the row indices of subsequent fields
         formPanel.add(new JLabel("Stock:"), gbc);
         gbc.gridx = 1;
         txtStock = new CustomTextField("Masukkan Stock", 20, 15, Optional.empty());
@@ -119,7 +125,7 @@ class RegisterObat extends JFrame {
 
         // Expired Date
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6; // Adjust the row indices of subsequent fields
         formPanel.add(new JLabel("Expired Date:"), gbc);
         gbc.gridx = 1;
         txtExpired = new CustomTextField("Expired Date", 20, 15, Optional.empty());
@@ -134,7 +140,7 @@ class RegisterObat extends JFrame {
 
         // Barcode Obat
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 7; // Adjust the row indices of subsequent fields
         formPanel.add(new JLabel("Barcode:"), gbc);
         gbc.gridx = 1;
         txtBarcode = new CustomTextField("Masukkan Barcode", 20, 15, Optional.empty());
@@ -142,7 +148,7 @@ class RegisterObat extends JFrame {
 
         // Submit button
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 8; // Adjust the row index for the submit button
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         RoundedButton submitButton = new RoundedButton("Tambahkan");
@@ -160,35 +166,27 @@ class RegisterObat extends JFrame {
                     String selectedBentukObat = (String) txtBentukObat.getSelectedItem();
                     LOGGER.info("Selected Bentuk Obat: " + selectedBentukObat);
                     String harga = txtHarga.getText();
+                    String hargaJual = txtHargaJual.getText(); // Get the Harga Jual value
                     String stock = txtStock.getText();
                     String tanggalExpired = txtExpired.getText();
                     String barcode = txtBarcode.getText();
 
                     QueryExecutor executor = new QueryExecutor();
-                    String Query = "SELECT id_obat, nama_obat, id_jenis_obat, bentuk_obat, harga FROM obat WHERE nama_obat = ? ";
+                    String Query = "SELECT id_obat, nama_obat, id_jenis_obat, bentuk_obat, harga, harga_jual FROM obat WHERE nama_obat = ? ";
                     Object[] parameter = new Object[]{namaObat};
                     java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, parameter);
 
-                    // Add Field Tanggal Expired, Jenis Obat Before this Comment is Uncommented
                     boolean isUpdateObat = false, isInsertDetailObat = false;
                     int idObat = 0;
                     if (!results.isEmpty() && results.size() == 1) {
                         Integer getId = (Integer) results.get(0).get("id_obat");
                         Integer hargaInput = Integer.valueOf(harga);
-                        Integer getHarga = ((BigDecimal) results.get(0).get("harga")).intValue();
-                        Integer hargaDifference = getHarga - hargaInput;
-                        boolean isHargaFluctation = hargaDifference >= getHarga / 10 || hargaDifference <= getHarga / 10 * -1;
-                        LOGGER.info("ID: " + getId + ", Harga Fluctuation: " + isHargaFluctation + ", Harga Difference: " + hargaDifference);
-                        CustomDialog confirmHarga = new CustomDialog(null, "Apakah Anda Yakin Harga Dari Obat " + namaObat + " dengan Harga " + hargaInput + "?", "Konfirmasi");
-                        int responseHarga = confirmHarga.showDialog();
-                        if (responseHarga == JOptionPane.YES_OPTION) {
-                            int hargaJual = (int) Math.round(hargaInput * 1.1);
-                            String QueryUpdate = "UPDATE obat SET harga = ?, barcode = ? WHERE id_obat = ?";
-                            Object[] parameterUpdate = new Object[]{hargaJual, barcode, getId};
-                            isUpdateObat = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
-                            if (isUpdateObat) {
-                                idObat = getId;
-                            }
+                        Integer hargaJualInput = Integer.valueOf(hargaJual); // Parse Harga Jual
+                        String QueryUpdate = "UPDATE obat SET harga = ?, harga_jual = ?, barcode = ? WHERE id_obat = ?";
+                        Object[] parameterUpdate = new Object[]{hargaInput, hargaJualInput, barcode, getId};
+                        isUpdateObat = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
+                        if (isUpdateObat) {
+                            idObat = getId;
                         }
                         String queryDetail = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock) VALUES (?, ?, ?)";
                         Object[] parameterDetail = new Object[]{getId, tanggalExpired, Integer.valueOf(stock)};
@@ -207,8 +205,9 @@ class RegisterObat extends JFrame {
                             idJenisObat = getIdJenis == 404 ? 0 : getIdJenis;
                         }
                         Integer hargaInput = Integer.valueOf(harga);
-                        String QueryUpdate = "INSERT INTO obat (nama_obat, id_jenis_obat, bentuk_obat, harga, barcode) VALUES (?, ?, ?, ?, ?)";
-                        Object[] parameterUpdate = new Object[]{namaObat, idJenisObat, selectedBentukObat, hargaInput, barcode};
+                        Integer hargaJualInput = Integer.valueOf(hargaJual); // Parse Harga Jual
+                        String QueryUpdate = "INSERT INTO obat (nama_obat, id_jenis_obat, bentuk_obat, harga, harga_jual, barcode) VALUES (?, ?, ?, ?, ?, ?)";
+                        Object[] parameterUpdate = new Object[]{namaObat, idJenisObat, selectedBentukObat, hargaInput, hargaJualInput, barcode};
                         idObat = (int) QueryExecutor.executeInsertQueryWithReturnID(QueryUpdate, parameterUpdate);
                         isUpdateObat = idObat != 404;
                         if (isUpdateObat) {

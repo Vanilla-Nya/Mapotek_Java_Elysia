@@ -241,75 +241,76 @@ public class TransaksiDiagnosa extends JFrame {
             } else {
                 id_pemeriksaan = 0; // or handle as appropriate for your application
             }
+            Long lastInsertObat = null; // Variabel untuk menyimpan ID pemeriksaan obat terakhir
+
             for (int i = 0; i < rowCount; i++) {
-                Object id = idList.get(i);
-                Object name = model.getValueAt(i, 0);   // Get value at (row, column 0)
-                Object type = model.getValueAt(i, 1);  // Get value at (row, column 1)
-                Object jumlah = model.getValueAt(i, 2); // Get value at (row, column 2)
-                Object harga = model.getValueAt(i, 3);  // Get value at (row, column 3)
-                Object signa = model.getValueAt(i, 4);  // Get value at (row, column 4)
-                int hargaJasaText = 0;
-                if (!hargaJasa.getText().isEmpty()) {
-                    try {
-                        hargaJasaText = Integer.parseInt(hargaJasa.getText());
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(this, "Harga Jasa tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(this, "Harga Jasa harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
+                // Ambil id_obat dari idList
+                String idObat = idList.get(i).toString();
+
+                // Ambil id_detail_obat berdasarkan id_obat dan tanggal kedaluwarsa terdekat
+                String idDetailObat = getIdDetailObatByClosestExpiry(idObat);
+                if (idDetailObat == null) {
+                    System.err.println("Gagal mendapatkan ID Detail Obat untuk ID Obat: " + idObat);
+                    continue;
                 }
-                // insert into pemeriksaan obat id, jumlah get id pemeriksaan_obat
-                String insertObatQuery = "INSERT INTO pemeriksaan_obat (id_obat, signa, jumlah) VALUES (?,?,?)";
-                Object[] parameter = new Object[]{id, signa, jumlah};
+
+                Object jumlah = model.getValueAt(i, 2);
+                Object signa = model.getValueAt(i, 4);
+
+                // Insert into pemeriksaan_obat
+                String insertObatQuery = "INSERT INTO pemeriksaan_obat (id_detail_obat, id_obat, signa, jumlah) VALUES (?, ?, ?, ?)";
+                Object[] parameter = new Object[]{idDetailObat, idObat, signa, jumlah};
                 Long insertObat = QueryExecutor.executeInsertQueryWithReturnID(insertObatQuery, parameter);
-                if (insertObat != 404L) {
-                    // insert into detail_pemeriksaan detail pemeriksaan
-                    String insertDetailPemeriksaan = "INSERT INTO detail_pemeriksaan(id_detail_pemeriksaan, id_pemeriksaan_obat, harga_jasa, total) VALUES (?,?,?,?)";
-                    Object[] parameterInsertDetail = new Object[]{id_pemeriksaan + 1, insertObat, hargaJasaText, total};
-                    isDone = QueryExecutor.executeInsertQuery(insertDetailPemeriksaan, parameterInsertDetail);
-                }
-                // Remove the code related to detail_pembayaran
-                // Ensure the value is a String and truncate if necessary
-                String idAntrian = dataFromParent[8].toString();
-                if (idAntrian.length() > 25) {
-                    idAntrian = idAntrian.substring(0, 25);
-                }
 
-                // Debugging statement to log the value of idAntrian
-                System.out.println("Inserting into detail_pembayaran with id_antrian: " + idAntrian);
-
-                // Store the data in the row array
-                row[i] = new Object[]{name, type, jumlah, harga, signa};
+                if (insertObat != null && insertObat != 404L) {
+                    lastInsertObat = insertObat; // Simpan ID pemeriksaan obat terakhir
+                    isDone = true;
+                } else {
+                    System.err.println("Failed to insert into pemeriksaan_obat. InsertObat: " + insertObat);
+                }
             }
             if (isDone) {
                 try {
-                    String queryPemeriksaan = "INSERT INTO pemeriksaan (id_detail_pemeriksaan, no_antrian, keluhan, harga_total, id_user) VALUES (?, ?, ?, ?, ?)";
-                    Object[] parameterPemeriksaan = new Object[]{id_pemeriksaan + 1, dataFromParent[8], diagnosisTextArea.getText(), total, uuid};
-                    boolean isPemeriksaan = QueryExecutor.executeInsertQuery(queryPemeriksaan, parameterPemeriksaan);
-                    if (isPemeriksaan) {
-                        String getIdPemeriksaan = "SELECT id_pemeriksaan FROM pemeriksaan WHERE id_detail_pemeriksaan = ?";
-                        Object[] paramgetId = new Object[]{id_pemeriksaan + 1};
-                        java.util.List<Map<String, Object>> resultIdPemeriksaan2 = executor.executeSelectQuery(getIdPemeriksaan, paramgetId);
-                        int getID = (int) resultIdPemeriksaan2.get(0).get("id_pemeriksaan");
-                        String queryPemasukan = "INSERT INTO pemasukan_harian (id_pemeriksaan , tanggal) VALUES (?, ?)";
-                        Object[] parameterPemasukan = new Object[]{getID, LocalDate.now().toString()};
-                        isFinal = QueryExecutor.executeInsertQuery(queryPemasukan, parameterPemasukan);
-                    }
-                    if (isFinal) {
-                        String QueryUpdate = "UPDATE antrian SET status_antrian = ? WHERE id_antrian = ?";
-                        Object[] parameterUpdate = new Object[]{"Selesai Diperiksa", dataFromParent[8]}; // Update status to "Selesai Diperiksa"
-                        boolean isChange = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
-                        if (isChange) {
-                            listener.onPasienUpdated((String) dataFromParent[8], (String) dataFromParent[10].toString(), (String) dataFromParent[2], "Selesai Diperiksa"); // Notify listener with new status
-                            JOptionPane.showMessageDialog(this, "Pemeriksaan Selesai", "Success", JOptionPane.INFORMATION_MESSAGE);
-                            dispose();
+                    // Masukkan data ke tabel detail_pemeriksaan
+                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_detail_pemeriksaan, id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?, ?)";
+                    Object[] detailPemeriksaanParams = new Object[]{id_pemeriksaan + 1, lastInsertObat, Double.parseDouble(hargaJasa.getText()), total};
+                    boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
+
+                    if (isDetailInserted) {
+                        // Masukkan data ke tabel pemeriksaan
+                        String queryPemeriksaan = "INSERT INTO pemeriksaan (id_detail_pemeriksaan, no_antrian, keluhan, harga_total, id_user) VALUES (?, ?, ?, ?, ?)";
+                        Object[] parameterPemeriksaan = new Object[]{id_pemeriksaan + 1, dataFromParent[8], diagnosisTextArea.getText(), total, uuid};
+                        boolean isPemeriksaan = QueryExecutor.executeInsertQuery(queryPemeriksaan, parameterPemeriksaan);
+
+                        if (isPemeriksaan) {
+                            // Masukkan data ke tabel pemasukan_harian
+                            String getIdPemeriksaan = "SELECT id_pemeriksaan FROM pemeriksaan WHERE id_detail_pemeriksaan = ?";
+                            Object[] paramgetId = new Object[]{id_pemeriksaan + 1};
+                            java.util.List<Map<String, Object>> resultIdPemeriksaan2 = executor.executeSelectQuery(getIdPemeriksaan, paramgetId);
+                            int getID = (int) resultIdPemeriksaan2.get(0).get("id_pemeriksaan");
+                            String queryPemasukan = "INSERT INTO pemasukan_harian (id_pemeriksaan , tanggal) VALUES (?, ?)";
+                            Object[] parameterPemasukan = new Object[]{getID, LocalDate.now().toString()};
+                            isFinal = QueryExecutor.executeInsertQuery(queryPemasukan, parameterPemasukan);
+                        }
+
+                        if (isFinal) {
+                            // Perbarui status antrian
+                            String QueryUpdate = "UPDATE antrian SET status_antrian = ? WHERE id_antrian = ?";
+                            Object[] parameterUpdate = new Object[]{"Selesai Diperiksa", dataFromParent[8]};
+                            boolean isChange = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
+
+                            if (isChange) {
+                                listener.onPasienUpdated((String) dataFromParent[8], (String) dataFromParent[10].toString(), (String) dataFromParent[2], "Selesai Diperiksa");
+                                JOptionPane.showMessageDialog(this, "Pemeriksaan Selesai", "Success", JOptionPane.INFORMATION_MESSAGE);
+                                dispose();
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Pemeriksaan Gagal", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
                         } else {
                             JOptionPane.showMessageDialog(null, "Pemeriksaan Gagal", "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     } else {
-                        JOptionPane.showMessageDialog(null, "Pemeriksaan Gagal", "Error", JOptionPane.ERROR_MESSAGE);
+                        System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
                     }
                 } catch (HeadlessException headlessException) {
                     System.err.println(headlessException);
@@ -614,5 +615,33 @@ public class TransaksiDiagnosa extends JFrame {
     public interface OnPemeriksaanUpdatedListener {
 
         void onPasienUpdated(String noAntrian, String idPasien, String nama_pasien, String status);
+    }
+
+    private String getIdDetailObat(String idObat) {
+        QueryExecutor executor = new QueryExecutor();
+        String query = "SELECT id_detail_obat FROM detail_obat WHERE id_obat = ? LIMIT 1";
+        Object[] parameter = new Object[]{idObat};
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+
+        if (!results.isEmpty()) {
+            return results.get(0).get("id_detail_obat").toString();
+        } else {
+            System.err.println("ID Detail Obat tidak ditemukan untuk ID Obat: " + idObat);
+            return null; // Jika tidak ditemukan, kembalikan null
+        }
+    }
+
+    private String getIdDetailObatByClosestExpiry(String idObat) {
+        QueryExecutor executor = new QueryExecutor();
+        String query = "SELECT id_detail_obat FROM detail_obat WHERE id_obat = ? AND tanggal_expired > CURDATE() ORDER BY tanggal_expired ASC LIMIT 1";
+        Object[] parameter = new Object[]{idObat};
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+
+        if (!results.isEmpty()) {
+            return results.get(0).get("id_detail_obat").toString();
+        } else {
+            System.err.println("ID Detail Obat tidak ditemukan untuk ID Obat: " + idObat);
+            return null; // Jika tidak ditemukan, kembalikan null
+        }
     }
 }

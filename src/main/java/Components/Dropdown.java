@@ -70,13 +70,13 @@ public class Dropdown extends JComboBox<String> {
         SwingUtilities.invokeLater(() -> {
             String input = editor.getText();
             List<String> filteredItems = new ArrayList<>();
-            
+
             // Check if the input changed before continuing
             if (input.equals(lastInput) && !isFirstTime) {
                 return; // No change, stop the update
             }
             lastInput = input; // Update the last input
-            
+
             if (isSearchable) {
                 // Filter items based on user input
                 for (String item : items) {
@@ -90,7 +90,7 @@ public class Dropdown extends JComboBox<String> {
             } else {
                 filteredItems = items;  // Show all items if not searchable
             }
-            
+
             // Update the model only if the items have changed
             if (!filteredItems.isEmpty()) {
                 // Update the model
@@ -102,18 +102,21 @@ public class Dropdown extends JComboBox<String> {
                 }
                 setPopupVisible(false); // Hide the popup if no matches
             }
-            
+
             // Hide or show the popup based on the number of filtered items
             if (!filteredItems.isEmpty() && isSearchable) {
                 if (lastInput.equals(filteredItems.get(0))) {
                     setPopupVisible(false);
                 } else {
-                    setPopupVisible(true);
+                    // Ensure the component is visible before showing the popup
+                    if (isShowing()) {
+                        setPopupVisible(true);
+                    }
                 }
             } else {
                 setPopupVisible(false);
             }
-            
+
             isFirstTime = false;
         });
     }

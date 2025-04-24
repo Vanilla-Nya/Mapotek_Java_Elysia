@@ -1,25 +1,22 @@
 package Obat;
 
-import Components.CustomDialog;
-import Components.CustomTable.CustomTable;
-import Components.CustomTextField;
-import Components.RoundedButton;
-import Components.RoundedPanel;
-import DataBase.QueryExecutor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -28,10 +25,18 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+
+import Components.CustomDatePicker;
+import Components.CustomTable.CustomTable;
+import Components.CustomTextField;
+import Components.RoundedButton;
+import Components.RoundedPanel;
+import DataBase.QueryExecutor;
 
 public class ObatExpierd extends JPanel {
 
@@ -40,8 +45,15 @@ public class ObatExpierd extends JPanel {
     private JTable obatTable;
     private int selectedRow = -1;
     Object[][] data = {};
+    private JLabel namaObatField, jenisObatField, tanggalExpiredField, stokField;
 
     public ObatExpierd() {
+        // Inisialisasi JTextField
+        namaObatField = new JLabel();
+        jenisObatField = new JLabel();
+        tanggalExpiredField = new JLabel();
+        stokField = new JLabel();
+
         // Frame setup
         setSize(800, 600);
         QueryExecutor executor = new QueryExecutor();
@@ -151,39 +163,38 @@ public class ObatExpierd extends JPanel {
     }
 
     private RoundedPanel createDataPanel() {
-        // Data Panel setup
         RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
         dataPanel.setLayout(new GridLayout(5, 2, 10, 10));
         dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Create Labels for data
-        namaObatLabel = createDataLabel("NAMA OBAT : ");
-        stockLabel = createDataLabel("STOCK : ");
-        jenisObatLabel = createDataLabel("JENIS OBAT : ");
-        tanggalExpierd = createDataLabel("TANGGAL EXPIERD : ");
+        // Inisialisasi JTextField
+        namaObatField = new JLabel();
+        jenisObatField = new JLabel();
+        tanggalExpiredField = new JLabel();
+        stokField = new JLabel();
 
-        // Add labels to the data panel
-        dataPanel.add(namaObatLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Nama Obat value
-        dataPanel.add(jenisObatLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Harga value
-        dataPanel.add(stockLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Stock value
-        dataPanel.add(tanggalExpierd);
-        dataPanel.add(new JLabel(""));  // Placeholder for Expierd value
+        // Tambahkan ke panel
+        dataPanel.add(new JLabel("NAMA OBAT : "));
+        dataPanel.add(namaObatField);
+        dataPanel.add(new JLabel("JENIS OBAT : "));
+        dataPanel.add(jenisObatField);
+        dataPanel.add(new JLabel("TANGGAL EXPIRED : "));
+        dataPanel.add(tanggalExpiredField);
+        dataPanel.add(new JLabel("STOK : "));
+        dataPanel.add(stokField);
 
         return dataPanel;
     }
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"NO", "NAMA OBAT", "JENIS OBAT", "TANGGAL EXPIERD", "STOCK", "AKSI"};
+        String[] columns = {"NO", "NAMA OBAT", "JENIS OBAT", "TANGGAL EXPIRED", "STOCK", "AKSI"};
 
         // Table model
         tableModel = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 5; // Action column (buttons) should be editable
+                return column == 5; // Only "AKSI" column is editable
             }
         };
 
@@ -196,8 +207,25 @@ public class ObatExpierd extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int selectedRow = obatTable.getSelectedRow();
-                if (selectedRow != -1) {
-                    updateDataPanel(obatTable, selectedRow);
+                if (selectedRow >= 0) {
+                    // Ambil data dari tabel
+                    String namaObat = (String) tableModel.getValueAt(selectedRow, 1);
+                    String jenisObat = (String) tableModel.getValueAt(selectedRow, 2);
+                    Object tanggalExpiredObj = tableModel.getValueAt(selectedRow, 3);
+                    String tanggalExpired = "";
+                    if (tanggalExpiredObj instanceof java.sql.Date) {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+                        tanggalExpired = dateFormat.format(tanggalExpiredObj);
+                    } else if (tanggalExpiredObj != null) {
+                        tanggalExpired = tanggalExpiredObj.toString();
+                    }
+                    String stok = String.valueOf(tableModel.getValueAt(selectedRow, 4));
+
+                    // Perbarui field di panel detail
+                    if (namaObatField != null) namaObatField.setText(namaObat);
+                    if (jenisObatField != null) jenisObatField.setText(jenisObat);
+                    if (tanggalExpiredField != null) tanggalExpiredField.setText(tanggalExpired);
+                    if (stokField != null) stokField.setText(stok);
                 }
             }
         });
@@ -216,17 +244,23 @@ public class ObatExpierd extends JPanel {
     }
 
     private void updateDataPanel(JTable table, int row) {
-        // Get values from the selected row and safely convert them to Strings
         String namaObat = String.valueOf(table.getValueAt(row, 1));  // Column 1: NAMA OBAT
         String jenisObat = String.valueOf(table.getValueAt(row, 2));  // Column 2: JENIS OBAT
-        String harga = String.valueOf(table.getValueAt(row, 3));      // Column 3: HARGA
+        Object tanggalExpiredObj = table.getValueAt(row, 3);          // Column 3: TANGGAL EXPIRED
+        String tanggalExpired = "";
+        if (tanggalExpiredObj instanceof java.sql.Date) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+            tanggalExpired = dateFormat.format(tanggalExpiredObj);
+        } else if (tanggalExpiredObj != null) {
+            tanggalExpired = tanggalExpiredObj.toString();
+        }
         String stock = String.valueOf(table.getValueAt(row, 4));      // Column 4: STOCK
 
-        // Update the labels in the data panel with values from the selected row
-        namaObatLabel.setText("NAMA OBAT : " + namaObat);
-        jenisObatLabel.setText("JENIS OBAT : " + jenisObat);
-        tanggalExpierd.setText("TANGGAL EXPIERD : " + harga);
-        stockLabel.setText("STOCK : " + stock);
+        // Update the labels in the data panel
+        namaObatField.setText(namaObat);
+        jenisObatField.setText(jenisObat);
+        tanggalExpiredField.setText(tanggalExpired);
+        stokField.setText(stock);
     }
 
     private void setTableColumnWidths(JTable table) {
@@ -303,21 +337,25 @@ public class ObatExpierd extends JPanel {
 
         public ActionCellRenderer() {
             setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            add(editButton);
-            setBackground(Color.WHITE);
+            
+            // "RESTOCK" Button
+            JButton restockButton = new RoundedButton("RESTOCK");
+            restockButton.setBackground(new Color(255, 153, 51));
+            restockButton.setForeground(Color.WHITE);
+            restockButton.setFocusPainted(false);
+            add(restockButton);
 
-            JButton hapusButton = new RoundedButton("HAPUS");
-            hapusButton.setBackground(new Color(255, 51, 51));
-            hapusButton.setForeground(Color.WHITE);
-            hapusButton.setFocusPainted(false);
-            add(hapusButton);
+            // "BUANG" Button
+            JButton buangButton = new RoundedButton("BUANG");
+            buangButton.setBackground(new Color(255, 51, 51));
+            buangButton.setForeground(Color.WHITE);
+            buangButton.setFocusPainted(false);
+            add(buangButton);
+
             setBackground(Color.WHITE);
         }
 
+        @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             return this;
         }
@@ -341,89 +379,170 @@ public class ObatExpierd extends JPanel {
             panel = new JPanel();
             panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
 
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            editButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    // Ensure row index is valid before attempting to edit
-                    if (row >= 0) {
-                        // Get data from the selected row
-                        String namaObat = (String) model.getValueAt(row, 1);  // NAMA OBAT
-                        String jenisObat = (String) model.getValueAt(row, 2);  // JENIS OBAT
-                        String harga = (String) String.valueOf(model.getValueAt(row, 3));      // HARGA
-                        String stock = (String) String.valueOf(model.getValueAt(row, 4));      // STOCK
+            // "RESTOCK" Button
+            JButton restockButton = new RoundedButton("RESTOCK");
+            restockButton.setBackground(new Color(255, 153, 51));
+            restockButton.setForeground(Color.WHITE);
+            restockButton.setFocusPainted(false);
+            restockButton.addActionListener(e -> {
+                if (row >= 0) {
+                    // Ambil data dari tabel
+                    String namaObat = (String) model.getValueAt(row, 1);  // NAMA OBAT
+                    String jenisObat = (String) model.getValueAt(row, 2); // JENIS OBAT
 
-                        // Launch the EditObat form with the selected data
-                        new EditObat(namaObat, jenisObat, harga, stock, "", obatTable, row);
+                    // Ambil dan format tanggal expired
+                    Object tanggalExpiredObj = model.getValueAt(row, 3); // TANGGAL EXPIRED
+                    String tanggalExpired = "";
+                    if (tanggalExpiredObj instanceof java.sql.Date) {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+                        tanggalExpired = dateFormat.format(tanggalExpiredObj);
+                    } else if (tanggalExpiredObj != null) {
+                        tanggalExpired = tanggalExpiredObj.toString();
+                    }
 
-                        stopCellEditing();  // Stop editing after opening the edit window
-                    } else {
-                        System.out.println("Invalid row index for editing: " + row);
+                    String stokLama = String.valueOf(model.getValueAt(row, 4)); // STOCK LAMA
+
+                    // Dialog untuk input stok baru
+                    JPanel panel = new JPanel(new GridBagLayout());
+                    GridBagConstraints gbc = new GridBagConstraints();
+                    gbc.insets = new Insets(5, 5, 5, 5);
+                    gbc.fill = GridBagConstraints.HORIZONTAL;
+
+                    // Detail Obat: Nama Obat
+                    gbc.gridx = 0;
+                    gbc.gridy = 0;
+                    panel.add(new JLabel("Nama Obat:"), gbc);
+                    gbc.gridx = 1;
+                    JTextField namaObatField = new JTextField(namaObat, 20);
+                    namaObatField.setEditable(false);
+                    panel.add(namaObatField, gbc);
+
+                    // Detail Obat: Jenis Obat
+                    gbc.gridx = 0;
+                    gbc.gridy = 1;
+                    panel.add(new JLabel("Jenis Obat:"), gbc);
+                    gbc.gridx = 1;
+                    JTextField jenisObatField = new JTextField(jenisObat, 20);
+                    jenisObatField.setEditable(false);
+                    panel.add(jenisObatField, gbc);
+
+                    // Detail Obat: Tanggal Expired
+                    gbc.gridx = 0;
+                    gbc.gridy = 2;
+                    panel.add(new JLabel("Tanggal Expired:"), gbc);
+                    gbc.gridx = 1;
+                    JTextField tanggalExpiredField = new JTextField(tanggalExpired, 20);
+                    tanggalExpiredField.setEditable(false);
+                    panel.add(tanggalExpiredField, gbc);
+
+                    // Detail Obat: Stok Lama
+                    gbc.gridx = 0;
+                    gbc.gridy = 3;
+                    panel.add(new JLabel("Stok Lama:"), gbc);
+                    gbc.gridx = 1;
+                    JTextField stokLamaField = new JTextField(stokLama, 20);
+                    stokLamaField.setEditable(false);
+                    panel.add(stokLamaField, gbc);
+
+                    // Input Stok Baru
+                    gbc.gridx = 0;
+                    gbc.gridy = 4;
+                    panel.add(new JLabel("Stok Baru:"), gbc);
+                    gbc.gridx = 1;
+                    JTextField stokBaruField = new JTextField(10);
+                    panel.add(stokBaruField, gbc);
+
+                    // Input Tanggal Expired Baru
+                    gbc.gridx = 0;
+                    gbc.gridy = 5;
+                    panel.add(new JLabel("Tanggal Expired Baru:"), gbc);
+                    gbc.gridx = 1;
+                    CustomTextField tanggalExpiredBaruField = new CustomTextField("Pilih tanggal expired", 20, 15, Optional.empty());
+                    CustomDatePicker datePicker = new CustomDatePicker(tanggalExpiredBaruField.getTextField(), true);
+                    tanggalExpiredBaruField.getTextField().addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                            datePicker.showDatePicker(); // Tampilkan dialog pemilihan tanggal
+                        }
+                    });
+                    panel.add(tanggalExpiredBaruField, gbc);
+
+                    // Tampilkan dialog
+                    int result = JOptionPane.showConfirmDialog(null, panel, "Restock Obat", JOptionPane.OK_CANCEL_OPTION);
+                    if (result == JOptionPane.OK_OPTION) {
+                        try {
+                            int stokBaru = Integer.parseInt(stokBaruField.getText());
+                            String tanggalExpiredBaru = tanggalExpiredBaruField.getText();
+
+                            // Panggil logika restock
+                            QueryExecutor executor = new QueryExecutor();
+                            String idObat = ""; // Replace with actual idObat retrieval logic
+
+                            // Tambahkan stok baru ke tabel `detail_obat` dan catat di `restock_log`
+                            String insertDetailObatQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock) VALUES (?, ?, ?)";
+                            String insertRestockLogQuery = "INSERT INTO restock_log (id_obat, tanggal_restock, jumlah_restock) VALUES (?, ?, ?)";
+
+                            try {
+                                // Insert ke tabel detail_obat
+                                executor.executeInsertQuery(insertDetailObatQuery, new Object[]{idObat, tanggalExpiredBaru, stokBaru});
+
+                                // Insert ke tabel restock_log
+                                executor.executeInsertQuery(insertRestockLogQuery, new Object[]{idObat, new java.sql.Date(System.currentTimeMillis()), stokBaru});
+
+                                JOptionPane.showMessageDialog(null, "Restock berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+
+                                // Refresh data tabel
+                                refreshTableData();
+                            } catch (Exception ex) {
+                                JOptionPane.showMessageDialog(null, "Masukkan stok yang valid.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(null, "Masukkan stok yang valid.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
                     }
                 }
             });
-            panel.add(editButton);
+            panel.add(restockButton);
 
-            JButton hapusButton = new RoundedButton("HAPUS");
-            hapusButton.setBackground(new Color(255, 51, 51));
-            hapusButton.setForeground(Color.WHITE);
-            hapusButton.setFocusPainted(false);
-            hapusButton.addActionListener((ActionEvent e) -> {
-                // Create and show the confirmation dialog
-                CustomDialog confirmDialog = new CustomDialog(null, "Apakah Anda yakin ingin menghapus obat ini?", "Konfirmasi Penghapusan");
-                // Get the user's response
-                int response = confirmDialog.showDialog();
+            // "BUANG" Button
+            JButton buangButton = new RoundedButton("BUANG");
+            buangButton.setBackground(new Color(255, 51, 51));
+            buangButton.setForeground(Color.WHITE);
+            buangButton.setFocusPainted(false);
+            buangButton.addActionListener(e -> {
+                if (row >= 0) {
+                    // Show confirmation dialog
+                    int response = JOptionPane.showConfirmDialog(
+                        null,
+                        "Apakah Anda yakin ingin membuang obat ini?",
+                        "Konfirmasi Pembuangan",
+                        JOptionPane.YES_NO_OPTION
+                    );
 
-                // If the user clicks "Yes"
-                if (response == JOptionPane.YES_OPTION) {
-                    // Check if the row index is valid before attempting to remove
-                    if (row >= 0 && row < model.getRowCount()) {
-                        JTable table = (JTable) panel.getParent();
+                    if (response == JOptionPane.YES_OPTION) {
+                        // Update the database to set `deleted` = 1
+                        String namaObat = (String) model.getValueAt(row, 1); // NAMA OBAT
+                        QueryExecutor executor = new QueryExecutor();
+                        String query = "UPDATE obat SET deleted = 1 WHERE nama_obat = ?";
+                        Object[] params = {namaObat};
+                        boolean success = executor.executeUpdateQuery(query, params);
 
-                        // Check if the table was in an editing state and stop editing
-                        if (table.isEditing()) {
-                            table.getCellEditor().stopCellEditing();  // Stop editing the cell if it is being edited
-                            System.out.println("Cell editing stopped.");
-                        }
-
-                        // Log the row index and row count before removal for debugging
-                        System.out.println("Attempting to remove row: " + row);
-
-                        // Proceed with row removal if index is valid
-                        model.removeRow(row);
-
-                        // Refresh the table view after the row is removed
-                        table.revalidate();
-                        table.repaint();
-
-                        // Handle edge case if the last row was removed
-                        if (model.getRowCount() == 0) {
-                            System.out.println("Last row deleted, table is empty.");
+                        if (success) {
+                            // Remove the row from the table
+                            model.removeRow(row);
+                            JOptionPane.showMessageDialog(null, "Obat berhasil dibuang.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
                         } else {
-                            // After removing the last row, we might want to focus or highlight the new "last row"
-                            int lastRowIndex = model.getRowCount() - 1;
-                            table.setRowSelectionInterval(lastRowIndex, lastRowIndex);
+                            JOptionPane.showMessageDialog(null, "Gagal membuang obat.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
-                    } else {
-                        System.out.println("Invalid row index for deletion: " + row);
                     }
-                } else {
-                    // If the user clicked "No", simply log that the deletion was canceled
-                    System.out.println("Deletion canceled by user.");
+                    stopCellEditing();
                 }
             });
-            panel.add(hapusButton);
+            panel.add(buangButton);
         }
 
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            // Ensure row index is set properly
-            if (row >= 0 && row < table.getRowCount()) {
-                this.row = row;  // Set the row index when the cell enters editing mode
-            } else {
-                System.out.println("Invalid row index passed to cell editor");
-            }
+            this.row = row;
             return panel;
         }
 

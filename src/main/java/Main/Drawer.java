@@ -9,6 +9,7 @@ import java.awt.Image;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Map;
 
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -27,6 +28,7 @@ import Antrian.AntrianPasien;
 import Components.CustomTitleBarFrame;
 import Dashboard.Dashboard;
 import DataBase.QueryExecutor;
+import DataBase.Scheduler.BatchStatusScheduler;
 import Global.UserSessionCache;
 import Obat.ManagementObatDanObatExpierd;
 import Pasien.Pasien;
@@ -49,6 +51,7 @@ public class Drawer extends JFrame {
     private Absensi absensiInstance;
 
     public Drawer() {
+        BatchStatusScheduler.startScheduler();
         UserSessionCache cache = new UserSessionCache();
         String uuid = (String) cache.getUUID();
         QueryExecutor executor = new QueryExecutor();
@@ -232,7 +235,7 @@ public class Drawer extends JFrame {
         if (section.equals("Dashboard")) {
             mainPanel.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Pasien")) {
-            mainPanel.add(new Pasien().getContentPane(), BorderLayout.CENTER);
+            mainPanel.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Obat")) {
             ManagementObatDanObatExpierd managementObat = new ManagementObatDanObatExpierd();
             mainPanel.add(managementObat.getContentPane(), BorderLayout.CENTER);

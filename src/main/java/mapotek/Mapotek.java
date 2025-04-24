@@ -6,6 +6,8 @@ package mapotek;
 import Auth.Login;
 import Auth.Register;
 import Components.RoundedButton;
+import DataBase.Scheduler.BatchStatusScheduler;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -62,7 +64,7 @@ public class Mapotek extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.CENTER;
 
-        // Welcome text
+        // Welcome textd
         JTextPane welcomePane = new JTextPane();
         welcomePane.setContentType("text/plain");
         welcomePane.setText("""

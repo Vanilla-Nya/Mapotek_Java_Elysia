@@ -25,9 +25,11 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
     private DefaultTableModel model;
     private JTextField searchField;
     private JScrollPane tableScrollPane;
+    private int role;
     Object[][] data = {};
 
-    public Pasien() {
+    public Pasien(int role) {
+        this.role = role;
         setSize(1000, 600);
         setLocationRelativeTo(null);
         QueryExecutor executor = new QueryExecutor();
@@ -65,13 +67,13 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         JPanel headerPanel = createHeaderPanel();
 
         // Search Panel (Search and Add Buttons)
-        JPanel searchPanel = createSearchPanel();
+        JPanel searchPanel = createSearchPanel(role);
 
         // Data Panel (Displays patient details)
         RoundedPanel detailPanel = createDetailPanel();
 
         // Table Panel (Displays list of patients)
-        tableScrollPane = createTablePanel();
+        tableScrollPane = createTablePanel(role);
 
         // Main Panel combining Data and Table Panels
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -84,8 +86,7 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         add(mainPanel, BorderLayout.CENTER);
     }
 
-    private JScrollPane createTablePanel() {
-        int role = new Drawer().role;
+    private JScrollPane createTablePanel(int role) {
         // Table data and columns setup
         String[] columnNames;
         if (role == 1) {
@@ -136,13 +137,12 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
             }
         });
         // Adjust table column widths
-        setTableColumnWidths(pasienTable);
+        setTableColumnWidths(pasienTable, role);
 
         return new JScrollPane(pasienTable);
     }
 
-    private void setTableColumnWidths(JTable table) {
-        int role = new Drawer().role;
+    private void setTableColumnWidths(JTable table, int role) {
         table.getColumnModel().getColumn(0).setPreferredWidth(30);
         table.getColumnModel().getColumn(1).setPreferredWidth(100);
         table.getColumnModel().getColumn(2).setPreferredWidth(100);
@@ -166,8 +166,7 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         return headerPanel;
     }
 
-    private JPanel createSearchPanel() {
-        int role = new Drawer().role;
+    private JPanel createSearchPanel(int role) {
         JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
         searchPanel.setBackground(Color.WHITE);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -300,7 +299,7 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Pasien().setVisible(true));
+        SwingUtilities.invokeLater(() -> new Pasien(0).setVisible(true));
     }
 
     public void onPasienAdded(String id, String nik, String name, String age, String gender, String phone, String address) {

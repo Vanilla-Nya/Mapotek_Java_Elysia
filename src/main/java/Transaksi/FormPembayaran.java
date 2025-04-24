@@ -156,6 +156,22 @@ public class FormPembayaran extends JFrame {
                     // Refresh the table in AntrianPasien
                     antrianPasien.refreshTableData();
 
+                    // Ask the user if they want to print the bill
+                    int printChoice = JOptionPane.showConfirmDialog(this, "Do you want to print the bill?", "Print Bill", JOptionPane.YES_NO_OPTION);
+                    if (printChoice == JOptionPane.YES_OPTION) {
+                        // Specify the file path for the bill
+                        String filePath = "bill.txt"; // Adjust the file path as needed
+                        try {
+                            // Generate the bill file
+                            printBill(filePath, payment, change);
+
+                            // Print the bill to the printer
+                            printBillToPrinter(filePath);
+                        } catch (IOException | PrinterException ex) {
+                            JOptionPane.showMessageDialog(this, "Error printing bill: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+
                     // Close the payment form
                     dispose();
                 }

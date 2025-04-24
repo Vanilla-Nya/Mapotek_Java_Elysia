@@ -1,36 +1,51 @@
 package Obat;
 
-import Components.CustomDialog;
-import Components.CustomTextField;
-import Components.CustomTable.CustomTable;
-import Components.RoundedButton;
-import Components.RoundedPanel;
-import DataBase.QueryExecutor;
-import Helpers.OnObatAddedListener;
-import Helpers.OnObatUpdateListener;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
-import javax.swing.*;
+import javax.swing.AbstractCellEditor;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
-import java.awt.event.MouseEvent;
-
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
-
+import Components.CustomTable.CustomTable;
+import Components.CustomTextField;
+import Components.RoundedButton;
+import Components.RoundedPanel;
+import DataBase.QueryExecutor;
+import Helpers.OnObatAddedListener;
+import Helpers.OnObatUpdateListener;
 import static Pemeriksaan.TablePemeriksaan.mapToArray;
 
 public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateListener {
 
     private JLabel idLabel, hargaLabel, namaObatLabel, stockLabel, jenisObatLabel;
+    private JLabel expiredLabel, statusBatchLabel;
     private DefaultTableModel tableModel;
     private JTable obatTable;
     private int selectedRow = -1;
@@ -47,35 +62,34 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 Object[] dataFromDatabase = new Object[]{
-                    data.length + 1, result.get("barcode"), result.get("nama_obat"), result.get("nama_jenis_obat"),
-                    result.get("harga"), result.get("stock"), ""
+                    data.length + 1,               // Column 0: 
+                    result.get("barcode"),         // Column 2: BARCODE
+                    result.get("nama_obat"),       // Column 3: NAMA OBAT
+                    result.get("nama_jenis_obat"), // Column 4: JENIS OBAT
+                    result.get("harga_jual"),      // Column 5: HARGA JUAL
+                    result.get("stock"),           // Column 6: STOCK
+                    ""                             // Column 7: AKSI (Action buttons)
                 };
 
-                // Create a new array with an additional row
+                // Update data array
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
 
-                // Create a new array with an additional row
+                // Update fullData array
                 Object[][] newDataFull = new Object[fullData.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(fullData, 0, newDataFull, 0, fullData.length);
-
-                // Add the new row to the new array
                 newDataFull[fullData.length] = mapToArray(result);
-
-                // Send back to original
                 fullData = newDataFull;
             }
         }
+        System.out.println(fullData[1][1]);
+        System.out.println(fullData[1][2]);
+        System.out.println(fullData[1][3]);
+        System.out.println(fullData[1][4]);
+        System.out.println(fullData[1][5]);
+        System.out.println(fullData[1][6]);
 
         setLayout(new BorderLayout());
 
@@ -141,7 +155,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         searchButton.addActionListener(e -> {
             String searchTerm = searchField.getText().toLowerCase();
-            Object[][] filteredData = Arrays.stream(data)
+            Object[][] filteredData = Arrays.stream(fullData)
                     .filter(row -> ((String) row[1]).toLowerCase().contains(searchTerm) // Check if 'BARCODE' contains search term
                             || ((String) row[2]).toLowerCase().contains(searchTerm)) // Check if 'NAMA OBAT' contains search term
                     .toArray(Object[][]::new);
@@ -213,7 +227,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     private RoundedPanel createDataPanel() {
         // Data Panel setup
         RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
-        dataPanel.setLayout(new GridLayout(5, 2, 10, 10));
+        dataPanel.setLayout(new GridLayout(6, 2, 10, 10)); // Adjust grid layout for new labels
         dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Create Labels for data
@@ -237,13 +251,11 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK", "AKSI"};
-
-        // Table model
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK", "AKSI"};
         tableModel = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 6; // Action column (buttons) should be editable
+                return column == 6; // Only "AKSI" column is editable
             }
         };
 
@@ -276,27 +288,25 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     }
 
     private void updateDataPanel(JTable table, int row) {
-        // Get values from the selected row and safely convert them to Strings
-        String barcode = String.valueOf(table.getValueAt(row, 1));  // Column 1: BARCODE
         String namaObat = String.valueOf(table.getValueAt(row, 2));  // Column 2: NAMA OBAT
-        String jenisObat = String.valueOf(table.getValueAt(row, 3));  // Column 3: JENIS OBAT
-        String harga = String.valueOf(table.getValueAt(row, 4));      // Column 4: HARGA
-        String stock = String.valueOf(table.getValueAt(row, 5));      // Column 5: STOCK
+        String jenisObat = String.valueOf(table.getValueAt(row, 3)); // Column 3: JENIS OBAT
+        double hargaJual = Double.parseDouble(table.getValueAt(row, 4).toString()); // Column 4: HARGA JUAL
+        String stock = String.valueOf(table.getValueAt(row, 5)); // Column 5: STOCK
 
-        // Update the labels in the data panel with values from the selected row
+        // Update the labels in the data panel
         namaObatLabel.setText("NAMA OBAT : " + namaObat);
         jenisObatLabel.setText("JENIS OBAT : " + jenisObat);
-        hargaLabel.setText("HARGA : " + harga);
+        hargaLabel.setText("HARGA JUAL : " + formatToRupiah(hargaJual));
         stockLabel.setText("STOCK : " + stock);
     }
 
     private void setTableColumnWidths(JTable table) {
         table.getColumnModel().getColumn(0).setPreferredWidth(50);  // NO column
-        table.getColumnModel().getColumn(1).setPreferredWidth(150); // BARCODE column
+        table.getColumnModel().getColumn(1).setPreferredWidth(100); // BARCODE column
         table.getColumnModel().getColumn(2).setPreferredWidth(150); // NAMA OBAT column
-        table.getColumnModel().getColumn(3).setPreferredWidth(75);  // JENIS OBAT column
-        table.getColumnModel().getColumn(4).setPreferredWidth(75);  // HARGA column
-        table.getColumnModel().getColumn(5).setPreferredWidth(75);  // STOCK column
+        table.getColumnModel().getColumn(3).setPreferredWidth(50);  // JENIS OBAT column
+        table.getColumnModel().getColumn(4).setPreferredWidth(50);  // HARGA column
+        table.getColumnModel().getColumn(5).setPreferredWidth(50);  // STOCK column
         table.getColumnModel().getColumn(6).setPreferredWidth(150); // AKSI column (Buttons)
     }
 
@@ -306,7 +316,14 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
     @Override
     public void onObatAddedListener(String namaObat, String jenisObat, String harga, String stock) {
-        tableModel.addRow(new Object[]{obatTable.getRowCount() + 1, namaObat, jenisObat, harga, stock});
+        double hargaValue = Double.parseDouble(harga);
+        tableModel.addRow(new Object[]{
+            obatTable.getRowCount() + 1, 
+            namaObat, 
+            jenisObat, 
+            formatToRupiah(hargaValue), // Format harga
+            stock
+        });
     }
 
     @Override
@@ -323,55 +340,32 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     }
 
     public void refreshTableData() {
-        // Query the database again or get the updated data from elsewhere
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat()";
+
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
 
-        // Clear the current data in the table
         data = new Object[0][];
-        fullData = new Object[0][];
-
-        // Re-populate the table data with the updated results
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 Object[] dataFromDatabase = new Object[]{
-                    data.length + 1, result.get("barcode"), result.get("nama_obat"), result.get("nama_jenis_obat"),
-                    result.get("harga"), result.get("stock"), ""
+                    data.length + 1,               // Column 0: NO
+                    result.get("barcode"),         // Column 1: BARCODE
+                    result.get("nama_obat"),       // Column 2: NAMA OBAT
+                    result.get("nama_jenis_obat"), // Column 3: JENIS OBAT
+                    result.get("harga_jual"),      // Column 4: HARGA JUAL
+                    result.get("stock")            // Column 5: STOCK
                 };
 
-                // Create a new array with an additional row
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
-
-                // Create a new array with an additional row
-                Object[][] newDataFull = new Object[fullData.length + 1][];
-
-                // Copy the old data to the new array
-                System.arraycopy(fullData, 0, newDataFull, 0, fullData.length);
-
-                // Add the new row to the new array
-                newDataFull[fullData.length] = mapToArray(result);
-
-                // Send back to original
-                fullData = newDataFull;
             }
         }
 
-        // Update the table model with the refreshed data
-        tableModel.setDataVector(data, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK", "AKSI"});
-
-        // Reapply the button rendering and editing to the "AKSI" column
-        obatTable.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
-        obatTable.getColumn("AKSI").setCellEditor(new ActionCellEditor(tableModel));
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"};
+        tableModel.setDataVector(data, columns);
         setTableColumnWidths(obatTable);
     }
 
@@ -424,19 +418,34 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             editButton.setFocusPainted(false);
             editButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    // Ensure row index is valid before attempting to edit
                     if (row >= 0) {
                         // Get data from the selected row
-                        String namaObat = (String) model.getValueAt(row, 2);  // NAMA OBAT
-                        String jenisObat = (String) model.getValueAt(row, 3);  // JENIS OBAT
-                        String harga = String.valueOf(model.getValueAt(row, 4));  // HARGA
-                        String stock = String.valueOf(model.getValueAt(row, 5));  // STOCK
-                        String barcode = (String) model.getValueAt(row, 1);  // BARCODE
+                        String namaObat = (String) model.getValueAt(row, 2);  // Column 2: NAMA OBAT
+                        String jenisObat = String.valueOf(fullData[row][5]); // Column 3: JENIS OBAT
+                        // Handle harga_jual (Column 5)
+                        Object hargaJualObj = model.getValueAt(row, 4); // Column 5: HARGA JUAL
+                        String hargaJual;
+                        if (hargaJualObj instanceof BigDecimal) {
+                            hargaJual = ((BigDecimal) hargaJualObj).toPlainString();
+                        } else {
+                            hargaJual = String.valueOf(hargaJualObj);
+                        }
 
-                        // Launch the EditObat form with the selected data
-                        new EditObat(namaObat, jenisObat, harga, stock, barcode, obatTable, row);
+                        String stock = String.valueOf(model.getValueAt(row, 5)); // Column 6: STOCK
+                        String barcode = (String) model.getValueAt(row, 1); // Column 1: BARCODE
+                        String idObat = String.valueOf(fullData[row][1]); // Column 0: ID OBAT (from fullData)
+                        System.out.println("ID Obat: " + idObat);
 
-                        stopCellEditing();  // Stop editing after opening the edit window
+                        System.out.println("Editing row: " + row);
+                        System.out.println("Nama Obat: " + namaObat);
+                        System.out.println("Jenis Obat: " + jenisObat);
+                        System.out.println("Harga Jual: " + hargaJual);
+                        System.out.println("Stock: " + stock);
+
+                        // Launch the EditObat form with the correct data
+                        new EditObat(namaObat, jenisObat, hargaJual, stock, barcode, obatTable, row, idObat);
+
+                        stopCellEditing(); // Stop editing after opening the edit window
                     } else {
                         System.out.println("Invalid row index for editing: " + row);
                     }
@@ -449,78 +458,27 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             hapusButton.setForeground(Color.WHITE);
             hapusButton.setFocusPainted(false);
             hapusButton.addActionListener((ActionEvent e) -> {
-                // Create and show the confirmation dialog
-                CustomDialog confirmDialog = new CustomDialog(null, "Apakah Anda yakin ingin menghapus obat ini?", "Konfirmasi Penghapusan");
-                // Get the user's response
-                int response = confirmDialog.showDialog();
+                int response = JOptionPane.showConfirmDialog(null, 
+                    "Apakah Anda yakin ingin menghapus obat ini?", 
+                    "Konfirmasi Penghapusan", 
+                    JOptionPane.YES_NO_OPTION);
 
-                // If the user clicks "Yes"
                 if (response == JOptionPane.YES_OPTION) {
-                    // Check if the row index is valid before attempting to remove
-                    if (row >= 0 && row < model.getRowCount()) {
-                        JTable table = (JTable) panel.getParent();// Get the ID of the pasien from the first column (adjust the column index if necessary)
-                        int id = (int) fullData[row][2];  // Assuming column 0 holds the 'id_pasien'
-
+                    try {
+                        int idObat = Integer.parseInt(fullData[row][0].toString()); // Ambil id_obat
                         QueryExecutor executor = new QueryExecutor();
-                        String getIdDetailObat = "SELECT id_detail_obat FROM detail_obat WHERE id_obat = ?";
-                        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(getIdDetailObat, new Object[]{id});
-                        Boolean[] isDone = new Boolean[results.size()];
-                        if (!results.isEmpty()) {
-                            int index = 0;
-                            for (Map<String, Object> result : results) {
-                                // Query to mark the pasien as deleted (update 'is_deleted' column)
-                                String deletedQuery = "UPDATE detail_obat SET is_deleted = 1 WHERE id_detail_obat = ?";
+                        String deleteQuery = "UPDATE obat SET is_deleted = 1 WHERE id_obat = ?";
+                        boolean isDeleted = executor.executeUpdateQuery(deleteQuery, new Object[]{idObat});
 
-                                // Execute the update query
-                                boolean isUpdated = QueryExecutor.executeUpdateQuery(deletedQuery, new Object[]{result.get("id_detail_obat")});
-                                isDone[index] = isUpdated;
-                                index++;
-                            }
-                        }
-                        boolean allTrue = true;
-                        for (Boolean done : isDone) {
-                            if (!done) {
-                                allTrue = false;
-                                break;
-                            }
-                        }
-                        if (allTrue) {
-                            // If the update was successful, remove the row from the table
-//                            model.removeRow(row);
+                        if (isDeleted) {
                             refreshTableData();
                             JOptionPane.showMessageDialog(null, "Obat berhasil ditandai sebagai dihapus.");
                         } else {
-                            // If something went wrong with the update
                             JOptionPane.showMessageDialog(null, "Gagal menandai obat sebagai dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
-
-                        // Check if the table was in an editing state and stop editing
-                        if (table.isEditing()) {
-                            table.getCellEditor().stopCellEditing();  // Stop editing the cell if it is being edited
-                            System.out.println("Cell editing stopped.");
-                        }
-
-                        // Log the row index and row count before removal for debugging
-                        System.out.println("Attempting to remove row: " + row);
-
-                        // Refresh the table view after the row is removed
-                        table.revalidate();
-                        table.repaint();
-
-                        // Handle edge case if the last row was removed
-                        if (model.getRowCount() == 0) {
-                            System.out.println("Last row deleted, table is empty.");
-                        } else {
-                            // After removing the last row, we might want to focus or highlight the new "last row"
-                            int lastRowIndex = model.getRowCount() - 1;
-                            table.setRowSelectionInterval(lastRowIndex, lastRowIndex);
-                        }
-                    } else {
-                        System.out.println("Invalid row index for deletion: " + row);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                } else {
-                    // If the user clicked "No", simply log that the deletion was canceled
-                    System.out.println("Deletion canceled by user.");
                 }
             });
             panel.add(hapusButton);
@@ -539,5 +497,10 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         public Object getCellEditorValue() {
             return null;
         }
+    }
+
+    private String formatToRupiah(double amount) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        return formatter.format(amount).replace("Rp", "Rp."); // Replace default "Rp" with "Rp."
     }
 }
