@@ -230,6 +230,23 @@ public class TransaksiDiagnosa extends JFrame {
             Object[][] row = new Object[rowCount][6];  // 6 columns (name, type, jumlah, harga, signa, signa)
             boolean isDone = false;
             boolean isFinal = false;
+
+            // Validasi hargaJasa
+            String hargaJasaText = hargaJasa.getText().trim();
+            if (hargaJasaText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Harga Jasa harus diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            double hargaJasaValue;
+            try {
+                hargaJasaValue = Double.parseDouble(hargaJasaText);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Harga Jasa harus berupa angka yang valid!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Lanjutkan proses jika validasi berhasil
             String getIdQuery = "SELECT id_detail_pemeriksaan FROM detail_pemeriksaan ORDER BY id_detail_pemeriksaan DESC LIMIT 1";
             java.util.List<Map<String, Object>> resultIdPemeriksaan = executor.executeSelectQuery(getIdQuery, new Object[]{});
             Object idValue = null;
@@ -271,49 +288,30 @@ public class TransaksiDiagnosa extends JFrame {
             }
             if (isDone) {
                 try {
+                    // Validasi data sebelum memasukkan ke tabel detail_pemeriksaan
+                    if (lastInsertObat == null || hargaJasa.getText().isEmpty() || total <= 0) {
+                        JOptionPane.showMessageDialog(this, "Data tidak valid untuk dimasukkan ke tabel detail_pemeriksaan!", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     // Masukkan data ke tabel detail_pemeriksaan
                     String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_detail_pemeriksaan, id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?, ?)";
                     Object[] detailPemeriksaanParams = new Object[]{id_pemeriksaan + 1, lastInsertObat, Double.parseDouble(hargaJasa.getText()), total};
+                    System.out.println("Executing query: " + insertDetailPemeriksaanQuery);
+                    System.out.println("Parameters: " + Arrays.toString(detailPemeriksaanParams));
                     boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
 
                     if (isDetailInserted) {
-                        // Masukkan data ke tabel pemeriksaan
-                        String queryPemeriksaan = "INSERT INTO pemeriksaan (id_detail_pemeriksaan, no_antrian, keluhan, harga_total, id_user) VALUES (?, ?, ?, ?, ?)";
-                        Object[] parameterPemeriksaan = new Object[]{id_pemeriksaan + 1, dataFromParent[8], diagnosisTextArea.getText(), total, uuid};
-                        boolean isPemeriksaan = QueryExecutor.executeInsertQuery(queryPemeriksaan, parameterPemeriksaan);
-
-                        if (isPemeriksaan) {
-                            // Masukkan data ke tabel pemasukan_harian
-                            String getIdPemeriksaan = "SELECT id_pemeriksaan FROM pemeriksaan WHERE id_detail_pemeriksaan = ?";
-                            Object[] paramgetId = new Object[]{id_pemeriksaan + 1};
-                            java.util.List<Map<String, Object>> resultIdPemeriksaan2 = executor.executeSelectQuery(getIdPemeriksaan, paramgetId);
-                            int getID = (int) resultIdPemeriksaan2.get(0).get("id_pemeriksaan");
-                            String queryPemasukan = "INSERT INTO pemasukan_harian (id_pemeriksaan , tanggal) VALUES (?, ?)";
-                            Object[] parameterPemasukan = new Object[]{getID, LocalDate.now().toString()};
-                            isFinal = QueryExecutor.executeInsertQuery(queryPemasukan, parameterPemasukan);
-                        }
-
-                        if (isFinal) {
-                            // Perbarui status antrian
-                            String QueryUpdate = "UPDATE antrian SET status_antrian = ? WHERE id_antrian = ?";
-                            Object[] parameterUpdate = new Object[]{"Selesai Diperiksa", dataFromParent[8]};
-                            boolean isChange = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
-
-                            if (isChange) {
-                                listener.onPasienUpdated((String) dataFromParent[8], (String) dataFromParent[10].toString(), (String) dataFromParent[2], "Selesai Diperiksa");
-                                JOptionPane.showMessageDialog(this, "Pemeriksaan Selesai", "Success", JOptionPane.INFORMATION_MESSAGE);
-                                dispose();
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Pemeriksaan Gagal", "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Pemeriksaan Gagal", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+                        System.out.println("Data berhasil dimasukkan ke tabel detail_pemeriksaan.");
                     } else {
                         System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
                     }
-                } catch (HeadlessException headlessException) {
-                    System.err.println(headlessException);
+                } catch (NumberFormatException ex) {
+                    System.err.println("Error parsing number: " + ex.getMessage());
+                    ex.printStackTrace();
+                } catch (Exception ex) {
+                    System.err.println("Unexpected error: " + ex.getMessage());
+                    ex.printStackTrace();
                 }
             }
             // Now row contains all the data, you can print or process it further
@@ -505,7 +503,7 @@ public class TransaksiDiagnosa extends JFrame {
     private List<Object[]> getDrugData(int row) {
         List<Object[]> drugData = new ArrayList<>();
         QueryExecutor executor = new QueryExecutor();
-        String query = "SELECT nama_obat, jenis_obat, jumlah, harga, signa FROM detail_pembayaran WHERE id_antrian = ?";
+        String query = "SELECT nama_obat, jenis_obat, jumlah, harga_jual, signa FROM detail_pembayaran WHERE id_antrian = ?";
         Object[] parameter = new Object[]{idList.get(row)};
         List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
@@ -514,7 +512,7 @@ public class TransaksiDiagnosa extends JFrame {
                 result.get("nama_obat"),
                 result.get("jenis_obat"),
                 result.get("jumlah"),
-                result.get("harga"),
+                result.get("harga_jual"),
                 result.get("signa")
             };
             drugData.add(drug);
@@ -633,7 +631,7 @@ public class TransaksiDiagnosa extends JFrame {
 
     private String getIdDetailObatByClosestExpiry(String idObat) {
         QueryExecutor executor = new QueryExecutor();
-        String query = "SELECT id_detail_obat FROM detail_obat WHERE id_obat = ? AND tanggal_expired > CURDATE() ORDER BY tanggal_expired ASC LIMIT 1";
+        String query = "SELECT id_detail_obat, harga_jual FROM detail_obat WHERE id_obat = ? AND tanggal_expired > CURDATE() ORDER BY tanggal_expired ASC LIMIT 1";
         Object[] parameter = new Object[]{idObat};
         List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 

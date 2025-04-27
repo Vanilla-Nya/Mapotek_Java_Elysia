@@ -50,7 +50,8 @@ public class EditObat extends JFrame {
     private int row;
     private CustomTable tableObatMasuk, tableObatKeluar;
 
-    public EditObat(String namaObat, String jenisObat, String hargaJual, String stock, String barcode, JTable table, int row, String idObat) {
+    // Tambahkan parameter Obat ke konstruktor EditObat
+    public EditObat(String namaObat, String jenisObat, String hargaJual, String stock, String barcode, JTable table, int row, String idObat, Obat obatPanel) {
         QueryExecutor executor = new QueryExecutor();
         String query = "SELECT * from jenis_obat";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
@@ -145,9 +146,25 @@ public class EditObat extends JFrame {
             CustomTextField txtStockInput = new CustomTextField("Masukkan jumlah stock", 20, 15, Optional.empty());
             panel.add(txtStockInput, dialogGbc);
 
-            // Date picker for stock addition
+            // Input field for harga beli
             dialogGbc.gridx = 0;
             dialogGbc.gridy = 1;
+            panel.add(new JLabel("Harga Beli:"), dialogGbc);
+            dialogGbc.gridx = 1;
+            CustomTextField txtHargaBeliInput = new CustomTextField("Masukkan harga beli", 20, 15, Optional.empty());
+            panel.add(txtHargaBeliInput, dialogGbc);
+
+            // Input field for harga jual
+            dialogGbc.gridx = 0;
+            dialogGbc.gridy = 2;
+            panel.add(new JLabel("Harga Jual:"), dialogGbc);
+            dialogGbc.gridx = 1;
+            CustomTextField txtHargaJualInput = new CustomTextField("Masukkan harga jual", 20, 15, Optional.empty());
+            panel.add(txtHargaJualInput, dialogGbc);
+
+            // Date picker for stock addition
+            dialogGbc.gridx = 0;
+            dialogGbc.gridy = 3;
             panel.add(new JLabel("Tanggal:"), dialogGbc);
             dialogGbc.gridx = 1;
             CustomTextField txtDateInput = new CustomTextField("Pilih tanggal", 20, 15, Optional.empty());
@@ -164,17 +181,25 @@ public class EditObat extends JFrame {
             int result = JOptionPane.showConfirmDialog(this, panel, "Tambahkan Stock", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if (result == JOptionPane.OK_OPTION) {
                 String stockInput = txtStockInput.getText();
+                String hargaBeliInput = txtHargaBeliInput.getText();
+                String hargaJualInput = txtHargaJualInput.getText();
                 String dateInput = txtDateInput.getText();
 
-                if (stockInput != null && !stockInput.trim().isEmpty() && dateInput != null && !dateInput.trim().isEmpty()) {
+                if (stockInput != null && !stockInput.trim().isEmpty() &&
+                    hargaBeliInput != null && !hargaBeliInput.trim().isEmpty() &&
+                    hargaJualInput != null && !hargaJualInput.trim().isEmpty() &&
+                    dateInput != null && !dateInput.trim().isEmpty()) {
                     try {
                         int stockValue = Integer.parseInt(stockInput.trim());
-                        if (stockValue > 0) {
+                        double hargaBeliValue = Double.parseDouble(hargaBeliInput.trim());
+                        double hargaJualValue = Double.parseDouble(hargaJualInput.trim());
+
+                        if (stockValue > 0 && hargaBeliValue > 0 && hargaJualValue > 0) {
                             // Update the stock in the database
-                            String insertQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock, status_batch, alasan) VALUES (?, ?, ?, 'aktif', NULL)";
+                            String insertQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock, harga_beli, harga_jual, status_batch, alasan) VALUES (?, ?, ?, ?, ?, 'aktif', NULL)";
                             try {
                                 int idObatInt = Integer.parseInt(idObat); // Pastikan idObat adalah integer
-                                executor.executeInsertQuery(insertQuery, new Object[]{idObatInt, dateInput, stockValue});
+                                executor.executeInsertQuery(insertQuery, new Object[]{idObatInt, dateInput, stockValue, hargaBeliValue, hargaJualValue});
                                 JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
                             } catch (NumberFormatException ex) {
                                 JOptionPane.showMessageDialog(this, "ID Obat harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -187,12 +212,17 @@ public class EditObat extends JFrame {
                             // Refresh the table
                             refreshTableObatMasuk(idObat);
 
+                            // Refresh tabel di Obat setelah stok berhasil ditambahkan
+                            if (obatPanel != null) {
+                                obatPanel.refreshTableData();
+                            }
+
                             JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
                         } else {
-                            JOptionPane.showMessageDialog(this, "Jumlah stock harus lebih dari 0!", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(this, "Jumlah stock, harga beli, dan harga jual harus lebih dari 0!", "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(this, "Masukkan jumlah stock yang valid!", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Masukkan nilai yang valid untuk stock, harga beli, dan harga jual!", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -256,9 +286,9 @@ public class EditObat extends JFrame {
         }
 
         JPanel panel = new JPanel(new BorderLayout());
-        String[] columns = {"Nama Obat", "Stock", "Created At", "harga_beli", "harga_jual", "AKSI"};
+        String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "AKSI"}; // Include "AKSI" column
         DefaultTableModel model = new DefaultTableModel(columns, 0);
-        tableObatMasuk = new CustomTable(model); // Gunakan CustomTable
+        tableObatMasuk = new CustomTable(model); // Use CustomTable
 
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat_masuk(?)";
@@ -269,13 +299,13 @@ public class EditObat extends JFrame {
                 row.get("nama_obat"),
                 row.get("stock"),
                 row.get("created_at"),
+                row.get("tanggal_expired"),
                 row.get("harga_beli"),
                 row.get("harga_jual"),
-                "DETAIL"
+                "DETAIL" // Add "DETAIL" button text to the "AKSI" column
             });
         }
 
-        // Tambahkan aksi untuk tombol "DETAIL"
         tableObatMasuk.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -321,17 +351,32 @@ public class EditObat extends JFrame {
         // Fetch updated data for "Obat Masuk"
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat_masuk(?)";
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{idObat});
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{idObat});
+
         for (Map<String, Object> row : results) {
             model.addRow(new Object[]{
-                row.get("id_detail_obat"),
-                row.get("id_obat"),
                 row.get("nama_obat"),
-                row.get("tanggal_expired"),
+                row.get("stock"),
                 row.get("created_at"),
-                row.get("stock")
+                row.get("tanggal_expired"),
+                row.get("harga_beli"),
+                row.get("harga_jual"),
+                "DETAIL" // Add "DETAIL" button text back to the "AKSI" column
             });
         }
+
+        // Reapply the mouse listener for the "DETAIL" button
+        tableObatMasuk.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int column = tableObatMasuk.getColumnModel().getColumnIndex("AKSI");
+                int row = tableObatMasuk.getSelectedRow();
+                if (row >= 0 && column == tableObatMasuk.getSelectedColumn()) {
+                    int idDetailObat = (Integer) results.get(row).get("id_detail_obat");
+                    showPengeluaranObatPerBatch(idDetailObat);
+                }
+            }
+        });
     }
 
     public void addActionListeners(TableModel model) {
@@ -386,7 +431,7 @@ public class EditObat extends JFrame {
             if (namaObat == null) {
                 namaObat = ""; // Default to an empty string
             }
-            new EditObat(namaObat, "Tablet", "1000", "100", "1234567890123", null, 0, "0"); // Pass the validated value
+            new EditObat(namaObat, "Tablet", "1000", "100", "1234567890123", null, 0, "0", null); // Pass the validated value
         });
     }
 }

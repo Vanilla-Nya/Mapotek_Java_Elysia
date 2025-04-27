@@ -48,14 +48,19 @@ public class AddDrugs extends JFrame {
 
         // Fetch data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_obat()";
+        String query = "CALL get_all_obat_selling()"; // Use the new procedure
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 id.add(result.get("id_obat"));
                 Object[] dataFromDatabase = new Object[]{
-                    data.length + 1, result.get("barcode"), result.get("nama_obat"), result.get("nama_jenis_obat"),
-                    result.get("harga"), result.get("stock"), ""
+                    data.length + 1, 
+                    result.get("barcode"), 
+                    result.get("nama_obat"), 
+                    result.get("nama_jenis_obat"), 
+                    result.get("harga_jual_terbaru"), // Use the latest price
+                    result.get("total_stock"),       // Use the total stock
+                    ""
                 };
 
                 // Create a new array with an additional row
@@ -272,7 +277,7 @@ public class AddDrugs extends JFrame {
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"};
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"};
 
         // Table model
         tableModel = new DefaultTableModel(data, columns);
@@ -288,8 +293,8 @@ public class AddDrugs extends JFrame {
                 idObat = Integer.valueOf(id.get(selectedRow).toString());
                 namaObat = String.valueOf(obatTable.getValueAt(selectedRow, 2));
                 jenisObat = String.valueOf(obatTable.getValueAt(selectedRow, 3));
-                harga = Double.parseDouble(String.valueOf(obatTable.getValueAt(selectedRow, 4)));
-                stock = Integer.valueOf(String.valueOf(obatTable.getValueAt(selectedRow, 5)));
+                harga = Double.parseDouble(String.valueOf(obatTable.getValueAt(selectedRow, 4))); // Update harga
+                stock = Integer.valueOf(String.valueOf(obatTable.getValueAt(selectedRow, 5)));   // Update stock
 
                 // Update data labels with the selected row details
                 namaObatLabel.setText("NAMA OBAT : " + namaObat);

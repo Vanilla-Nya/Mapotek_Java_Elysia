@@ -68,7 +68,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                     result.get("nama_jenis_obat"), // Column 4: JENIS OBAT
                     result.get("harga_jual"),      // Column 5: HARGA JUAL
                     result.get("stock"),           // Column 6: STOCK
-                    ""                             // Column 7: AKSI (Action buttons)
                 };
 
                 // Update data array
@@ -169,11 +168,9 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             }
 
             // Update the table model with the filtered data
-            tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK", "AKSI"});
+            tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"});
 
             // Reapply the button rendering and editing to the "AKSI" column
-            obatTable.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
-            obatTable.getColumn("AKSI").setCellEditor(new ActionCellEditor(tableModel));
             setTableColumnWidths(obatTable);
         });
 
@@ -212,8 +209,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK", "AKSI"});
 
                 // Reapply the button rendering and editing to the "AKSI" column
-                obatTable.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
-                obatTable.getColumn("AKSI").setCellEditor(new ActionCellEditor(tableModel));
                 setTableColumnWidths(obatTable);
             }
         });
@@ -225,9 +220,8 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     }
 
     private RoundedPanel createDataPanel() {
-        // Data Panel setup
         RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
-        dataPanel.setLayout(new GridLayout(6, 2, 10, 10)); // Adjust grid layout for new labels
+        dataPanel.setLayout(new GridLayout(6, 2, 10, 10));
         dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Create Labels for data
@@ -238,20 +232,73 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         // Add labels to the data panel
         dataPanel.add(namaObatLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Nama Obat value
+        dataPanel.add(new JLabel(""));
         dataPanel.add(jenisObatLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Jenis Obat value
+        dataPanel.add(new JLabel(""));
         dataPanel.add(hargaLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Harga value
+        dataPanel.add(new JLabel(""));
         dataPanel.add(stockLabel);
-        dataPanel.add(new JLabel(""));  // Placeholder for Stock value
+        dataPanel.add(new JLabel(""));
+
+        // Add "EDIT" and "HAPUS" buttons
+        JButton editButton = new RoundedButton("EDIT");
+        editButton.setBackground(new Color(255, 153, 51));
+        editButton.setForeground(Color.WHITE);
+        editButton.setFocusPainted(false);
+        editButton.addActionListener(e -> {
+            if (selectedRow != -1) {
+                String namaObat = String.valueOf(obatTable.getValueAt(selectedRow, 2));
+                String jenisObat = String.valueOf(obatTable.getValueAt(selectedRow, 3));
+                String hargaJual = String.valueOf(obatTable.getValueAt(selectedRow, 4));
+                String stock = String.valueOf(obatTable.getValueAt(selectedRow, 5));
+                String barcode = String.valueOf(obatTable.getValueAt(selectedRow, 1));
+                String idObat = String.valueOf(fullData[selectedRow][1]);
+
+                new EditObat(namaObat, jenisObat, hargaJual, stock, barcode, obatTable, selectedRow, idObat, Obat.this);
+            }
+        });
+
+        JButton hapusButton = new RoundedButton("HAPUS");
+        hapusButton.setBackground(new Color(255, 51, 51));
+        hapusButton.setForeground(Color.WHITE);
+        hapusButton.setFocusPainted(false);
+        hapusButton.addActionListener(e -> {
+            if (selectedRow != -1) {
+                int response = JOptionPane.showConfirmDialog(null,
+                    "Apakah Anda yakin ingin menghapus obat ini?",
+                    "Konfirmasi Penghapusan",
+                    JOptionPane.YES_NO_OPTION);
+
+                if (response == JOptionPane.YES_OPTION) {
+                    try {
+                        int idObat = Integer.parseInt(fullData[selectedRow][0].toString());
+                        QueryExecutor executor = new QueryExecutor();
+                        String deleteQuery = "UPDATE obat SET is_deleted = 1 WHERE id_obat = ?";
+                        boolean isDeleted = executor.executeUpdateQuery(deleteQuery, new Object[]{idObat});
+
+                        if (isDeleted) {
+                            refreshTableData();
+                            JOptionPane.showMessageDialog(null, "Obat berhasil ditandai sebagai dihapus.");
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Gagal menandai obat sebagai dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        // Add buttons to the panel
+        dataPanel.add(editButton);
+        dataPanel.add(hapusButton);
 
         return dataPanel;
     }
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK", "AKSI"};
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"}; // Remove "AKSI"
         tableModel = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -260,8 +307,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         };
 
         obatTable = new CustomTable(tableModel);
-        obatTable.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
-        obatTable.getColumn("AKSI").setCellEditor(new ActionCellEditor(tableModel));
 
         // Add Mouse Listener to update data panel when a row is selected
         obatTable.addMouseListener(new MouseAdapter() {
@@ -288,12 +333,12 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     }
 
     private void updateDataPanel(JTable table, int row) {
-        String namaObat = String.valueOf(table.getValueAt(row, 2));  // Column 2: NAMA OBAT
-        String jenisObat = String.valueOf(table.getValueAt(row, 3)); // Column 3: JENIS OBAT
-        double hargaJual = Double.parseDouble(table.getValueAt(row, 4).toString()); // Column 4: HARGA JUAL
-        String stock = String.valueOf(table.getValueAt(row, 5)); // Column 5: STOCK
+        selectedRow = row; // Save the selected row index
+        String namaObat = String.valueOf(table.getValueAt(row, 2));
+        String jenisObat = String.valueOf(table.getValueAt(row, 3));
+        double hargaJual = Double.parseDouble(table.getValueAt(row, 4).toString());
+        String stock = String.valueOf(table.getValueAt(row, 5));
 
-        // Update the labels in the data panel
         namaObatLabel.setText("NAMA OBAT : " + namaObat);
         jenisObatLabel.setText("JENIS OBAT : " + jenisObat);
         hargaLabel.setText("HARGA JUAL : " + formatToRupiah(hargaJual));
@@ -307,7 +352,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         table.getColumnModel().getColumn(3).setPreferredWidth(50);  // JENIS OBAT column
         table.getColumnModel().getColumn(4).setPreferredWidth(50);  // HARGA column
         table.getColumnModel().getColumn(5).setPreferredWidth(50);  // STOCK column
-        table.getColumnModel().getColumn(6).setPreferredWidth(150); // AKSI column (Buttons)
     }
 
     public static void main(String[] args) {
@@ -354,7 +398,8 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                     result.get("nama_obat"),       // Column 2: NAMA OBAT
                     result.get("nama_jenis_obat"), // Column 3: JENIS OBAT
                     result.get("harga_jual"),      // Column 4: HARGA JUAL
-                    result.get("stock")            // Column 5: STOCK
+                    result.get("stock"),            // Column 5: STOCK
+                    ""
                 };
 
                 Object[][] newData = new Object[data.length + 1][];
@@ -364,139 +409,15 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             }
         }
 
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"};
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"}; // Remove "AKSI"
         tableModel.setDataVector(data, columns);
         setTableColumnWidths(obatTable);
-    }
-
-    // Renderer for "AKSI" column
-    class ActionCellRenderer extends JPanel implements TableCellRenderer {
-
-        public ActionCellRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            add(editButton);
-            setBackground(Color.WHITE);
-
-            JButton hapusButton = new RoundedButton("HAPUS");
-            hapusButton.setBackground(new Color(255, 51, 51));
-            hapusButton.setForeground(Color.WHITE);
-            hapusButton.setFocusPainted(false);
-            add(hapusButton);
-            setBackground(Color.WHITE);
-        }
-
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            return this;
-        }
     }
 
     public void addDrugToTable(String name, String type, int quantity, int price) {
         // Add the new drug data to the table
         Object[] newRow = {name, type, quantity, price, ""};
         tableModel.addRow(newRow);
-    }
-
-    // Editor for "AKSI" column
-    class ActionCellEditor extends AbstractCellEditor implements TableCellEditor {
-
-        JPanel panel;
-        int row;
-        DefaultTableModel model;
-
-        public ActionCellEditor(DefaultTableModel model) {
-            this.model = model;
-            panel = new JPanel();
-            panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            editButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    if (row >= 0) {
-                        // Get data from the selected row
-                        String namaObat = (String) model.getValueAt(row, 2);  // Column 2: NAMA OBAT
-                        String jenisObat = String.valueOf(fullData[row][5]); // Column 3: JENIS OBAT
-                        // Handle harga_jual (Column 5)
-                        Object hargaJualObj = model.getValueAt(row, 4); // Column 5: HARGA JUAL
-                        String hargaJual;
-                        if (hargaJualObj instanceof BigDecimal) {
-                            hargaJual = ((BigDecimal) hargaJualObj).toPlainString();
-                        } else {
-                            hargaJual = String.valueOf(hargaJualObj);
-                        }
-
-                        String stock = String.valueOf(model.getValueAt(row, 5)); // Column 6: STOCK
-                        String barcode = (String) model.getValueAt(row, 1); // Column 1: BARCODE
-                        String idObat = String.valueOf(fullData[row][1]); // Column 0: ID OBAT (from fullData)
-                        System.out.println("ID Obat: " + idObat);
-
-                        System.out.println("Editing row: " + row);
-                        System.out.println("Nama Obat: " + namaObat);
-                        System.out.println("Jenis Obat: " + jenisObat);
-                        System.out.println("Harga Jual: " + hargaJual);
-                        System.out.println("Stock: " + stock);
-
-                        // Launch the EditObat form with the correct data
-                        new EditObat(namaObat, jenisObat, hargaJual, stock, barcode, obatTable, row, idObat);
-
-                        stopCellEditing(); // Stop editing after opening the edit window
-                    } else {
-                        System.out.println("Invalid row index for editing: " + row);
-                    }
-                }
-            });
-            panel.add(editButton);
-
-            JButton hapusButton = new RoundedButton("HAPUS");
-            hapusButton.setBackground(new Color(255, 51, 51));
-            hapusButton.setForeground(Color.WHITE);
-            hapusButton.setFocusPainted(false);
-            hapusButton.addActionListener((ActionEvent e) -> {
-                int response = JOptionPane.showConfirmDialog(null, 
-                    "Apakah Anda yakin ingin menghapus obat ini?", 
-                    "Konfirmasi Penghapusan", 
-                    JOptionPane.YES_NO_OPTION);
-
-                if (response == JOptionPane.YES_OPTION) {
-                    try {
-                        int idObat = Integer.parseInt(fullData[row][0].toString()); // Ambil id_obat
-                        QueryExecutor executor = new QueryExecutor();
-                        String deleteQuery = "UPDATE obat SET is_deleted = 1 WHERE id_obat = ?";
-                        boolean isDeleted = executor.executeUpdateQuery(deleteQuery, new Object[]{idObat});
-
-                        if (isDeleted) {
-                            refreshTableData();
-                            JOptionPane.showMessageDialog(null, "Obat berhasil ditandai sebagai dihapus.");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Gagal menandai obat sebagai dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-            panel.add(hapusButton);
-        }
-
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            // Ensure row index is set properly
-            if (row >= 0 && row < table.getRowCount()) {
-                this.row = row;  // Set the row index when the cell enters editing mode
-            } else {
-                System.out.println("Invalid row index passed to cell editor");
-            }
-            return panel;
-        }
-
-        public Object getCellEditorValue() {
-            return null;
-        }
     }
 
     private String formatToRupiah(double amount) {
