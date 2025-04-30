@@ -62,7 +62,7 @@ public class TransaksiDiagnosa extends JFrame {
     private Object[] patientData;
     private List<Object[]> drugData;
 
-    public TransaksiDiagnosa(OnPemeriksaanUpdatedListener listener, String idAntrian ,Object[] dataFromParent) {
+    public TransaksiDiagnosa(OnPemeriksaanUpdatedListener listener, String idAntrian, Object[] dataFromParent) {
         System.out.println(Arrays.toString(dataFromParent));
         QueryExecutor executor = new QueryExecutor();
         this.listener = listener;
@@ -254,21 +254,10 @@ public class TransaksiDiagnosa extends JFrame {
                     return;
                 }
 
-                // Lanjutkan proses jika validasi berhasil
-                String getIdQuery = "SELECT id_detail_pemeriksaan FROM detail_pemeriksaan ORDER BY id_detail_pemeriksaan DESC LIMIT 1";
-                java.util.List<Map<String, Object>> resultIdPemeriksaan = executor.executeSelectQuery(getIdQuery, new Object[]{});
-                Object idValue = null;
-                if (!resultIdPemeriksaan.isEmpty()) {
-                    idValue = resultIdPemeriksaan.get(0).get("id_detail_pemeriksaan");
-                }
-                if (idValue != null) {
-                    id_pemeriksaan = ((Number) idValue).intValue(); // Convert to integer safely
-                } else {
-                    id_pemeriksaan = 0; // or handle as appropriate for your application
-                }
+                // Deklarasikan variabel idDetailPemeriksaan di awal metode
+                int idDetailPemeriksaan = -1; // Inisialisasi dengan nilai default
+                Integer idValue = null;
                 Long lastInsertObat = null; // Variabel untuk menyimpan ID pemeriksaan obat terakhir
-
-                lastInsertObat = getLastInsertedPemeriksaanObatId(); // Ambil ID pemeriksaan obat terakhir
 
                 for (int i = 0; i < rowCount; i++) {
                     // Ambil id_obat dari idList
@@ -280,55 +269,75 @@ public class TransaksiDiagnosa extends JFrame {
 
                     // Proses stok obat
                     processDrugStockWithLogging(idObat, jumlah, signa);
+
+                    // Lanjutkan proses jika validasi berhasil
+                    String getIdPemeriksaanQuery = "SELECT id_pemeriksaan_obat FROM pemeriksaan_obat ORDER BY id_pemeriksaan_obat DESC LIMIT 1";
+                    java.util.List<Map<String, Object>> resultIdPemeriksaanObat = executor.executeSelectQuery(getIdPemeriksaanQuery, new Object[]{});
+                    if (!resultIdPemeriksaanObat.isEmpty()) {
+                        lastInsertObat = ((Number) resultIdPemeriksaanObat.get(0).get("id_pemeriksaan_obat")).longValue();
+                    }
+                    // Validasi data sebelum memasukkan ke tabel detail_pemeriksaan
+                    if (lastInsertObat == null || hargaJasa.getText().isEmpty() || total <= 0) {
+                        JOptionPane.showMessageDialog(this, "Data tidak valid untuk dimasukkan ke tabel detail_pemeriksaan!", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    if (i == 0) {
+                        // Lanjutkan proses jika validasi berhasil
+                        String getIdQuery = "SELECT id_detail_pemeriksaan FROM detail_pemeriksaan ORDER BY id_detail_pemeriksaan DESC LIMIT 1";
+                        java.util.List<Map<String, Object>> resultIdPemeriksaan = executor.executeSelectQuery(getIdQuery, new Object[]{});
+                        if (!resultIdPemeriksaan.isEmpty()) {
+                            idValue = (Integer) resultIdPemeriksaan.get(0).get("id_detail_pemeriksaan") + 1;
+                        }
+                        if (idValue != null) {
+                            id_pemeriksaan = ((Number) idValue).intValue(); // Convert to integer safely
+                        } else {
+                            id_pemeriksaan = 0; // or handle as appropriate for your application
+                        }
+                    }
+
+                    // Masukkan data ke tabel detail_pemeriksaan
+                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_pemeriksaan_obat, harga_jasa, total, id_detail_pemeriksaan) VALUES (?, ?, ?, ?)";
+                    Object[] detailPemeriksaanParams = new Object[]{lastInsertObat, i == 0 ? Double.parseDouble(hargaJasa.getText()) : 0.0, i == 0 ? total : 0.0, idValue};
+                    System.out.println("Detail Pemeriksaan Params: " + Arrays.toString(detailPemeriksaanParams)); // Debugging
+                    boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
+                    if (isDetailInserted) {
+                        System.out.println("Data berhasil dimasukkan ke tabel detail_pemeriksaan.");
+                    } else {
+                        System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
+                    }
+
+                    if (isDetailInserted) {
+                        // Ambil ID detail_pemeriksaan yang baru saja dimasukkan
+                        String getLastIdQuery = "SELECT LAST_INSERT_ID() AS id_detail_pemeriksaan";
+                        List<Map<String, Object>> lastIdResult = executor.executeSelectQuery(getLastIdQuery, new Object[]{});
+                        if (!lastIdResult.isEmpty()) {
+                            idDetailPemeriksaan = ((Number) lastIdResult.get(0).get("id_detail_pemeriksaan")).intValue();
+                            System.out.println("ID Detail Pemeriksaan: " + idDetailPemeriksaan); // Debugging
+                        } else {
+                            System.err.println("Gagal mendapatkan ID detail_pemeriksaan.");
+                        }
+                    }
                 }
 
                 isDone = true; // Set isDone to true after successfully processing all drugs
 
                 if (isDone) {
                     try {
-                        // Validasi data sebelum memasukkan ke tabel detail_pemeriksaan
-                        if (lastInsertObat == null || hargaJasa.getText().isEmpty() || total <= 0) {
-                            JOptionPane.showMessageDialog(this, "Data tidak valid untuk dimasukkan ke tabel detail_pemeriksaan!", "Error", JOptionPane.ERROR_MESSAGE);
-                            return;
-                        }
-
-                        // Masukkan data ke tabel detail_pemeriksaan
-                        String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?)";
-                        Object[] detailPemeriksaanParams = new Object[]{lastInsertObat, Double.parseDouble(hargaJasa.getText()), total};
-                        boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
-                        if (isDetailInserted) {
-                            System.out.println("Data berhasil dimasukkan ke tabel detail_pemeriksaan.");
-                        } else {
-                            System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
-                        }
-
-                        // Deklarasikan variabel idDetailPemeriksaan di awal metode
-                        int idDetailPemeriksaan = -1; // Inisialisasi dengan nilai default
-
-                        if (isDetailInserted) {
-                            // Ambil ID detail_pemeriksaan yang baru saja dimasukkan
-                            String getLastIdQuery = "SELECT LAST_INSERT_ID() AS id_detail_pemeriksaan";
-                            List<Map<String, Object>> lastIdResult = executor.executeSelectQuery(getLastIdQuery, new Object[]{});
-                            if (!lastIdResult.isEmpty()) {
-                                idDetailPemeriksaan = ((Number) lastIdResult.get(0).get("id_detail_pemeriksaan")).intValue();
-                                System.out.println("ID Detail Pemeriksaan: " + idDetailPemeriksaan); // Debugging
-                            } else {
-                                System.err.println("Gagal mendapatkan ID detail_pemeriksaan.");
-                            }
-                        }
 
                         // Pastikan idDetailPemeriksaan memiliki nilai valid sebelum digunakan
                         if (idDetailPemeriksaan != -1) {
                             // Masukkan data ke tabel pemeriksaan
                             String insertPemeriksaanQuery = "INSERT INTO pemeriksaan (id_detail_pemeriksaan, no_antrian, keluhan, riwayat_penyakit, harga_total, created_at, id_user) VALUES (?, ?, ?, ?, ?, NOW(), ?)";
                             Object[] pemeriksaanParams = new Object[]{
-                                idDetailPemeriksaan, // id_detail_pemeriksaan
-                                idAntrian,           // no_antrian
-                                diagnosis,           // keluhan
-                                null,                // riwayat_penyakit
-                                total,               // harga_total
-                                uuid                 // id_user
+                                idValue, // id_detail_pemeriksaan
+                                idAntrian, // no_antrian
+                                diagnosis, // keluhan
+                                null, // riwayat_penyakit
+                                total, // harga_total
+                                uuid // id_user
                             };
+                            System.out.println("Pemeriksaan Params: " + Arrays.toString(pemeriksaanParams)); // Debugging
                             boolean isPemeriksaanInserted = QueryExecutor.executeInsertQuery(insertPemeriksaanQuery, pemeriksaanParams);
 
                             if (isPemeriksaanInserted) {
@@ -554,6 +563,7 @@ public class TransaksiDiagnosa extends JFrame {
         QueryExecutor executor = new QueryExecutor();
         List<Map<String, Object>> result = executor.executeSelectQuery(query, new Object[]{});
         if (!result.isEmpty()) {
+            System.out.println("ID Pemeriksaan Obat: " + result.get(0)); // Debugging
             return ((Number) result.get(0).get("id_pemeriksaan_obat")).longValue();
         }
         return null;
@@ -665,14 +675,15 @@ public class TransaksiDiagnosa extends JFrame {
                 int stock = ((Number) batch.get("stock")).intValue(); // Stok saat ini di batch
                 String idDetailObat = batch.get("id_detail_obat").toString(); // ID detail batch
 
-                if (remaining <= 0) break; // Jika jumlah sudah terpenuhi, keluar dari loop
-
+                if (remaining <= 0) {
+                    break; // Jika jumlah sudah terpenuhi, keluar dari loop
+                }
                 int toDeduct = Math.min(stock, remaining); // Kurangi stok sebanyak mungkin dari batch ini
 
                 if (toDeduct > 0) {
                     try {
                         // 1. Masukkan data ke tabel pemeriksaan_obat
-                        String insertPemeriksaanObatQuery = "INSERT INTO pemeriksaan_obat (id_detail_obat, id_obat, signa, jumlah, created_at) VALUES (?, ?, ?, ?, NOW())";
+                        String insertPemeriksaanObatQuery = "INSERT INTO  pemeriksaan_obat (id_detail_obat, id_obat, signa, jumlah, created_at) VALUES (?, ?, ?, ?, NOW())";
                         QueryExecutor.executeInsertQuery(insertPemeriksaanObatQuery, new Object[]{idDetailObat, idObat, signa, toDeduct});
 
                         // 2. Kurangi stok di tabel detail_obat
