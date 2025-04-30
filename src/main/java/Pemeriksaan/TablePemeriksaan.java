@@ -49,37 +49,46 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
             model.setRowCount(0);
         }
 
-        // Reload the data from the database (or wherever it comes from)
+        // Reload the data from the database
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_pemeriksaan(?)";
-        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
+        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"}; // Sesuaikan UUID
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
-                Object[] dataFromDatabase = new Object[]{result.get("no_antrian"), result.get("id_pasien"), result.get("nama_pasien"), result.get("status_antrian"), ""};
-                // Create a new array with an additional row
+                // Ambil data yang akan ditampilkan di tabel
+                Object[] dataFromDatabase = new Object[]{
+                    result.get("no_antrian"), // Kolom 0
+                    result.get("id_pasien"), // Kolom 1
+                    result.get("nama_pasien"), // Kolom 2
+                    result.get("status_antrian"), // Kolom 3
+                    "" // Placeholder untuk kolom "AKSI"
+                };
+
+                // Tambahkan data ke tabel
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
 
-                // Create a new array with an additional row
+                // Tambahkan data lengkap (termasuk id_antrian) ke fullData
+                Object[] fullRowData = new Object[]{
+                    result.get("id_antrian"),      // Indeks 0
+                    result.get("no_antrian"),      // Indeks 1
+                    result.get("id_pasien"),       // Indeks 2
+                    result.get("nama_pasien"),     // Indeks 3
+                    result.get("status_antrian"),  // Indeks 4
+                    result.get("jenis_kelamin_pasien"), // Indeks 5
+                    result.get("umur"),            // Indeks 6
+                    result.get("alamat_pasien"),   // Indeks 7
+                    result.get("id_user"),         // Indeks 8
+                    result.get("nama_user")        // Indeks 9
+                };
+
                 Object[][] newDataFull = new Object[fullData.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(fullData, 0, newDataFull, 0, fullData.length);
-
-                // Add the new row to the new array
-                newDataFull[fullData.length] = mapToArray(result);
-
-                // Send back to original
+                newDataFull[fullData.length] = fullRowData;
                 fullData = newDataFull;
             }
         }
@@ -179,8 +188,22 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
             PeriksaButton.setFocusPainted(false);
             PeriksaButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
+                    // Ambil data dari fullData berdasarkan baris yang dipilih
+                    Object[] selectedRowData = fullData[row];
+
+                    // Validasi data
+                    if (selectedRowData == null || selectedRowData.length < 10) {
+                        System.err.println("Data tidak lengkap atau null.");
+                        JOptionPane.showMessageDialog(null, "Data tidak lengkap. Tidak dapat melanjutkan.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    String idAntrian = selectedRowData[0].toString(); // Indeks 0 adalah id_antrian
+                    System.out.println("ID Antrian: " + idAntrian);
+
+                    // Panggil form TransaksiDiagnosa dengan data yang relevan
                     SwingUtilities.invokeLater(() -> {
-                        new TransaksiDiagnosa(TablePemeriksaan.this, fullData[row]);
+                        new TransaksiDiagnosa(TablePemeriksaan.this, selectedRowData);
                     });
                 }
             });
