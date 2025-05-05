@@ -163,7 +163,7 @@ public class Login extends JFrame {
                 new Register().setVisible(true);
                 dispose(); // Close the Login window
             }
-        }); 
+        });
 
         // Use RoundedButton for the login button
         RoundedButton btnLogin = new RoundedButton("Login");

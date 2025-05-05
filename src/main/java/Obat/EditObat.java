@@ -244,9 +244,9 @@ public class EditObat extends JFrame {
         formPanel.add(submitButton, gbc);
 
         // Set the preferred size of the form panel to match the table's width
-        if (table != null) {
-            formPanel.setPreferredSize(table.getPreferredSize());
-        }
+        // if (table != null) {
+        //     formPanel.setPreferredSize(table.getPreferredSize());
+        // }
 
         // Add the form panel to the main layout
         add(formPanel, BorderLayout.NORTH);
