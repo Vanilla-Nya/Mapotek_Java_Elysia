@@ -206,7 +206,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 }
 
                 // Update the table model with the filtered data
-                tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK", "AKSI"});
+                tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"});
 
                 // Reapply the button rendering and editing to the "AKSI" column
                 setTableColumnWidths(obatTable);
@@ -254,7 +254,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 String barcode = String.valueOf(obatTable.getValueAt(selectedRow, 1));
                 String idObat = String.valueOf(fullData[selectedRow][1]);
 
-                new EditObat(namaObat, jenisObat, hargaJual, stock, barcode, obatTable, selectedRow, idObat, Obat.this);
+                new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, Obat.this);
             }
         });
 
@@ -298,7 +298,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"}; // Remove "AKSI"
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"};
         tableModel = new DefaultTableModel(data, columns) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -399,7 +399,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                     result.get("nama_jenis_obat"), // Column 3: JENIS OBAT
                     result.get("harga_jual"),      // Column 4: HARGA JUAL
                     result.get("stock"),            // Column 5: STOCK
-                    ""
                 };
 
                 Object[][] newData = new Object[data.length + 1][];
@@ -409,7 +408,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             }
         }
 
-        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"}; // Remove "AKSI"
+        String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"}; 
         tableModel.setDataVector(data, columns);
         setTableColumnWidths(obatTable);
     }

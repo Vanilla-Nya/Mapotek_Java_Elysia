@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,6 +39,7 @@ public class StockObatMenipis extends JPanel {
     private JTable obatTable;
     private int selectedRow = -1;
     Object[][] data = {};
+    private List<Map<String, Object>> allObatData;
 
     public StockObatMenipis() {
         // Frame setup
@@ -47,11 +49,11 @@ public class StockObatMenipis extends JPanel {
         // Query data obat
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat()";
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+        allObatData = executor.executeSelectQuery(query, new Object[]{});
 
         // Filter data untuk stok menipis
-        if (!results.isEmpty()) {
-            for (Map<String, Object> result : results) {
+        if (!allObatData.isEmpty()) {
+            for (Map<String, Object> result : allObatData) {
                 String namaObat = String.valueOf(result.get("nama_obat"));
                 String namaJenisObat = String.valueOf(result.get("nama_jenis_obat"));
                 String bentukObat = String.valueOf(result.get("bentuk_obat"));
@@ -59,6 +61,7 @@ public class StockObatMenipis extends JPanel {
 
                 // Check if stock is low based on the bentuk_obat
                 if (isStockRunningLow(bentukObat, stock)) {
+                    // Tambahkan data ke tabel
                     Object[] dataFromDatabase = new Object[]{
                         data.length + 1, namaObat, namaJenisObat, stock
                     };
@@ -184,8 +187,26 @@ public class StockObatMenipis extends JPanel {
         editButton.setFocusPainted(false);
         editButton.addActionListener(e -> {
             if (selectedRow != -1) {
-                // Implement edit logic here
-                JOptionPane.showMessageDialog(null, "Edit obat: " + namaObatLabel.getText());
+                // Ambil data dari tabel berdasarkan baris yang dipilih
+                String namaObat = String.valueOf(obatTable.getValueAt(selectedRow, 1)); // NAMA OBAT
+
+                // Cari detail obat di allObatData
+                Map<String, Object> selectedObat = allObatData.stream()
+                    .filter(obat -> namaObat.equals(String.valueOf(obat.get("nama_obat"))))
+                    .findFirst()
+                    .orElse(null);
+
+                if (selectedObat != null) {
+                    String jenisObat = String.valueOf(selectedObat.get("nama_jenis_obat"));
+                    String stock = String.valueOf(selectedObat.get("stock"));
+                    String barcode = String.valueOf(selectedObat.get("barcode"));
+                    String idObat = String.valueOf(selectedObat.get("id_obat"));
+
+                    // Panggil EditObat dengan data yang sesuai
+                    new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, null);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Detail obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 

@@ -138,8 +138,13 @@ public class ObatExpierd extends JPanel {
         searchButton.addActionListener(e -> {
             String searchTerm = searchField.getText().toLowerCase();
             Object[][] filteredData = Arrays.stream(data)
-                    .filter(row -> ((String) row[1]).toLowerCase().contains(searchTerm)) // Check if 'NAMA OBAT' contains search term
+                    .filter(row -> ((String) row[1]).toLowerCase().contains(searchTerm) // Filter by 'NAMA OBAT'
+                            || ((String) row[2]).toLowerCase().contains(searchTerm)) // Filter by 'JENIS OBAT'
                     .toArray(Object[][]::new);
+
+            // Update the table model with the filtered data
+            tableModel.setDataVector(filteredData, new String[]{"NO", "NAMA OBAT", "JENIS OBAT", "TANGGAL EXPIRED", "STOCK"});
+            setTableColumnWidths(obatTable);
         });
 
         // Add components to the top panel
@@ -292,14 +297,18 @@ public class ObatExpierd extends JPanel {
                     JOptionPane.YES_NO_OPTION);
 
                 if (response == JOptionPane.YES_OPTION) {
-                    String namaObat = namaObatField.getText();
+                    // Ambil data dari results berdasarkan selectedRow
+                    Map<String, Object> detail = results.get(selectedRow);
+                    String idDetailObat = String.valueOf(detail.get("id_detail_obat")); // ID Detail Obat
+
+                    // Perbarui status_batch menjadi 'dibuang'
                     QueryExecutor executor = new QueryExecutor();
-                    String query = "UPDATE obat SET deleted = 1 WHERE nama_obat = ?";
-                    boolean success = executor.executeUpdateQuery(query, new Object[]{namaObat});
+                    String query = "UPDATE detail_obat SET status_batch = 'dibuang' WHERE id_detail_obat = ?";
+                    boolean success = executor.executeUpdateQuery(query, new Object[]{idDetailObat});
 
                     if (success) {
                         JOptionPane.showMessageDialog(null, "Obat berhasil dibuang.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                        refreshTableData();
+                        refreshTableData(); // Refresh data tabel
                     } else {
                         JOptionPane.showMessageDialog(null, "Gagal membuang obat.", "Error", JOptionPane.ERROR_MESSAGE);
                     }

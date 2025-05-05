@@ -35,7 +35,7 @@ import com.itextpdf.layout.element.GridContainer;
 import Components.CustomDatePicker;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
-import Components.Dropdown;
+import Components.Dropdown; 
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
 import java_cup.parse_action;
@@ -51,7 +51,7 @@ public class EditObat extends JFrame {
     private CustomTable tableObatMasuk, tableObatKeluar;
 
     // Tambahkan parameter Obat ke konstruktor EditObat
-    public EditObat(String namaObat, String jenisObat, String hargaJual, String stock, String barcode, JTable table, int row, String idObat, Obat obatPanel) {
+    public EditObat(String namaObat, String jenisObat, String stock, String barcode, JTable table, int row, String idObat, Obat obatPanel) {
         QueryExecutor executor = new QueryExecutor();
         String query = "SELECT * from jenis_obat";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
@@ -431,7 +431,7 @@ public class EditObat extends JFrame {
             if (namaObat == null) {
                 namaObat = ""; // Default to an empty string
             }
-            new EditObat(namaObat, "Tablet", "1000", "100", "1234567890123", null, 0, "0", null); // Pass the validated value
+            new EditObat(namaObat, "Tablet", "100", "1234567890123", null, 0, "0", null); // Pass the validated value
         });
     }
 }
