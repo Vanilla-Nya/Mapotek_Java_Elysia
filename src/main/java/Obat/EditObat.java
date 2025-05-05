@@ -228,7 +228,7 @@ public class EditObat extends JFrame {
                         JOptionPane.showMessageDialog(this, "Masukkan nilai yang valid untuk stock, harga beli, dan harga jual!", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Semua field harus diisi !", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
