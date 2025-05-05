@@ -254,7 +254,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 String barcode = String.valueOf(obatTable.getValueAt(selectedRow, 1));
                 String idObat = String.valueOf(fullData[selectedRow][1]);
 
-                new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, Obat.this);
+                new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, () -> refreshTableData());
             }
         });
 

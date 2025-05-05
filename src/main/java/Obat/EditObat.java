@@ -2,9 +2,11 @@ package Obat;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
+import javax.swing.JTextField;
 
 import com.itextpdf.layout.element.GridContainer;
 
@@ -50,12 +53,11 @@ public class EditObat extends JFrame {
     private int row;
     private CustomTable tableObatMasuk, tableObatKeluar;
 
-    // Tambahkan parameter Obat ke konstruktor EditObat
-    public EditObat(String namaObat, String jenisObat, String stock, String barcode, JTable table, int row, String idObat, Obat obatPanel) {
+    public EditObat(String namaObat, String jenisObat, String stock, String barcode, JTable table, int row, String idObat, Runnable refreshCallback) {
         QueryExecutor executor = new QueryExecutor();
         String query = "SELECT * from jenis_obat";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
-        Set<String> uniqueJenisObatSet = new HashSet<>();  // Use a Set to store unique 'nama_jenis_obat'
+        Set<String> uniqueJenisObatSet = new HashSet<>();
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
@@ -169,7 +171,8 @@ public class EditObat extends JFrame {
             dialogGbc.gridx = 1;
             CustomTextField txtDateInput = new CustomTextField("Pilih tanggal", 20, 15, Optional.empty());
             CustomDatePicker datePicker = new CustomDatePicker(txtDateInput.getTextField(), true);
-            txtDateInput.getTextField().addMouseListener(new MouseAdapter() {
+            CustomTextField customTxtTanggalExpiredBaru = new CustomTextField("Tanggal Expired Baru", 20, 15, Optional.empty());
+            customTxtTanggalExpiredBaru.getTextField().addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     datePicker.showDatePicker(); // Show the date picker dialog
@@ -212,9 +215,9 @@ public class EditObat extends JFrame {
                             // Refresh the table
                             refreshTableObatMasuk(idObat);
 
-                            // Refresh tabel di Obat setelah stok berhasil ditambahkan
-                            if (obatPanel != null) {
-                                obatPanel.refreshTableData();
+                            // Panggil callback untuk menyegarkan data
+                            if (refreshCallback != null) {
+                                refreshCallback.run();
                             }
 
                             JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -248,14 +251,40 @@ public class EditObat extends JFrame {
         // Add the form panel to the main layout
         add(formPanel, BorderLayout.NORTH);
 
-        // Create the tabbed pane
-        JTabbedPane tabbedPane = new JTabbedPane();
+        // Create the table for "Obat Masuk"
+        String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "AKSI"}; // Include "AKSI" column
+        DefaultTableModel model = new DefaultTableModel(columns, 0);
+        tableObatMasuk = new CustomTable(model); // Use CustomTable
 
-        // Add "Obat Masuk" tab
-        JPanel panelObatMasuk = createObatMasukPanel(idObat);
-        tabbedPane.addTab("Obat Masuk", panelObatMasuk);
+        query = "CALL all_obat_masuk(?)";
+        List<Map<String, Object>> updatedResults = executor.executeSelectQuery(query, new Object[]{Integer.parseInt(idObat)});
+        for (Map<String, Object> resultRow : updatedResults) {
+            model.addRow(new Object[]{
+                resultRow.get("nama_obat"),
+                resultRow.get("stock"),
+                resultRow.get("created_at"),
+                resultRow.get("tanggal_expired"),
+                resultRow.get("harga_beli"),
+                resultRow.get("harga_jual"),
+                "DETAIL" // Add "DETAIL" button text to the "AKSI" column
+            });
+        }
 
-        add(tabbedPane, BorderLayout.CENTER);
+        // Add mouse listener for "DETAIL" button
+        tableObatMasuk.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int column = tableObatMasuk.getColumnModel().getColumnIndex("AKSI");
+                int row = tableObatMasuk.getSelectedRow();
+                if (row >= 0 && column == tableObatMasuk.getSelectedColumn()) {
+                    int idDetailObat = (Integer) updatedResults.get(row).get("id_detail_obat");
+                    showPengeluaranObatPerBatch(idDetailObat);
+                }
+            }
+        });
+
+        // Add the table to the main layout
+        add(new JScrollPane(tableObatMasuk), BorderLayout.CENTER);
 
         setLocationRelativeTo(null);
         setVisible(true);
@@ -270,14 +299,6 @@ public class EditObat extends JFrame {
             return (String) results.get(0).get("bentuk_obat");
         }
         return null; // Return null if no result is found
-    }
-
-    private void updateObat(String idObat) {
-        // Update the database with the new "Jenis Bentuk Obat" value
-        String selectedJenisBentukObat = (String) txtJenisBentukObat.getSelectedItem();
-        String updateQuery = "UPDATE obat SET bentuk_obat = ? WHERE id_obat = ?";
-        QueryExecutor executor = new QueryExecutor();
-        executor.executeUpdateQuery(updateQuery, new Object[]{selectedJenisBentukObat, idObat});
     }
 
     private JPanel createObatMasukPanel(String idObat) {
@@ -341,6 +362,48 @@ public class EditObat extends JFrame {
         JScrollPane scrollPane = new JScrollPane(detailTable);
         detailPanel.add(scrollPane, BorderLayout.CENTER);
 
+        // Panel untuk tombol di bawah tabel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+        // Tombol Restock
+        JButton btnRestock = new RoundedButton("Restock");
+        btnRestock.setBackground(new Color(0, 123, 255));
+        btnRestock.setForeground(Color.WHITE);
+
+        // Tambahkan tombol ke panel
+        buttonPanel.add(btnRestock);
+
+        // Tambahkan panel tombol ke bawah tabel
+        detailPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Action listener untuk tombol Restock
+        btnRestock.addActionListener(e -> {
+            // Ambil data batch obat yang dipilih
+            String queryDetail = "Call detail_obat_bacth(?)";
+            List<Map<String, Object>> detailResults = executor.executeSelectQuery(queryDetail, new Object[]{idDetailObat});
+            if (!detailResults.isEmpty()) {
+                Map<String, Object> detail = detailResults.get(0);
+
+                // Ambil data yang diperlukan untuk Restock
+                String idObat = String.valueOf(detail.get("id_obat"));
+                String namaObat = String.valueOf(detail.get("nama_obat"));
+                String jenisObat = String.valueOf(detail.get("nama_jenis_obat"));
+                String stokLama = String.valueOf(detail.get("stock"));
+                String tanggalExpiredLama = String.valueOf(detail.get("tanggal_expired"));
+                String hargaBeliLama = String.valueOf(detail.get("harga_beli"));
+                String hargaJualLama = String.valueOf(detail.get("harga_jual"));
+
+                // Panggil dialog Restock
+                Restock.showRestockDialog(idObat, String.valueOf(idDetailObat), namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
+
+                // Refresh tabel setelah Restock
+                refreshTableObatMasuk(idObat);
+            } else {
+                JOptionPane.showMessageDialog(null, "Data batch tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Tampilkan dialog
         JOptionPane.showMessageDialog(null, detailPanel, "Detail Pengeluaran Obat Per Batch", JOptionPane.INFORMATION_MESSAGE);
     }
 

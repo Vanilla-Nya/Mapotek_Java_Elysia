@@ -44,7 +44,7 @@ public class StockObatMenipis extends JPanel {
     public StockObatMenipis() {
         // Frame setup
         setLayout(new BorderLayout());
-        setSize(800, 600);
+        setSize(1280, 720);
 
         // Query data obat
         QueryExecutor executor = new QueryExecutor();
@@ -203,7 +203,7 @@ public class StockObatMenipis extends JPanel {
                     String idObat = String.valueOf(selectedObat.get("id_obat"));
 
                     // Panggil EditObat dengan data yang sesuai
-                    new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, null);
+                    new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, () -> refreshTableData());
                 } else {
                     JOptionPane.showMessageDialog(this, "Detail obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -233,6 +233,35 @@ public class StockObatMenipis extends JPanel {
         dataPanel.add(hapusButton);
 
         return dataPanel;
+    }
+
+     public void refreshTableData() {
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_obat()";
+
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+        data = new Object[0][];
+        if (!results.isEmpty()) {
+            for (Map<String, Object> result : results) {
+                Object[] dataFromDatabase = new Object[]{
+                    data.length + 1,                      
+                    result.get("nama_obat"),       
+                    result.get("nama_jenis_obat"), 
+                    result.get("bentuk_obat"),      
+                    result.get("stock"),            
+                };
+
+                Object[][] newData = new Object[data.length + 1][];
+                System.arraycopy(data, 0, newData, 0, data.length);
+                newData[data.length] = dataFromDatabase;
+                data = newData;
+            }
+        }
+
+        String[] columns = {"NO", "NAMA OBAT", "JENIS OBAT", "BENTUK OBAT", "STOCK"}; 
+        tableModel.setDataVector(data, columns);
+        setTableColumnWidths(obatTable);
     }
 
     private JScrollPane createTablePanel() {
