@@ -1,6 +1,21 @@
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
 import Components.CustomChart;
+import Components.CustomTextFormField;
+import Components.ShowmodalBottomSheet;
 
 public class TestChart {
     public static void main(String[] args) {
@@ -19,7 +34,52 @@ public class TestChart {
         CustomChart chart = new CustomChart(incomeData, outcomeData, xLabels, yLabels);
 
         // Add the CustomChart to the JFrame
-        frame.add(chart);
+        frame.add(chart, BorderLayout.CENTER);
+
+        // Add a button to show the modal bottom sheet
+        JButton showModalButton = new JButton("Show Modal Bottom Sheet");
+        frame.add(showModalButton, BorderLayout.SOUTH);
+
+        // Add action listener to the button
+        showModalButton.addActionListener(e -> {
+            // Membuat konten dinamis untuk bottom sheet
+            JPanel content = new JPanel();
+            content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+            content.setBackground(Color.LIGHT_GRAY);
+
+            JLabel titleLabel = new JLabel("Dynamic Content");
+            titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            // Tambahkan CustomTextFormField
+            CustomTextFormField customTextField = new CustomTextFormField("Enter your text");
+            customTextField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            
+            CustomTextFormField customTextField1 = new CustomTextFormField("Enter your text");
+            customTextField.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JButton actionButton = new JButton("Submit");
+            actionButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            actionButton.addActionListener(actionEvent -> {
+                String inputText = customTextField.getText();
+                JOptionPane.showMessageDialog(frame, "You entered: " + inputText);
+            });
+
+            content.add(titleLabel);
+            content.add(Box.createRigidArea(new Dimension(0, 10))); // Spacer
+            content.add(customTextField);
+            content.add(Box.createRigidArea(new Dimension(0, 10))); // Spacer
+            content.add(customTextField1);
+            content.add(Box.createRigidArea(new Dimension(0, 10))); // Spacer
+            content.add(actionButton);
+
+            // Tambahkan JScrollPane untuk konten
+            JScrollPane scrollPane = new JScrollPane(content);
+            scrollPane.setBorder(null); // Hilangkan border default
+            scrollPane.setPreferredSize(new Dimension(frame.getWidth(), 300)); // Atur tinggi scroll
+            ShowmodalBottomSheet.showBottomSheet(frame, scrollPane);
+        });
 
         // Set JFrame properties
         frame.setSize(600, 400); // Set the size of the window

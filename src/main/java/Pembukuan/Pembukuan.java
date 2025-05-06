@@ -27,6 +27,12 @@ import Components.RoundedButton;
 import DataBase.QueryExecutor;
 import Pengeluaran.Pengeluaran;
 
+// Tambahkan import untuk JDialog
+import javax.swing.JDialog;
+
+// Tambahkan import untuk ShowmodalBottomSheet
+import Components.ShowmodalBottomSheet;
+
 public class Pembukuan extends JPanel {
 
     private DefaultTableModel model;
@@ -187,6 +193,24 @@ public class Pembukuan extends JPanel {
 
         footerPanel.add(addButton);
         footerPanel.add(exportButton);
+
+        // Modifikasi tombol "Filter Data" di footer panel
+        RoundedButton filterModalButton = new RoundedButton("Filter Data");
+        filterModalButton.setBackground(new Color(33, 150, 243));
+        filterModalButton.setForeground(Color.WHITE);
+        filterModalButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        filterModalButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        filterModalButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showFilterBottomSheet(); // Panggil metode untuk menampilkan bottom sheet
+            }
+        });
+
+        // Tambahkan tombol ke footer panel
+        footerPanel.add(filterModalButton);
+
         add(footerPanel, BorderLayout.SOUTH);
 
         // Add Action Listener for Filter Button
@@ -394,5 +418,57 @@ public class Pembukuan extends JPanel {
             setOpaque(true);  // Make sure the background color is applied
             return this;
         }
+    }
+
+    // Tambahkan metode untuk menampilkan filter di bottom sheet
+    private void showFilterBottomSheet() {
+        // Panel untuk komponen filter
+        JPanel filterPanel = new JPanel();
+        filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
+        filterPanel.setBackground(Color.WHITE);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        // Tambahkan komponen filter ke dalam panel
+        filterPanel.add(createFilterComponent("Tanggal Mulai:", startDatePicker));
+        filterPanel.add(createFilterComponent("Tanggal Selesai:", endDatePicker));
+        filterPanel.add(createFilterComponent("Kategori:", categoryDropdown));
+
+        // Tombol untuk menerapkan filter
+        RoundedButton applyFilterButton = new RoundedButton("Terapkan Filter");
+        applyFilterButton.setBackground(new Color(33, 150, 243));
+        applyFilterButton.setForeground(Color.WHITE);
+        applyFilterButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        applyFilterButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        applyFilterButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String startDate = startDatePicker.getText();
+                String endDate = endDatePicker.getText();
+
+                if (startDate.isEmpty() || endDate.isEmpty()) {
+                    JOptionPane.showMessageDialog(
+                            SwingUtilities.getWindowAncestor(Pembukuan.this),
+                            "Harap pilih kedua tanggal (mulai dan selesai) untuk menerapkan filter.",
+                            "Peringatan",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                } else {
+                    refreshTable(); // Refresh tabel berdasarkan filter
+
+                    // Tutup bottom sheet
+                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(Pembukuan.this);
+                    ShowmodalBottomSheet.closeBottomSheet(parentFrame);
+                }
+            }
+        });
+
+        // Tambahkan tombol ke panel
+        filterPanel.add(Box.createVerticalStrut(20)); // Spasi antar komponen
+        filterPanel.add(applyFilterButton);
+
+        // Tampilkan bottom sheet
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        ShowmodalBottomSheet.showBottomSheet(parentFrame, filterPanel);
     }
 }
