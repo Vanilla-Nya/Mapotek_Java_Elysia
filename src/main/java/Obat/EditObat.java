@@ -2,22 +2,20 @@ package Obat;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Logger;
-import java.text.NumberFormat;
-import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -26,14 +24,10 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
-import javax.swing.JTextField;
-
-import com.itextpdf.layout.element.GridContainer;
 
 import Components.CustomDatePicker;
 import Components.CustomTable.CustomTable;
@@ -41,7 +35,6 @@ import Components.CustomTextField;
 import Components.Dropdown; 
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
-import java_cup.parse_action;
 
 public class EditObat extends JFrame {
 
@@ -55,20 +48,16 @@ public class EditObat extends JFrame {
 
     public EditObat(String namaObat, String jenisObat, String stock, String barcode, JTable table, int row, String idObat, Runnable refreshCallback) {
         QueryExecutor executor = new QueryExecutor();
-        String query = "SELECT * from jenis_obat";
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
-        Set<String> uniqueJenisObatSet = new HashSet<>();
-
-        if (!results.isEmpty()) {
-            for (Map<String, Object> result : results) {
-                String jenisObatValue = (String) result.get("nama_jenis_obat");
-                LOGGER.info("Retrieved jenisObat: " + jenisObatValue);
-                uniqueJenisObatSet.add(jenisObatValue);
-            }
-        }
+        String query = "SELECT nama_jenis_obat FROM jenis_obat";
+        List<String> jenisObatList = new ArrayList<>();
+        Map<String, String> jenisObatMap = new HashMap<>();
         System.out.println(idObat);
-        List<String> jenisObatList = new ArrayList<>(uniqueJenisObatSet);
         LOGGER.info("Unique jenisObatList: " + jenisObatList);
+
+        if (idObat == null || idObat.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ID Obat tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         setTitle("Edit Obat");
         setSize(1280, 720);
@@ -199,10 +188,10 @@ public class EditObat extends JFrame {
 
                         if (stockValue > 0 && hargaBeliValue > 0 && hargaJualValue > 0) {
                             // Update the stock in the database
-                            String insertQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock, harga_beli, harga_jual, status_batch, alasan) VALUES (?, ?, ?, ?, ?, 'aktif', NULL)";
+                            String insertQuery = "INSERT INTO detail_obat (tanggal_expired, stock, harga_beli, harga_jual, status_batch, alasan) VALUES (?, ?, ?, ?, ?, 'aktif', NULL)";
                             try {
                                 int idObatInt = Integer.parseInt(idObat); // Pastikan idObat adalah integer
-                                executor.executeInsertQuery(insertQuery, new Object[]{idObatInt, dateInput, stockValue, hargaBeliValue, hargaJualValue});
+                                executor.executeInsertQuery(insertQuery, new Object[]{dateInput, stockValue, hargaBeliValue, hargaJualValue});
                                 JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
                             } catch (NumberFormatException ex) {
                                 JOptionPane.showMessageDialog(this, "ID Obat harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -252,7 +241,7 @@ public class EditObat extends JFrame {
         add(formPanel, BorderLayout.NORTH);
 
         // Create the table for "Obat Masuk"
-        String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "AKSI"}; // Include "AKSI" column
+        String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "Status", "AKSI"}; // Include "AKSI" column
         DefaultTableModel model = new DefaultTableModel(columns, 0);
         tableObatMasuk = new CustomTable(model); // Use CustomTable
 
@@ -266,6 +255,7 @@ public class EditObat extends JFrame {
                 resultRow.get("tanggal_expired"),
                 resultRow.get("harga_beli"),
                 resultRow.get("harga_jual"),
+                resultRow.get("status_batch"),
                 "DETAIL" // Add "DETAIL" button text to the "AKSI" column
             });
         }
@@ -301,47 +291,6 @@ public class EditObat extends JFrame {
         return null; // Return null if no result is found
     }
 
-    private JPanel createObatMasukPanel(String idObat) {
-        if (idObat == null || idObat.isEmpty()) {
-            throw new IllegalArgumentException("ID Obat tidak boleh kosong!");
-        }
-
-        JPanel panel = new JPanel(new BorderLayout());
-        String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "AKSI"}; // Include "AKSI" column
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
-        tableObatMasuk = new CustomTable(model); // Use CustomTable
-
-        QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_obat_masuk(?)";
-        List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{Integer.parseInt(idObat)});
-
-        for (Map<String, Object> row : results) {
-            model.addRow(new Object[]{
-                row.get("nama_obat"),
-                row.get("stock"),
-                row.get("created_at"),
-                row.get("tanggal_expired"),
-                row.get("harga_beli"),
-                row.get("harga_jual"),
-                "DETAIL" // Add "DETAIL" button text to the "AKSI" column
-            });
-        }
-
-        tableObatMasuk.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = tableObatMasuk.getColumnModel().getColumnIndex("AKSI");
-                int row = tableObatMasuk.getSelectedRow();
-                if (row >= 0 && column == tableObatMasuk.getSelectedColumn()) {
-                    int idDetailObat = (Integer) results.get(row).get("id_detail_obat");
-                    showPengeluaranObatPerBatch(idDetailObat);
-                }
-            }
-        });
-
-        panel.add(new JScrollPane(tableObatMasuk), BorderLayout.CENTER);
-        return panel;
-    }
 
     private void showPengeluaranObatPerBatch(int idDetailObat) {
         QueryExecutor executor = new QueryExecutor();
@@ -379,13 +328,19 @@ public class EditObat extends JFrame {
         // Action listener untuk tombol Restock
         btnRestock.addActionListener(e -> {
             // Ambil data batch obat yang dipilih
-            String queryDetail = "Call detail_obat_bacth(?)";
+            String queryDetail = "CALL detail_obat_bacth(?)";
             List<Map<String, Object>> detailResults = executor.executeSelectQuery(queryDetail, new Object[]{idDetailObat});
+
             if (!detailResults.isEmpty()) {
                 Map<String, Object> detail = detailResults.get(0);
 
                 // Ambil data yang diperlukan untuk Restock
                 String idObat = String.valueOf(detail.get("id_obat"));
+                if (idObat == null || idObat.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "ID Obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 String namaObat = String.valueOf(detail.get("nama_obat"));
                 String jenisObat = String.valueOf(detail.get("nama_jenis_obat"));
                 String stokLama = String.valueOf(detail.get("stock"));
@@ -394,10 +349,15 @@ public class EditObat extends JFrame {
                 String hargaJualLama = String.valueOf(detail.get("harga_jual"));
 
                 // Panggil dialog Restock
-                Restock.showRestockDialog(idObat, String.valueOf(idDetailObat), namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
+                boolean isRestockSuccessful = Restock.showRestockDialog(idObat, String.valueOf(idDetailObat), namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
 
-                // Refresh tabel setelah Restock
-                refreshTableObatMasuk(idObat);
+                // Jika Restock berhasil, refresh tabel
+                if (isRestockSuccessful) {
+                    refreshTableObatMasuk(idObat);
+                } else {
+                    // Jika dialog dibatalkan, tidak ada tindakan lebih lanjut
+                    System.out.println("Restock dibatalkan oleh pengguna.");
+                }
             } else {
                 JOptionPane.showMessageDialog(null, "Data batch tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -408,6 +368,11 @@ public class EditObat extends JFrame {
     }
 
     private void refreshTableObatMasuk(String idObat) {
+        if (idObat == null || idObat.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "ID Obat tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         DefaultTableModel model = (DefaultTableModel) tableObatMasuk.getModel();
         model.setRowCount(0); // Clear the table
 
@@ -424,22 +389,10 @@ public class EditObat extends JFrame {
                 row.get("tanggal_expired"),
                 row.get("harga_beli"),
                 row.get("harga_jual"),
+                row.get("status_batch"),
                 "DETAIL" // Add "DETAIL" button text back to the "AKSI" column
             });
         }
-
-        // Reapply the mouse listener for the "DETAIL" button
-        tableObatMasuk.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int column = tableObatMasuk.getColumnModel().getColumnIndex("AKSI");
-                int row = tableObatMasuk.getSelectedRow();
-                if (row >= 0 && column == tableObatMasuk.getSelectedColumn()) {
-                    int idDetailObat = (Integer) results.get(row).get("id_detail_obat");
-                    showPengeluaranObatPerBatch(idDetailObat);
-                }
-            }
-        });
     }
 
     public void addActionListeners(TableModel model) {

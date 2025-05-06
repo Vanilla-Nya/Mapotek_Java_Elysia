@@ -11,6 +11,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import java.awt.Window;
 
 import Components.CustomDatePicker;
 import Components.CustomTextField;
@@ -18,7 +20,7 @@ import DataBase.QueryExecutor;
 
 public class Restock {
 
-    public static void showRestockDialog(String idObat, String idDetailObat, String namaObat, String jenisObat, String stokLama, String tanggalExpiredLama, String hargaBeliLama, String hargaJualLama) {
+    public static boolean showRestockDialog(String idObat, String idDetailObat, String namaObat, String jenisObat, String stokLama, String tanggalExpiredLama, String hargaBeliLama, String hargaJualLama) {
         // Panel kiri: Data lama
         JPanel leftPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -73,6 +75,12 @@ public class Restock {
         hargaJualLamaField.setEditable(false);
         leftPanel.add(hargaJualLamaField, gbc);
 
+        QueryExecutor executor = new QueryExecutor();
+
+        // Periksa status batch
+        String checkStatusQuery = "SELECT status_batch FROM detail_obat WHERE id_detail_obat = ?";
+        String statusBatch = (String) executor.executeSelectQuery(checkStatusQuery, new Object[]{idDetailObat}).get(0).get("status_batch");
+
         // Panel kanan: Input data baru
         JPanel rightPanel = new JPanel(new GridBagLayout());
         gbc.gridx = 0;
@@ -110,6 +118,16 @@ public class Restock {
         JTextField hargaJualBaruField = new JTextField();
         rightPanel.add(hargaJualBaruField, gbc);
 
+        // Tambahkan field alasan hanya jika status batch bukan expired
+        if (!"expired".equalsIgnoreCase(statusBatch)) {
+            gbc.gridx = 0;
+            gbc.gridy = 4; // Tambahkan di bawah "Harga Jual (Baru)"
+            rightPanel.add(new JLabel("Alasan Restock:"), gbc);
+            gbc.gridx = 1;
+            JTextField alasanField = new JTextField();
+            rightPanel.add(alasanField, gbc);
+        }
+
         // Panel utama: Gabungkan panel kiri dan kanan
         JPanel mainPanel = new JPanel(new GridBagLayout());
         gbc.gridx = 0;
@@ -126,22 +144,34 @@ public class Restock {
                 String tanggalExpiredBaru = tanggalExpiredBaruField.getText();
                 double hargaBeliBaru = Double.parseDouble(hargaBeliBaruField.getText());
                 double hargaJualBaru = Double.parseDouble(hargaJualBaruField.getText());
+                String alasanRestock = null;
+                if (!"expired".equalsIgnoreCase(statusBatch)) {
+                    alasanRestock = ((JTextField) rightPanel.getComponent(9)).getText(); // Ambil alasan dari input field
+                }
 
-                QueryExecutor executor = new QueryExecutor();
-
-                // 1. Tambahkan data baru ke detail_obat
-                String insertQuery = "INSERT INTO detail_obat (tanggal_expired, stock, harga_beli, harga_jual, status_batch) " +
-                                     "VALUES (?, ?, ?, ?, 'aktif')";
+                // Tambahkan data baru ke detail_obat
+                String insertQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock, harga_beli, harga_jual, status_batch) " +
+                                     "VALUES (?, ?, ?, ?, ?, 'aktif')";
                 executor.executeInsertQuery(insertQuery, new Object[]{idObat, tanggalExpiredBaru, stokBaru, hargaBeliBaru, hargaJualBaru});
 
-                // 2. Perbarui status entri lama menjadi 'diganti'
-                String updateQuery = "UPDATE detail_obat SET status_batch = 'diganti' WHERE id_detail_obat = ?";
-                executor.executeUpdateQuery(updateQuery, new Object[]{idDetailObat});
+                if (!"expired".equalsIgnoreCase(statusBatch)) {
+                    // Perbarui status batch lama menjadi 'diganti' dengan alasan
+                    String updateQuery = "UPDATE detail_obat SET status_batch = 'diganti', alasan = ? " +
+                                         "WHERE id_detail_obat = ?";
+                    executor.executeUpdateQuery(updateQuery, new Object[]{"Diganti dengan batch baru: " + alasanRestock, idDetailObat});
+                } else {
+                    // Perbarui status batch lama menjadi 'diganti' tanpa alasan
+                    String updateQuery = "UPDATE detail_obat SET status_batch = 'diganti' " +
+                                         "WHERE id_detail_obat = ?";
+                    executor.executeUpdateQuery(updateQuery, new Object[]{idDetailObat});
+                }
 
-                JOptionPane.showMessageDialog(null, "Restock berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Restock berhasil! Batch lama telah diperbarui.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                return true; // Operasi berhasil
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Masukkan data yang valid.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+        return false; // Operasi dibatalkan
     }
 }
