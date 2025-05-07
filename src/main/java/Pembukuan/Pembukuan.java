@@ -12,12 +12,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+
 import Components.CustomDatePicker;
 import Components.CustomPanel;
 import Components.CustomTable.CustomTable;
@@ -41,6 +47,10 @@ public class Pembukuan extends JPanel {
     private CustomTextField endDatePicker;
     private Dropdown categoryDropdown;
     private CustomDatePicker customStartDatePicker, customEndDatePicker;
+    private JPanel summaryPanel;
+    private JLabel totalPemasukanLabel;
+    private JLabel totalPengeluaranLabel;
+    private JLabel totalKeuntunganLabel;
 
     public Pembukuan() {
         QueryExecutor executor = new QueryExecutor();
@@ -96,43 +106,47 @@ public class Pembukuan extends JPanel {
             }
         });
 
-        // Filter Panel with Modern Design
-        JPanel filterPanel = new JPanel();
-        filterPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 20));
-        filterPanel.setBackground(Color.WHITE);
-        filterPanel.setPreferredSize(new Dimension(1280, 150));
-
-        filterPanel.add(createFilterComponent("Tanggal Mulai:", startDatePicker));
-        filterPanel.add(createFilterComponent("Tanggal Selesai:", endDatePicker));
-
-        // Category Dropdown
+        // Inisialisasi categoryDropdown
         categoryDropdown = new Dropdown(false, false, "Semua");
         categoryDropdown.setItems(List.of("Semua", "Pemasukan", "Pengeluaran"), false, false, "Semua");
-        categoryDropdown.setBackground(Color.WHITE);
-        categoryDropdown.setPreferredSize(new Dimension(150, 30));
-        filterPanel.add(createFilterComponent("Kategori:", categoryDropdown));
 
-        // Terapkan Filter Button
-        RoundedButton filterButton = new RoundedButton("Terapkan Filter");
-        filterButton.setBackground(new Color(33, 150, 243));
-        filterButton.setForeground(Color.WHITE);
-        filterButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        filterButton.setMargin(new Insets(10, 20, 10, 20));
-        filterButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        filterPanel.add(filterButton);
-
-        // Add filter panel to main layout
-        add(filterPanel, BorderLayout.NORTH);
+        // Create Summary Panel
+        createSummaryPanel();
 
         // Table Setup for Data
-        String[] columnNames = {"Tanggal", "Deskripsi", "Banyak", "Jenis"};
+        String[] columnNames = {"Tanggal", "Total Pemasukan", "Total Pengeluaran", "Aksi"};
         model = new DefaultTableModel(data, columnNames);
         loadData();
         CustomTable table = new CustomTable(model);
         table.setEnabled(false);
 
         // Apply the custom TableCellRenderer
-        table.setDefaultRenderer(Object.class, new CustomTableCellRenderer());
+        // Define a simple CustomTableCellRenderer class if it doesn't exist
+                table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+                    @Override
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                        Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                        if (column == 3) { // Customize the "Aksi" column
+                            cell.setForeground(Color.BLUE);
+                            cell.setFont(cell.getFont().deriveFont(Font.BOLD));
+                        }
+                        return cell;
+                    }
+                });
+
+        // Add mouse listener for table actions
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+
+                if (column == 3) { // Kolom "Aksi"
+                    String tanggal = (String) model.getValueAt(row, 0);
+                    showDetailDialog(tanggal);
+                }
+            }
+        });
 
         // Table Customization
         JScrollPane tableScrollPane = new JScrollPane(table);
@@ -204,7 +218,7 @@ public class Pembukuan extends JPanel {
         filterModalButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showFilterBottomSheet(); // Panggil metode untuk menampilkan bottom sheet
+                showFilterBottomSheet(); // Call the method to display the bottom sheet
             }
         });
 
@@ -212,29 +226,6 @@ public class Pembukuan extends JPanel {
         footerPanel.add(filterModalButton);
 
         add(footerPanel, BorderLayout.SOUTH);
-
-        // Add Action Listener for Filter Button
-        filterButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Check if both the start and end date pickers are filled
-                String startDate = startDatePicker.getText();
-                String endDate = endDatePicker.getText();
-
-                if (startDate.isEmpty() || endDate.isEmpty()) {
-                    // If either the start date or end date is empty, show an alert
-                    JOptionPane.showMessageDialog(
-                            Pembukuan.this,
-                            "Harap pilih kedua tanggal (mulai dan selesai) untuk menerapkan filter.",
-                            "Peringatan",
-                            JOptionPane.WARNING_MESSAGE
-                    );
-                } else {
-                    // If both dates are filled, refresh the table based on the filter
-                    refreshTable();  // Refresh table based on new filter values
-                }
-            }
-        });
     }
 
     private void exportToWord(String filePath) throws IOException {
@@ -247,7 +238,7 @@ public class Pembukuan extends JPanel {
         String tempFilePath = filePath.replace(".rtf", ".txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath))) {
             // Write table headers
-            writer.write("Tanggal\tDeskripsi\tBanyak\tJenis");
+            writer.write("Tanggal\tTotal Pemasukan\tTotal Pengeluaran\tAksi");
             writer.newLine();
 
             // Write table data
@@ -353,122 +344,206 @@ public class Pembukuan extends JPanel {
 
     private void loadData() {
         data = new Object[0][];  // Clear existing data
-        model.setDataVector(data, new String[]{"Tanggal", "Deskripsi", "Banyak", "Jenis"});
+        model.setDataVector(data, new String[]{"Tanggal", "Total Pemasukan", "Total Pengeluaran", "Aksi"});
 
         String startDate = startDatePicker.getText();
         String endDate = endDatePicker.getText();
-        String selectedCategory = (String) categoryDropdown.getSelectedItem();
+
+        // Validasi input tanggal
+        if (startDate.isEmpty() || endDate.isEmpty()) {
+            // Jika tanggal kosong, jangan tampilkan pesan error, cukup hentikan eksekusi
+            return;
+        }
 
         QueryExecutor executor = new QueryExecutor();
+        Map<String, Map<String, Double>> groupedData = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Format tanggal
 
-        // Query Pemasukan (Income)
-        if ("Pemasukan".equals(selectedCategory) || "Semua".equals(selectedCategory)) {
+        double totalPemasukan = 0.0;
+        double totalPengeluaran = 0.0;
+
+        try {
+            // Query Pemasukan (Income)
             String queryPemasukan = "CALL all_pemasukan_harian(?, ?)";
             List<Map<String, Object>> resultPemasukan = executor.executeSelectQuery(queryPemasukan, new Object[]{startDate, endDate});
             for (Map<String, Object> result : resultPemasukan) {
-                Object[] dataFromDatabase = new Object[]{
-                    result.get("tanggal"), result.get("deskripsi"),
-                    result.get("total"), result.get("jenis")
-                };
-                addDataToTable(dataFromDatabase);
-            }
-        }
+                java.sql.Date sqlDate = (java.sql.Date) result.get("tanggal");
+                String tanggal = dateFormat.format(sqlDate); // Konversi java.sql.Date ke String
+                double pemasukan = ((Number) result.get("total")).doubleValue();
 
-        // Query Pengeluaran (Expenses)
-        if ("Pengeluaran".equals(selectedCategory) || "Semua".equals(selectedCategory)) {
+                groupedData.putIfAbsent(tanggal, new HashMap<>());
+                groupedData.get(tanggal).put("pemasukan", groupedData.get(tanggal).getOrDefault("pemasukan", 0.0) + pemasukan);
+
+                // Tambahkan ke total pemasukan
+                totalPemasukan += pemasukan;
+            }
+
+            // Query Pengeluaran (Expenses)
             String queryPengeluaran = "CALL all_pengeluaran(?, ?)";
             List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{startDate, endDate});
             for (Map<String, Object> result : resultPengeluaran) {
-                Object[] dataFromDatabase = new Object[]{
-                    result.get("tanggal"), result.get("keterangan"),
-                    result.get("total_pengeluaran"), result.get("jenis")
-                };
-                addDataToTable(dataFromDatabase);
+                java.sql.Date sqlDate = (java.sql.Date) result.get("tanggal");
+                String tanggal = dateFormat.format(sqlDate); // Konversi java.sql.Date ke String
+                double pengeluaran = ((Number) result.get("total_pengeluaran")).doubleValue();
+
+                groupedData.putIfAbsent(tanggal, new HashMap<>());
+                groupedData.get(tanggal).put("pengeluaran", groupedData.get(tanggal).getOrDefault("pengeluaran", 0.0) + pengeluaran);
+
+                // Tambahkan ke total pengeluaran
+                totalPengeluaran += pengeluaran;
             }
+
+            // Populate the table
+            for (Map.Entry<String, Map<String, Double>> entry : groupedData.entrySet()) {
+                String tanggal = entry.getKey();
+                double pemasukan = entry.getValue().getOrDefault("pemasukan", 0.0);
+                double pengeluaran = entry.getValue().getOrDefault("pengeluaran", 0.0);
+
+                model.addRow(new Object[]{tanggal, formatToRupiah(pemasukan), formatToRupiah(pengeluaran), "Lihat Detail"});
+            }
+
+            // Hitung total keuntungan
+            double totalKeuntungan = totalPemasukan - totalPengeluaran;
+
+            // Perbarui label di summary panel
+            totalPemasukanLabel.setText(formatToRupiah(totalPemasukan));
+            totalPengeluaranLabel.setText(formatToRupiah(totalPengeluaran));
+            totalKeuntunganLabel.setText(formatToRupiah(totalKeuntungan));
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Terjadi kesalahan saat memuat data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // Method to add rows to the table model
-    private void addDataToTable(Object[] data) {
-        model.addRow(data);
-    }
-
-    private static class CustomTableCellRenderer extends JLabel implements TableCellRenderer {
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            setText(value != null ? value.toString() : "");
-
-            // Color the entire row based on the "Jenis" column
-            String jenis = (String) table.getValueAt(row, 3);  // Get value from the "Jenis" column (index 3)
-            if ("Pengeluaran".equalsIgnoreCase(jenis)) {
-                // Red background for "Pengeluaran" rows (expenses)
-                setBackground(new Color(255, 99, 71));
-                setForeground(Color.WHITE);  // White text color
-            } else if ("Pemasukan".equalsIgnoreCase(jenis)) {
-                // Green background for "Pemasukan" rows (income)
-                setBackground(new Color(34, 139, 34));
-                setForeground(Color.WHITE);  // White text color
-            } else {
-                // Default background for other rows
-                setBackground(Color.WHITE);
-                setForeground(Color.BLACK);  // Default text color
-            }
-
-            setOpaque(true);  // Make sure the background color is applied
-            return this;
-        }
-    }
-
-    // Tambahkan metode untuk menampilkan filter di bottom sheet
     private void showFilterBottomSheet() {
-        // Panel untuk komponen filter
-        JPanel filterPanel = new JPanel();
-        filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.Y_AXIS));
+        // Buat panel untuk konten filter
+        JPanel filterPanel = new JPanel(new GridLayout(2, 1, 10, 10)); // Ubah menjadi 2 baris
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         filterPanel.setBackground(Color.WHITE);
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Tambahkan komponen filter ke dalam panel
-        filterPanel.add(createFilterComponent("Tanggal Mulai:", startDatePicker));
-        filterPanel.add(createFilterComponent("Tanggal Selesai:", endDatePicker));
-        filterPanel.add(createFilterComponent("Kategori:", categoryDropdown));
+        // Tambahkan komponen filter (Start Date dan End Date)
+        filterPanel.add(createFilterComponent("Start Date", startDatePicker));
+        filterPanel.add(createFilterComponent("End Date", endDatePicker));
 
-        // Tombol untuk menerapkan filter
-        RoundedButton applyFilterButton = new RoundedButton("Terapkan Filter");
-        applyFilterButton.setBackground(new Color(33, 150, 243));
-        applyFilterButton.setForeground(Color.WHITE);
-        applyFilterButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        applyFilterButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        // Tambahkan tombol "Terapkan Filter"
+        JButton applyButton = new JButton("Terapkan Filter");
+        applyButton.setBackground(new Color(33, 150, 243));
+        applyButton.setForeground(Color.WHITE);
+        applyButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        applyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        applyFilterButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String startDate = startDatePicker.getText();
-                String endDate = endDatePicker.getText();
+        // Tambahkan listener untuk tombol "Terapkan Filter"
+        applyButton.addActionListener(e -> {
+            String startDate = startDatePicker.getText();
+            String endDate = endDatePicker.getText();
 
-                if (startDate.isEmpty() || endDate.isEmpty()) {
-                    JOptionPane.showMessageDialog(
-                            SwingUtilities.getWindowAncestor(Pembukuan.this),
-                            "Harap pilih kedua tanggal (mulai dan selesai) untuk menerapkan filter.",
-                            "Peringatan",
-                            JOptionPane.WARNING_MESSAGE
-                    );
-                } else {
-                    refreshTable(); // Refresh tabel berdasarkan filter
-
-                    // Tutup bottom sheet
-                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(Pembukuan.this);
-                    ShowmodalBottomSheet.closeBottomSheet(parentFrame);
-                }
+            // Validasi input tanggal
+            if (startDate.isEmpty() || endDate.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Tanggal tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+
+            refreshTable(); // Refresh tabel dengan filter yang diterapkan
+            ShowmodalBottomSheet.closeBottomSheet((JFrame) SwingUtilities.getWindowAncestor(this)); // Tutup bottom sheet
         });
 
-        // Tambahkan tombol ke panel
-        filterPanel.add(Box.createVerticalStrut(20)); // Spasi antar komponen
-        filterPanel.add(applyFilterButton);
+        // Tambahkan tombol ke panel filter
+        filterPanel.add(applyButton);
 
         // Tampilkan bottom sheet
-        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-        ShowmodalBottomSheet.showBottomSheet(parentFrame, filterPanel);
+        ShowmodalBottomSheet.showBottomSheet((JFrame) SwingUtilities.getWindowAncestor(this), filterPanel);
+    }
+
+    private void createSummaryPanel() {
+        summaryPanel = new JPanel();
+        summaryPanel.setLayout(new GridLayout(1, 3, 20, 0)); // 3 cards in a row
+        summaryPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        summaryPanel.setBackground(Color.WHITE);
+
+        // Card for Total Pemasukan
+        JPanel pemasukanCard = createCard("Total Pemasukan", "Rp. 0");
+        totalPemasukanLabel = (JLabel) pemasukanCard.getComponent(1); // Get the label for updating later
+        summaryPanel.add(pemasukanCard);
+
+        // Card for Total Pengeluaran
+        JPanel pengeluaranCard = createCard("Total Pengeluaran", "Rp. 0");
+        totalPengeluaranLabel = (JLabel) pengeluaranCard.getComponent(1);
+        summaryPanel.add(pengeluaranCard);
+
+        // Card for Total Keuntungan
+        JPanel keuntunganCard = createCard("Total Keuntungan", "Rp. 0");
+        totalKeuntunganLabel = (JLabel) keuntunganCard.getComponent(1);
+        summaryPanel.add(keuntunganCard);
+
+        // Add the summary panel to the top of the main layout
+        add(summaryPanel, BorderLayout.NORTH);
+    }
+
+    private JPanel createCard(String title, String value) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true));
+        card.setBackground(Color.WHITE);
+        card.setPreferredSize(new Dimension(200, 100));
+
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setForeground(new Color(33, 150, 243));
+
+        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        valueLabel.setForeground(new Color(0, 150, 136));
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+
+        return card;
+    }
+
+    private String formatToRupiah(double amount) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        return formatter.format(amount).replace("Rp", "Rp."); // Replace default "Rp" with "Rp."
+    }
+
+    private void addDataToTable(Object[] rowData) {
+        model.addRow(rowData); // Tambahkan baris ke model tabel
+    }
+
+    private void showDetailDialog(String tanggal) {
+        JDialog detailDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Detail Transaksi - " + tanggal, Dialog.ModalityType.APPLICATION_MODAL);
+        detailDialog.setSize(600, 400);
+        detailDialog.setLayout(new BorderLayout());
+
+        DefaultTableModel detailModel = new DefaultTableModel(new String[]{"Deskripsi", "Banyak", "Jenis"}, 0);
+        JTable detailTable = new JTable(detailModel);
+
+        QueryExecutor executor = new QueryExecutor();
+
+        // Load Pemasukan
+        String queryPemasukan = "CALL all_pemasukan_harian_detail(?)";
+        List<Map<String, Object>> resultPemasukan = executor.executeSelectQuery(queryPemasukan, new Object[]{tanggal});
+        for (Map<String, Object> result : resultPemasukan) {
+            detailModel.addRow(new Object[]{
+                result.get("deskripsi"), result.get("total"), "Pemasukan"
+            });
+        }
+
+        // Load Pengeluaran
+        String queryPengeluaran = "CALL all_pengeluaran_detail(?)";
+        List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{tanggal});
+        for (Map<String, Object> result : resultPengeluaran) {
+            detailModel.addRow(new Object[]{
+                result.get("keterangan"), result.get("total_pengeluaran"), "Pengeluaran"
+            });
+        }
+
+        detailDialog.add(new JScrollPane(detailTable), BorderLayout.CENTER);
+
+        JButton closeButton = new JButton("Tutup");
+        closeButton.addActionListener(e -> detailDialog.dispose());
+        detailDialog.add(closeButton, BorderLayout.SOUTH);
+
+        detailDialog.setLocationRelativeTo(this);
+        detailDialog.setVisible(true);
     }
 }
