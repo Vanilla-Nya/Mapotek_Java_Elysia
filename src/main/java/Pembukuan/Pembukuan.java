@@ -234,19 +234,27 @@ public class Pembukuan extends JPanel {
             filePath = filePath.replace(".docx", ".rtf");
         }
 
+        // Query all transaction details
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_transaksi_detail(?, ?)";
+        List<Map<String, Object>> allDetails = executor.executeSelectQuery(query, new Object[]{startDatePicker.getText(), endDatePicker.getText()});
+
         // Create a temporary text file
         String tempFilePath = filePath.replace(".rtf", ".txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath))) {
             // Write table headers
-            writer.write("Tanggal\tTotal Pemasukan\tTotal Pengeluaran\tAksi");
+            writer.write("No\tTanggal\tDeskripsi\tJenis\tTotal");
             writer.newLine();
 
             // Write table data
-            for (int row = 0; row < model.getRowCount(); row++) {
-                writer.write(model.getValueAt(row, 0).toString() + "\t");
-                writer.write(model.getValueAt(row, 1).toString() + "\t");
-                writer.write(model.getValueAt(row, 2).toString() + "\t");
-                writer.write(model.getValueAt(row, 3).toString());
+            int no = 1;
+            for (Map<String, Object> detail : allDetails) {
+                String tanggal = detail.get("tanggal").toString();
+                String deskripsi = detail.get("deskripsi").toString();
+                String jenis = detail.get("jenis").toString();
+                double total = ((Number) detail.get("total")).doubleValue();
+
+                writer.write(no++ + "\t" + tanggal + "\t" + deskripsi + "\t" + jenis + "\t" + formatToRupiah(total));
                 writer.newLine();
             }
         }
@@ -261,63 +269,28 @@ public class Pembukuan extends JPanel {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(wordFilePath))) {
             writer.write("{\\rtf1\\ansi\\deff0");
             writer.newLine();
-            writer.write("{\\colortbl ;\\red255\\green99\\blue71;\\red34\\green139\\blue34;}");
+            writer.write("{\\colortbl ;\\red255\\green99\\blue71;\\red34\\green139\\blue34;}"); // Define colors
             writer.newLine();
-
-            double totalKeuntungan = 0.0;
 
             for (String line : lines) {
                 writer.write("\\trowd\\trgaph108\\trleft-108");
                 writer.newLine();
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx2000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx4000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx6000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx8000");
+                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx1000");
+                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx3000");
+                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx5000");
+                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx7000");
+                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx9000");
                 writer.newLine();
 
                 String[] cells = line.split("\t");
-
-                // Determine the background color based on the "Jenis" column
-                String jenis = cells[3];
-                String bgColor = "";
-                if ("Pengeluaran".equalsIgnoreCase(jenis)) {
-                    bgColor = "\\clcbpat1";  // Red background
-                } else if ("Pemasukan".equalsIgnoreCase(jenis)) {
-                    bgColor = "\\clcbpat2";  // Green background
-                }
-
-                // Apply the background color to the "Jenis" cell only
-                writer.write("\\intbl " + cells[0] + "\\cell ");
-                writer.write("\\intbl " + cells[1] + "\\cell ");
-                writer.write("\\intbl " + cells[2] + "\\cell ");
-                writer.write(bgColor + "\\intbl " + cells[3] + "\\cell ");
+                writer.write("\\intbl " + cells[0] + "\\cell "); // No
+                writer.write("\\intbl " + cells[1] + "\\cell "); // Tanggal
+                writer.write("\\intbl " + cells[2] + "\\cell "); // Deskripsi
+                writer.write("\\intbl " + cells[3] + "\\cell "); // Jenis
+                writer.write("\\intbl " + cells[4] + "\\cell "); // Total
                 writer.write("\\row");
                 writer.newLine();
-
-                // Calculate total keuntungan
-                if (!line.startsWith("Tanggal")) { // Skip header row
-                    try {
-                        double banyak = Double.parseDouble(cells[2].replace(",", ""));
-                        if ("Pemasukan".equalsIgnoreCase(cells[3])) {
-                            totalKeuntungan += banyak;
-                        } else if ("Pengeluaran".equalsIgnoreCase(cells[3])) {
-                            totalKeuntungan -= banyak;
-                        }
-                    } catch (NumberFormatException e) {
-                        // Handle the case where the number format is incorrect
-                        System.err.println("Error parsing number: " + cells[2]);
-                    }
-                }
             }
-
-            // Add summary row for total keuntungan with merged cells
-            writer.write("\\trowd\\trgaph108\\trleft-108");
-            writer.newLine();
-            writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx2000");
-            writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx8000"); // Merge cells 2, 3, 4
-            writer.newLine();
-            writer.write("\\intbl\\qc Total Keuntungan\\cell \\intbl\\qc " + decimalFormat.format(totalKeuntungan) + "\\cell \\row");
-            writer.newLine();
 
             writer.write("}");
         }

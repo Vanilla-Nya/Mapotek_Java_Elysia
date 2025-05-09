@@ -2,23 +2,13 @@
 Name: Vanilla
 User: Elysia
 ====================
-PROMAG
+CHLORAMFECORT CREAM 10 G
 Jumlah: 10
-Harga: Rp. 21000.00
-  Signa: 3 x 1 sesudah makan
+Harga: Rp. 130000.00
+  Signa: 3 x 1
 ------------------------------------------------------------
-Dettol
-Jumlah: 1
-Harga: Rp. 22000.00
-  Signa: Dipakai 3/4 tutup botol kedalam bak mandi
-------------------------------------------------------------
-OBH COMBI PLUS BATUK FLU MENTHOL 100 ML
-Jumlah: 1
-Harga: Rp. 35000.00
-  Signa: 3 x 1 jarak 10 min dengan obat yang lainya 
-------------------------------------------------------------
-Total:                                Rp. 267000.00
-Payment:                                Rp. 1000000
-Change:                               Rp. 733000.00
+Total:                               Rp. 1300000.00
+Payment:                               Rp. 10000000
+Change:                              Rp. 8700000.00
 ====================
 Thank you for your payment!
