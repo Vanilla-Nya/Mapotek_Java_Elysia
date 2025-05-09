@@ -5,8 +5,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +21,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+
+// Tambahkan import untuk JDialog
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -32,10 +36,6 @@ import Components.Dropdown;
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
 import Pengeluaran.Pengeluaran;
-
-// Tambahkan import untuk JDialog
-import javax.swing.JDialog;
-
 // Tambahkan import untuk ShowmodalBottomSheet
 import Components.ShowmodalBottomSheet;
 
@@ -239,6 +239,10 @@ public class Pembukuan extends JPanel {
         String query = "CALL all_transaksi_detail(?, ?)";
         List<Map<String, Object>> allDetails = executor.executeSelectQuery(query, new Object[]{startDatePicker.getText(), endDatePicker.getText()});
 
+        // Variables to calculate totals
+        double totalPemasukan = 0.0;
+        double totalPengeluaran = 0.0;
+
         // Create a temporary text file
         String tempFilePath = filePath.replace(".rtf", ".txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath))) {
@@ -254,49 +258,100 @@ public class Pembukuan extends JPanel {
                 String jenis = detail.get("jenis").toString();
                 double total = ((Number) detail.get("total")).doubleValue();
 
+                // Add to totals
+                if (jenis.equalsIgnoreCase("Pemasukan")) {
+                    totalPemasukan += total;
+                } else if (jenis.equalsIgnoreCase("Pengeluaran")) {
+                    totalPengeluaran += total;
+                }
+
                 writer.write(no++ + "\t" + tanggal + "\t" + deskripsi + "\t" + jenis + "\t" + formatToRupiah(total));
                 writer.newLine();
             }
+
+            // Calculate total keuntungan
+            double totalKeuntungan = totalPemasukan - totalPengeluaran;
+
+             // Write totals to the file (merge into 2 cells)
+            writer.newLine();
+            writer.write("Total Pemasukan:\t" + formatToRupiah(totalPemasukan)); // 2 cells: label and value
+            writer.newLine();
+            writer.write("Total Pengeluaran:\t" + formatToRupiah(totalPengeluaran)); // 2 cells: label and value
+            writer.newLine();
+            writer.write("Total Keuntungan:\t" + formatToRupiah(totalKeuntungan)); // 2 cells: label and value
         }
 
         // Convert the text file to a simple Word document format
         convertTextToWord(tempFilePath, filePath);
+
+        // Delete the temporary text file after conversion
+        File tempFile = new File(tempFilePath);
+        if (tempFile.exists()) {
+            boolean deleted = tempFile.delete();
+            if (deleted) {
+                System.out.println("Temporary file deleted.");
+            } else {
+                System.out.println("Failed to delete the temporary file.");
+            }
+        }
     }
 
-    private void convertTextToWord(String textFilePath, String wordFilePath) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(textFilePath));
-        DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(wordFilePath))) {
-            writer.write("{\\rtf1\\ansi\\deff0");
-            writer.newLine();
-            writer.write("{\\colortbl ;\\red255\\green99\\blue71;\\red34\\green139\\blue34;}"); // Define colors
-            writer.newLine();
+    public static void convertTextToWord(String inputFile, String outputFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
 
-            for (String line : lines) {
-                writer.write("\\trowd\\trgaph108\\trleft-108");
-                writer.newLine();
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx1000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx3000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx5000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx7000");
-                writer.write("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10\\cellx9000");
-                writer.newLine();
+        writer.write("{\\rtf1\\ansi\\deff0\n");
 
-                String[] cells = line.split("\t");
-                writer.write("\\intbl " + cells[0] + "\\cell "); // No
-                writer.write("\\intbl " + cells[1] + "\\cell "); // Tanggal
-                writer.write("\\intbl " + cells[2] + "\\cell "); // Deskripsi
-                writer.write("\\intbl " + cells[3] + "\\cell "); // Jenis
-                writer.write("\\intbl " + cells[4] + "\\cell "); // Total
-                writer.write("\\row");
-                writer.newLine();
+        // Set column widths (in twips)
+        int[] cellWidths = {1000, 3000, 6000, 8000, 10000}; // 5 columns
+
+        // Table header
+        writer.write("\\trowd\\trgaph108\\trleft-108\n");
+        for (int width : cellWidths) {
+            writer.write("\\clbrdrt\\brdrs\\clbrdrl\\brdrs\\clbrdrb\\brdrs\\clbrdrr\\brdrs\\cellx" + width + "\n");
+        }
+        writer.write("\\intbl No\\cell Tanggal\\cell Deskripsi\\cell Jenis\\cell Total\\cell\\row\n");
+
+        // Table content
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.trim().isEmpty()) continue; // ✅ Skip empty lines
+            String[] cells = line.split("\t");
+
+            if (cells.length == 2) {
+                writer.write("\\trowd\\trgaph108\\trleft-108\n");
+                writer.write(
+                    // First merged cell spans 3 columns (width 6000)
+                    "\\clbrdrt\\brdrs\\clbrdrl\\brdrs\\clbrdrb\\brdrs\\clbrdrr\\brdrs\\cellx6000" +
+                    // Second merged cell spans last 2 columns (width 4000)
+                    "\\clbrdrt\\brdrs\\clbrdrl\\brdrs\\clbrdrb\\brdrs\\clbrdrr\\brdrs\\cellx10000\n"
+                );
+
+                writer.write("\\intbl " + cells[0] + "\\cell ");
+                writer.write("\\intbl " + cells[1] + "\\cell ");
+                writer.write("\\row\n");
+            } else {
+                writer.write("\\trowd\\trgaph108\\trleft-108\n");
+                for (int width : cellWidths) {
+                    writer.write("\\clbrdrt\\brdrs\\clbrdrl\\brdrs\\clbrdrb\\brdrs\\clbrdrr\\brdrs\\cellx" + width + "\n");
+                }
+                for (String cell : cells) {
+                    writer.write("\\intbl " + cell + "\\cell ");
+                }
+                writer.write("\\row\n");
             }
-
-            writer.write("}");
         }
 
-        // Delete the temporary text file
-        Files.delete(Paths.get(textFilePath));
+        writer.write("}");
+        reader.close();
+        writer.close();
+    }
+
+    private String escapeRTF(String text) {
+        return text.replace("\\", "\\\\")
+               .replace("{", "\\{")
+               .replace("}", "\\}")
+               .replace("\t", "    "); // Replace tab with spaces
     }
 
     private JPanel createFilterComponent(String label, JComponent component) {
