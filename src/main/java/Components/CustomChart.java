@@ -2,6 +2,10 @@ package Components;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -117,5 +121,16 @@ public class CustomChart extends JPanel {
         // Example static content
         g.setColor(Color.BLACK);
         g.drawString("Income vs Outcome Chart (Progressive Animation)", getWidth() / 2 - 100, 20);
+    }
+
+    public void updateData(int[] incomeData, int[] outcomeData, String[] xLabels, String[] yLabels) {
+        // Update the chart's data fields
+        this.incomeData = incomeData;
+        this.outcomeData = outcomeData;
+        this.xLabels = xLabels;
+        this.yLabels = yLabels;
+
+        // Repaint the chart to reflect the updated data
+        repaint();
     }
 }

@@ -2,13 +2,18 @@
 Name: Vanilla
 User: Elysia
 ====================
-CHLORAMFECORT CREAM 10 G
+PROMAG
 Jumlah: 10
-Harga: Rp. 130000.00
-  Signa: 3 x 1
+Harga: Rp. 24010.00
+  Signa: 3dd1
 ------------------------------------------------------------
-Total:                               Rp. 1300000.00
-Payment:                               Rp. 10000000
-Change:                              Rp. 8700000.00
+Cefadroxill 250 mg
+Jumlah: 10
+Harga: Rp. 25000.00
+  Signa: 3dd1
+------------------------------------------------------------
+Total:                                Rp. 490100.00
+Payment:                                Rp. 1000000
+Change:                               Rp. 509900.00
 ====================
 Thank you for your payment!

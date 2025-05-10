@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 // Tambahkan import untuk JDialog
 import javax.swing.*;
@@ -28,11 +31,14 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import Components.CustomChart;
 import Components.CustomDatePicker;
 import Components.CustomPanel;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.Dropdown;
+import Components.ExpandableCard;
+import Components.PieChart;
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
 import Pengeluaran.Pengeluaran;
@@ -47,10 +53,16 @@ public class Pembukuan extends JPanel {
     private CustomTextField endDatePicker;
     private Dropdown categoryDropdown;
     private CustomDatePicker customStartDatePicker, customEndDatePicker;
+    private PieChart pieChart;
     private JPanel summaryPanel;
     private JLabel totalPemasukanLabel;
     private JLabel totalPengeluaranLabel;
     private JLabel totalKeuntunganLabel;
+    private CustomChart customChart; // Komponen CustomChart
+    private int[] incomeData; // Data pemasukan
+    private int[] outcomeData; // Data pengeluaran
+    private String[] xLabels; // Label untuk sumbu X
+    private String[] yLabels = {"0", "20", "40", "60", "80", "100"}; // Label untuk sumbu Y
 
     public Pembukuan() {
         QueryExecutor executor = new QueryExecutor();
@@ -226,6 +238,10 @@ public class Pembukuan extends JPanel {
         footerPanel.add(filterModalButton);
 
         add(footerPanel, BorderLayout.SOUTH);
+
+        // Inisialisasi array dengan ukuran default (misalnya 0)
+        incomeData = new int[0];
+        outcomeData = new int[0];
     }
 
     private void exportToWord(String filePath) throws IOException {
@@ -366,8 +382,86 @@ public class Pembukuan extends JPanel {
     public void refreshTable() {
         // Clear the existing data
         model.setRowCount(0);
-        loadData();  // Reload the data from the database
-        model.fireTableDataChanged();
+        data = new Object[0][];
+        model.setDataVector(data, new String[]{"Tanggal", "Total Pemasukan", "Total Pengeluaran", "Aksi"});
+
+        String startDate = startDatePicker.getText();
+        String endDate = endDatePicker.getText();
+
+        // Validasi input tanggal
+        if (startDate.isEmpty() || endDate.isEmpty()) {
+            incomeData = new int[0];
+            outcomeData = new int[0];
+            return; // Jika tanggal kosong, hentikan eksekusi
+        }
+
+        QueryExecutor executor = new QueryExecutor();
+        Map<String, Map<String, Double>> groupedData = new HashMap<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        double totalPemasukan = 0.0;
+        double totalPengeluaran = 0.0;
+
+        try {
+            // Query Pemasukan
+            String queryPemasukan = "CALL all_pemasukan_harian(?, ?)";
+            List<Map<String, Object>> resultPemasukan = executor.executeSelectQuery(queryPemasukan, new Object[]{startDate, endDate});
+            for (Map<String, Object> result : resultPemasukan) {
+                java.sql.Date sqlDate = (java.sql.Date) result.get("tanggal");
+                String tanggal = dateFormat.format(sqlDate);
+                double pemasukan = ((Number) result.get("total")).doubleValue();
+
+                groupedData.putIfAbsent(tanggal, new HashMap<>());
+                groupedData.get(tanggal).put("pemasukan", groupedData.get(tanggal).getOrDefault("pemasukan", 0.0) + pemasukan);
+
+                totalPemasukan += pemasukan;
+            }
+
+            // Query Pengeluaran
+            String queryPengeluaran = "CALL all_pengeluaran(?, ?)";
+            List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{startDate, endDate});
+            for (Map<String, Object> result : resultPengeluaran) {
+                java.sql.Date sqlDate = (java.sql.Date) result.get("tanggal");
+                String tanggal = dateFormat.format(sqlDate);
+                double pengeluaran = ((Number) result.get("total_pengeluaran")).doubleValue();
+
+                groupedData.putIfAbsent(tanggal, new HashMap<>());
+                groupedData.get(tanggal).put("pengeluaran", groupedData.get(tanggal).getOrDefault("pengeluaran", 0.0) + pengeluaran);
+
+                totalPengeluaran += pengeluaran;
+            }
+
+            // Populate the table
+            List<String> sortedDates = new ArrayList<>(groupedData.keySet());
+            Collections.sort(sortedDates); // Urutkan tanggal secara ascending
+
+            incomeData = new int[sortedDates.size()];
+            outcomeData = new int[sortedDates.size()];
+
+            int index = 0;
+            for (String tanggal : sortedDates) {
+                double pemasukan = groupedData.get(tanggal).getOrDefault("pemasukan", 0.0);
+                double pengeluaran = groupedData.get(tanggal).getOrDefault("pengeluaran", 0.0);
+
+                model.addRow(new Object[]{tanggal, formatToRupiah(pemasukan), formatToRupiah(pengeluaran), "Lihat Detail"});
+
+                incomeData[index] = (int) pemasukan;
+                outcomeData[index] = (int) pengeluaran;
+                index++;
+            }
+
+            // Update total labels
+            double totalKeuntungan = totalPemasukan - totalPengeluaran;
+            totalPemasukanLabel.setText(formatToRupiah(totalPemasukan));
+            totalPengeluaranLabel.setText(formatToRupiah(totalPengeluaran));
+            totalKeuntunganLabel.setText(formatToRupiah(totalKeuntungan));
+
+            // Update PieChart
+            pieChart.updateData(totalPemasukan, totalPengeluaran);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Terjadi kesalahan saat memuat data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void loadData() {
@@ -422,12 +516,19 @@ public class Pembukuan extends JPanel {
             }
 
             // Populate the table
-            for (Map.Entry<String, Map<String, Double>> entry : groupedData.entrySet()) {
-                String tanggal = entry.getKey();
-                double pemasukan = entry.getValue().getOrDefault("pemasukan", 0.0);
-                double pengeluaran = entry.getValue().getOrDefault("pengeluaran", 0.0);
+            int index = 0; // Initialize the index variable
+            for (String tanggal : groupedData.keySet()) {
+                double pemasukan = groupedData.get(tanggal).getOrDefault("pemasukan", 0.0);
+                double pengeluaran = groupedData.get(tanggal).getOrDefault("pengeluaran", 0.0);
 
+                // Tambahkan data ke tabel
                 model.addRow(new Object[]{tanggal, formatToRupiah(pemasukan), formatToRupiah(pengeluaran), "Lihat Detail"});
+
+                // Tambahkan data ke grafik
+                incomeData[index] = (int) pemasukan;
+                outcomeData[index] = (int) pengeluaran;
+                xLabels[index] = tanggal;
+                index++;
             }
 
             // Hitung total keuntungan
@@ -483,28 +584,40 @@ public class Pembukuan extends JPanel {
     }
 
     private void createSummaryPanel() {
-        summaryPanel = new JPanel();
-        summaryPanel.setLayout(new GridLayout(1, 3, 20, 0)); // 3 cards in a row
-        summaryPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        summaryPanel.setBackground(Color.WHITE);
+        // Panel untuk card summary (Total Pemasukan, Total Pengeluaran, Total Keuntungan)
+        JPanel cardPanel = new JPanel();
+        cardPanel.setLayout(new GridLayout(1, 3, 20, 0)); // 3 cards in a row
+        cardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        cardPanel.setBackground(Color.WHITE);
 
         // Card for Total Pemasukan
         JPanel pemasukanCard = createCard("Total Pemasukan", "Rp. 0");
         totalPemasukanLabel = (JLabel) pemasukanCard.getComponent(1); // Get the label for updating later
-        summaryPanel.add(pemasukanCard);
 
         // Card for Total Pengeluaran
         JPanel pengeluaranCard = createCard("Total Pengeluaran", "Rp. 0");
         totalPengeluaranLabel = (JLabel) pengeluaranCard.getComponent(1);
-        summaryPanel.add(pengeluaranCard);
 
         // Card for Total Keuntungan
         JPanel keuntunganCard = createCard("Total Keuntungan", "Rp. 0");
         totalKeuntunganLabel = (JLabel) keuntunganCard.getComponent(1);
-        summaryPanel.add(keuntunganCard);
 
-        // Add the summary panel to the top of the main layout
-        add(summaryPanel, BorderLayout.NORTH);
+        cardPanel.add(pemasukanCard);
+        cardPanel.add(pengeluaranCard);
+        cardPanel.add(keuntunganCard);
+
+        // Inisialisasi PieChart dengan data kosong
+        pieChart = new PieChart(0, 0);
+        pieChart.setPreferredSize(new Dimension(200, 200)); // Sesuaikan ukuran pie chart
+
+        // Bungkus cardPanel dengan ExpandableCard
+        ExpandableCard expandableCard = new ExpandableCard("", "", pieChart, "bottom");
+
+        // Tambahkan cardPanel ke header ExpandableCard
+        expandableCard.add(cardPanel, BorderLayout.NORTH);
+
+        // Tambahkan ExpandableCard ke layout utama
+        add(expandableCard, BorderLayout.NORTH);
     }
 
     private JPanel createCard(String title, String value) {
@@ -573,5 +686,55 @@ public class Pembukuan extends JPanel {
 
         detailDialog.setLocationRelativeTo(this);
         detailDialog.setVisible(true);
+    }
+
+    public void updateData(int[] incomeData, int[] outcomeData, String[] xLabels, String[] yLabels) {
+        this.incomeData = incomeData;
+        this.outcomeData = outcomeData;
+        this.xLabels = xLabels;
+        this.yLabels = yLabels;
+        repaint(); // Render ulang chart dengan data baru
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+    
+        // Periksa apakah array null atau kosong
+        if (incomeData == null || outcomeData == null || incomeData.length == 0 || outcomeData.length == 0) {
+            g2d.setColor(Color.BLACK);
+            g2d.drawString("Tidak ada data untuk ditampilkan", getWidth() / 2 - 50, getHeight() / 2);
+            return;
+        }
+    
+        // Hitung total
+        double totalPemasukan = Arrays.stream(incomeData).sum();
+        double totalPengeluaran = Arrays.stream(outcomeData).sum();
+        double total = totalPemasukan + totalPengeluaran;
+    
+        // Hitung sudut untuk setiap bagian
+        int pemasukanAngle = (int) Math.round((totalPemasukan / total) * 360);
+        int pengeluaranAngle = 360 - pemasukanAngle;
+    
+        // Gambar pie chart
+        int diameter = Math.min(getWidth(), getHeight()) - 40; // Diameter lingkaran (kurangi margin)
+        int x = (getWidth() - diameter) / 2;
+        int y = (getHeight() - diameter) / 2;
+    
+        // Pemasukan (warna hijau)
+        g2d.setColor(new Color(0, 150, 136));
+        g2d.fillArc(x, y, diameter, diameter, 0, pemasukanAngle);
+    
+        // Pengeluaran (warna merah)
+        g2d.setColor(new Color(244, 67, 54));
+        g2d.fillArc(x, y, diameter, diameter, pemasukanAngle, pengeluaranAngle);
+    
+        // Tambahkan label di luar lingkaran
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        int margin = 20; // Margin untuk label
+        g2d.drawString("Pemasukan", x + diameter / 4, y - margin); // Label di atas
+        g2d.drawString("Pengeluaran", x + 3 * diameter / 4 - 50, y + diameter + margin); // Label di bawah
     }
 }
