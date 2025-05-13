@@ -11,9 +11,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -29,7 +26,6 @@ import java.util.Collections;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
 
 import Components.CustomChart;
 import Components.CustomDatePicker;
@@ -37,7 +33,6 @@ import Components.CustomPanel;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.Dropdown;
-import Components.ExpandableCard;
 import Components.PieChart;
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
@@ -53,16 +48,11 @@ public class Pembukuan extends JPanel {
     private CustomTextField endDatePicker;
     private Dropdown categoryDropdown;
     private CustomDatePicker customStartDatePicker, customEndDatePicker;
-    private PieChart pieChart;
-    private JPanel summaryPanel;
     private JLabel totalPemasukanLabel;
     private JLabel totalPengeluaranLabel;
     private JLabel totalKeuntunganLabel;
-    private CustomChart customChart; // Komponen CustomChart
     private int[] incomeData; // Data pemasukan
     private int[] outcomeData; // Data pengeluaran
-    private String[] xLabels; // Label untuk sumbu X
-    private String[] yLabels = {"0", "20", "40", "60", "80", "100"}; // Label untuk sumbu Y
 
     public Pembukuan() {
         QueryExecutor executor = new QueryExecutor();
@@ -362,14 +352,7 @@ public class Pembukuan extends JPanel {
         reader.close();
         writer.close();
     }
-
-    private String escapeRTF(String text) {
-        return text.replace("\\", "\\\\")
-               .replace("{", "\\{")
-               .replace("}", "\\}")
-               .replace("\t", "    "); // Replace tab with spaces
-    }
-
+    
     private JPanel createFilterComponent(String label, JComponent component) {
         JPanel panel = new JPanel(new BorderLayout());
         JLabel jLabel = new JLabel(label);
@@ -456,9 +439,6 @@ public class Pembukuan extends JPanel {
             totalPengeluaranLabel.setText(formatToRupiah(totalPengeluaran));
             totalKeuntunganLabel.setText(formatToRupiah(totalKeuntungan));
 
-            // Update PieChart
-            pieChart.updateData(totalPemasukan, totalPengeluaran);
-
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Terjadi kesalahan saat memuat data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -513,22 +493,6 @@ public class Pembukuan extends JPanel {
 
                 // Tambahkan ke total pengeluaran
                 totalPengeluaran += pengeluaran;
-            }
-
-            // Populate the table
-            int index = 0; // Initialize the index variable
-            for (String tanggal : groupedData.keySet()) {
-                double pemasukan = groupedData.get(tanggal).getOrDefault("pemasukan", 0.0);
-                double pengeluaran = groupedData.get(tanggal).getOrDefault("pengeluaran", 0.0);
-
-                // Tambahkan data ke tabel
-                model.addRow(new Object[]{tanggal, formatToRupiah(pemasukan), formatToRupiah(pengeluaran), "Lihat Detail"});
-
-                // Tambahkan data ke grafik
-                incomeData[index] = (int) pemasukan;
-                outcomeData[index] = (int) pengeluaran;
-                xLabels[index] = tanggal;
-                index++;
             }
 
             // Hitung total keuntungan
@@ -606,18 +570,8 @@ public class Pembukuan extends JPanel {
         cardPanel.add(pengeluaranCard);
         cardPanel.add(keuntunganCard);
 
-        // Inisialisasi PieChart dengan data kosong
-        pieChart = new PieChart(0, 0);
-        pieChart.setPreferredSize(new Dimension(200, 200)); // Sesuaikan ukuran pie chart
-
-        // Bungkus cardPanel dengan ExpandableCard
-        ExpandableCard expandableCard = new ExpandableCard("", "", pieChart, "bottom");
-
-        // Tambahkan cardPanel ke header ExpandableCard
-        expandableCard.add(cardPanel, BorderLayout.NORTH);
-
-        // Tambahkan ExpandableCard ke layout utama
-        add(expandableCard, BorderLayout.NORTH);
+        // Tambahkan cardPanel langsung ke layout utama
+        add(cardPanel, BorderLayout.NORTH);
     }
 
     private JPanel createCard(String title, String value) {
@@ -644,10 +598,6 @@ public class Pembukuan extends JPanel {
     private String formatToRupiah(double amount) {
         NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
         return formatter.format(amount).replace("Rp", "Rp."); // Replace default "Rp" with "Rp."
-    }
-
-    private void addDataToTable(Object[] rowData) {
-        model.addRow(rowData); // Tambahkan baris ke model tabel
     }
 
     private void showDetailDialog(String tanggal) {
@@ -686,14 +636,6 @@ public class Pembukuan extends JPanel {
 
         detailDialog.setLocationRelativeTo(this);
         detailDialog.setVisible(true);
-    }
-
-    public void updateData(int[] incomeData, int[] outcomeData, String[] xLabels, String[] yLabels) {
-        this.incomeData = incomeData;
-        this.outcomeData = outcomeData;
-        this.xLabels = xLabels;
-        this.yLabels = yLabels;
-        repaint(); // Render ulang chart dengan data baru
     }
 
     @Override

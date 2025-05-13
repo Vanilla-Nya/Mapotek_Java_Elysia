@@ -26,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.border.Border;
@@ -130,16 +131,58 @@ public class TransaksiDiagnosa extends JFrame {
         diagnosisPanel.add(diagnosisLabel);
         diagnosisPanel.add(Box.createVerticalStrut(10));
 
-        // Multi-line diagnosis input (using JTextArea)
-        JTextArea diagnosisTextArea = new JTextArea(2, 5);
-        // Set the JTextArea border to null to remove the default border
-        diagnosisTextArea.setBorder(BorderFactory.createEmptyBorder());
-        diagnosisTextArea.setBorder(new RoundBorder(15));
-        diagnosisTextArea.setFont(new Font("Arial", Font.PLAIN, 14));
-        JScrollPane diagnosisTextAreaScroll = new JScrollPane(diagnosisTextArea);
-        diagnosisTextAreaScroll.setBorder(BorderFactory.createEmptyBorder());
-        diagnosisTextAreaScroll.setMaximumSize(new Dimension(600, 120));
-        diagnosisPanel.add(diagnosisTextAreaScroll);
+        // Tambahkan JTabbedPane untuk Diagnosis Information
+        JTabbedPane diagnosisTabbedPane = new JTabbedPane();
+
+        // Panel untuk ICDX
+        JPanel icdxPanel = new JPanel();
+        icdxPanel.setLayout(new BoxLayout(icdxPanel, BoxLayout.Y_AXIS));
+        String[] icdxColumns = {"Kode ICDX", "Deskripsi", "Aksi"};
+        DefaultTableModel icdxTableModel = new DefaultTableModel(icdxColumns, 0);
+        JTable icdxTable = new JTable(icdxTableModel);
+        JScrollPane icdxScrollPane = new JScrollPane(icdxTable);
+        icdxPanel.add(icdxScrollPane);
+
+        // Tombol Tambah untuk ICDX
+        RoundedButton addICDXButton = new RoundedButton("Tambah ICDX");
+        addICDXButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        addICDXButton.addActionListener(e -> {
+            ICDXForm icdxForm = new ICDXForm(selectedData -> {
+                // Tambahkan data ke tabel ICDX
+                icdxTableModel.addRow(new Object[]{selectedData[0], selectedData[1], "Hapus"});
+            });
+            icdxForm.setVisible(true);
+        });
+        icdxPanel.add(Box.createVerticalStrut(10));
+        icdxPanel.add(addICDXButton);
+        // Panel untuk ICDIX
+        JPanel icdixPanel = new JPanel();
+        icdixPanel.setLayout(new BoxLayout(icdixPanel, BoxLayout.Y_AXIS));
+        String[] icdixColumns = {"Kode ICDIX", "Deskripsi", "Aksi"};
+        DefaultTableModel icdixTableModel = new DefaultTableModel(icdixColumns, 0);
+        JTable icdixTable = new JTable(icdixTableModel);
+        JScrollPane icdixScrollPane = new JScrollPane(icdixTable);
+        icdixPanel.add(icdixScrollPane);
+
+        // Tombol Tambah untuk ICDIX
+        RoundedButton addICDIXButton = new RoundedButton("Tambah ICDIX");
+        addICDIXButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        addICDIXButton.addActionListener(e -> {
+            ICDIXForm icdixForm = new ICDIXForm(selectedData -> {
+                // Tambahkan data ke tabel ICDIX
+                icdixTableModel.addRow(new Object[]{selectedData[0], selectedData[1], "Hapus"});
+            });
+            icdixForm.setVisible(true);
+        });
+        icdixPanel.add(Box.createVerticalStrut(10));
+        icdixPanel.add(addICDIXButton);
+
+        // Tambahkan tab ke JTabbedPane
+        diagnosisTabbedPane.addTab("ICDX", icdxPanel);
+        diagnosisTabbedPane.addTab("ICDIX", icdixPanel);
+
+        // Tambahkan JTabbedPane ke diagnosisPanel
+        diagnosisPanel.add(diagnosisTabbedPane);
 
         // "Next" button
         nextButton = new RoundedButton("Next");
@@ -224,7 +267,6 @@ public class TransaksiDiagnosa extends JFrame {
                 // Initialize the row array with the correct size
                 UserSessionCache cache = new UserSessionCache();
                 String uuid = (String) cache.getUUID();
-                String diagnosis = diagnosisTextArea.getText();
                 int rowCount = model.getRowCount();
                 Object[][] row = new Object[rowCount][6];  // 6 columns (name, type, jumlah, harga, signa, signa)
                 boolean isDone = false;
@@ -332,7 +374,7 @@ public class TransaksiDiagnosa extends JFrame {
                             Object[] pemeriksaanParams = new Object[]{
                                 idValue, // id_detail_pemeriksaan
                                 idAntrian, // no_antrian
-                                diagnosis, // keluhan
+                                "", // keluhan
                                 null, // riwayat_penyakit
                                 total, // harga_total
                                 uuid // id_user
