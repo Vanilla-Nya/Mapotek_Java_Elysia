@@ -347,6 +347,7 @@ public class TransaksiDiagnosa extends JFrame {
                             Object[] icdxParams = new Object[]{id_pemeriksaan, kodeICDX, deskripsiICDX};
                             executor.executeInsertQuery(insertICDXQuery, icdxParams);
                         }
+                        // Test
     
                         // Simpan data ICDIX
                         for (int countIcdIX = 0; countIcdIX < icdixTableModel.getRowCount(); countIcdIX++) {
