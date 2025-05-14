@@ -4,23 +4,11 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import DataBase.QueryExecutor;
 
 public class ICDXForm extends JFrame {
 
@@ -30,7 +18,7 @@ public class ICDXForm extends JFrame {
     private OnICDXSelectedListener listener;
     private List<Object[]> cachedData = null;
     private Map<String, String> icdxDataMap = new HashMap<>();
-
+    
     public ICDXForm(OnICDXSelectedListener listener) {
         this.listener = listener;
 
@@ -76,17 +64,21 @@ public class ICDXForm extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    private void loadDataToCache() {
-        if (cachedData == null) {
-            cachedData = readICDXFromExcel("assets/ICD-10.xlsx");
-        }
-    }
-
     private void loadDataToMap() {
         if (icdxDataMap.isEmpty()) {
-            List<Object[]> data = readICDXFromExcel("assets/ICD-10.xlsx");
-            for (Object[] row : data) {
-                icdxDataMap.put((String) row[0], (String) row[1]);
+            try {
+                QueryExecutor executor = new QueryExecutor();
+                String query = "SELECT code, name_en FROM icds"; // Query untuk tabel ICDS
+                List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+                for (Map<String, Object> row : results) {
+                    String code = (String) row.get("code");
+                    String nameEn = (String) row.get("name_en");
+                    icdxDataMap.put(code, nameEn);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Gagal mengambil data dari database!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -112,34 +104,6 @@ public class ICDXForm extends JFrame {
         } else {
             JOptionPane.showMessageDialog(this, "Masukkan kata kunci untuk mencari ICDX!", "Peringatan", JOptionPane.WARNING_MESSAGE);
         }
-    }
-
-    private List<Object[]> readICDXFromExcel(String filePath) {
-        List<Object[]> results = new ArrayList<>();
-        try (InputStream fis = getClass().getClassLoader().getResourceAsStream(filePath);
-             Workbook workbook = new XSSFWorkbook(fis)) {
-    
-            // Ambil sheet pertama
-            Sheet sheet = workbook.getSheetAt(0);
-    
-            // Iterasi melalui baris (mulai dari baris kedua untuk melewati header)
-            for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue; // Lewati header
-    
-                // Ambil data dari kolom
-                Cell kodeCell = row.getCell(0);
-                Cell deskripsiCell = row.getCell(1);
-    
-                String kode = kodeCell.getStringCellValue();
-                String deskripsi = deskripsiCell.getStringCellValue();
-    
-                results.add(new Object[]{kode, deskripsi});
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal membaca file Excel!", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        return results;
     }
 
     public interface OnICDXSelectedListener {

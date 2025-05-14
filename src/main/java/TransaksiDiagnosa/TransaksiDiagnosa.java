@@ -285,6 +285,27 @@ public class TransaksiDiagnosa extends JFrame {
                     JOptionPane.showMessageDialog(this, "Harga Jasa harus berupa angka yang valid!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
+                
+                // Simpan data ICDX
+                for (int i = 0; i < icdxTableModel.getRowCount(); i++) {
+                    String kodeICDX = (String) icdxTableModel.getValueAt(i, 0);
+                    String deskripsiICDX = (String) icdxTableModel.getValueAt(i, 1);
+
+                    String insertICDXQuery = "INSERT INTO diagnosis_icdx (id_pemeriksaan, kode_icdx, deskripsi) VALUES (?, ?, ?)";
+                    Object[] icdxParams = new Object[]{id_pemeriksaan, kodeICDX, deskripsiICDX};
+                    executor.executeInsertQuery(insertICDXQuery, icdxParams);
+                }
+
+                // Simpan data ICDIX
+                for (int i = 0; i < icdixTableModel.getRowCount(); i++) {
+                    String kodeICDIX = (String) icdixTableModel.getValueAt(i, 0);
+                    String deskripsiICDIX = (String) icdixTableModel.getValueAt(i, 1);
+
+                    String insertICDIXQuery = "INSERT INTO diagnosis_icdix (id_pemeriksaan, kode_icdix, deskripsi) VALUES (?, ?, ?)";
+                    Object[] icdixParams = new Object[]{id_pemeriksaan, kodeICDIX, deskripsiICDIX};
+                    executor.executeInsertQuery(insertICDIXQuery, icdixParams);
+                }
+                
 
                 // Validasi apakah no_antrian valid
                 String checkAntrianQuery = "SELECT COUNT(*) AS count FROM antrian WHERE id_antrian = ?";
