@@ -28,7 +28,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -286,26 +285,6 @@ public class TransaksiDiagnosa extends JFrame {
                     return;
                 }
                 
-                // Simpan data ICDX
-                for (int i = 0; i < icdxTableModel.getRowCount(); i++) {
-                    String kodeICDX = (String) icdxTableModel.getValueAt(i, 0);
-                    String deskripsiICDX = (String) icdxTableModel.getValueAt(i, 1);
-
-                    String insertICDXQuery = "INSERT INTO diagnosis_icdx (id_pemeriksaan, kode_icdx, deskripsi) VALUES (?, ?, ?)";
-                    Object[] icdxParams = new Object[]{id_pemeriksaan, kodeICDX, deskripsiICDX};
-                    executor.executeInsertQuery(insertICDXQuery, icdxParams);
-                }
-
-                // Simpan data ICDIX
-                for (int i = 0; i < icdixTableModel.getRowCount(); i++) {
-                    String kodeICDIX = (String) icdixTableModel.getValueAt(i, 0);
-                    String deskripsiICDIX = (String) icdixTableModel.getValueAt(i, 1);
-
-                    String insertICDIXQuery = "INSERT INTO diagnosis_icdix (id_pemeriksaan, kode_icdix, deskripsi) VALUES (?, ?, ?)";
-                    Object[] icdixParams = new Object[]{id_pemeriksaan, kodeICDIX, deskripsiICDIX};
-                    executor.executeInsertQuery(insertICDIXQuery, icdixParams);
-                }
-                
 
                 // Validasi apakah no_antrian valid
                 String checkAntrianQuery = "SELECT COUNT(*) AS count FROM antrian WHERE id_antrian = ?";
@@ -356,6 +335,27 @@ public class TransaksiDiagnosa extends JFrame {
                             id_pemeriksaan = ((Number) idValue).intValue(); // Convert to integer safely
                         } else {
                             id_pemeriksaan = 0; // or handle as appropriate for your application
+                        }
+                        System.out.println("ID Pemeriksaan: " + id_pemeriksaan); // Debugging
+
+                        // Simpan data ICDX
+                        for (int countIcdX = 0; countIcdX < icdxTableModel.getRowCount(); countIcdX++) {
+                            String kodeICDX = (String) icdxTableModel.getValueAt(countIcdX, 0);
+                            String deskripsiICDX = (String) icdxTableModel.getValueAt(countIcdX, 1);
+    
+                            String insertICDXQuery = "INSERT INTO diagnosis_icdx (id_pemeriksaan, kode_icdx, deskripsi) VALUES (?, ?, ?)";
+                            Object[] icdxParams = new Object[]{id_pemeriksaan, kodeICDX, deskripsiICDX};
+                            executor.executeInsertQuery(insertICDXQuery, icdxParams);
+                        }
+    
+                        // Simpan data ICDIX
+                        for (int countIcdIX = 0; countIcdIX < icdixTableModel.getRowCount(); countIcdIX++) {
+                            String kodeICDIX = (String) icdixTableModel.getValueAt(countIcdIX, 0);
+                            String deskripsiICDIX = (String) icdixTableModel.getValueAt(countIcdIX, 1);
+    
+                            String insertICDIXQuery = "INSERT INTO diagnosis_icdix (id_pemeriksaan, kode_icdix, deskripsi) VALUES (?, ?, ?)";
+                            Object[] icdixParams = new Object[]{id_pemeriksaan, kodeICDIX, deskripsiICDIX};
+                            executor.executeInsertQuery(insertICDIXQuery, icdixParams);
                         }
                     }
 
