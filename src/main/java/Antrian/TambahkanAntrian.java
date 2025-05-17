@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -17,22 +18,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
 import Components.CustomTextField;
 import Components.Dropdown;
 import Components.RoundedButton;
 import Components.RoundedPanel;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Utils.TableUtils;
 
-public class TambahkanAntrian extends JFrame {
+public class TambahkanAntrian extends JPanel {
 
     private Dropdown idPasienDropdown;
     private CustomTextField namaPasienDropdown;
@@ -57,19 +61,16 @@ public class TambahkanAntrian extends JFrame {
         QueryExecutor namapasien = new QueryExecutor();
         namaPasienDropdown = new CustomTextField("Masukkan NIK Atau Nama", 0, 0, Optional.empty());
 
-        setTitle("Tambahkan Antrian");
-        setSize(400, 450);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null); // Center the window
-
         // Panel with rounded corners
         RoundedPanel mainPanel = new RoundedPanel(15, Color.WHITE);
         mainPanel.setLayout(new GridBagLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20)); // Padding around the panel
+        mainPanel.setPreferredSize(new Dimension(800, 600));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10); // Spacing between components
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTH; // Tambahkan ini agar semua komponen ke atas
 
         // Nama Pasien Dropdown
         JLabel namaPasienLabel = new JLabel("NIK / Nama / KTP :");
@@ -123,7 +124,7 @@ public class TambahkanAntrian extends JFrame {
         // Back button action
         kembaliButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                dispose(); // Close the frame
+                ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(TambahkanAntrian.this));
             }
         });
 
@@ -165,7 +166,7 @@ public class TambahkanAntrian extends JFrame {
                     antrianPasien.refreshTableData();
                 }
 
-                dispose(); // Close the TambahkanAntrian window
+                // Close the TambahkanAntrian window
             }
         });
 
@@ -183,7 +184,6 @@ public class TambahkanAntrian extends JFrame {
         JPanel patientCardPanel = new JPanel();
         patientCardPanel.setLayout(new BoxLayout(patientCardPanel, BoxLayout.Y_AXIS));
         patientCardPanel.setBorder(BorderFactory.createTitledBorder("Data Pasien"));
-        patientCardPanel.setPreferredSize(new Dimension(350, 200));
 
         // Create labels for the card data
         idPasienCardLabel = new JLabel("ID Pasien: ");
@@ -207,9 +207,15 @@ public class TambahkanAntrian extends JFrame {
         gbc.gridwidth = 2;
         mainPanel.add(patientCardPanel, gbc);
 
-        // Add main panel to frame
-        add(mainPanel);
-        setVisible(true);
+        // Tambahkan komponen "pengisi" agar konten tetap di atas
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.weighty = 1; // Komponen pengisi
+        mainPanel.add(Box.createVerticalGlue(), gbc);
+
+        // Add the mainPanel to this panel
+        setLayout(new BorderLayout());
+        add(mainPanel, BorderLayout.CENTER);
     }
 
     // Getter methods to access the text from the text fields

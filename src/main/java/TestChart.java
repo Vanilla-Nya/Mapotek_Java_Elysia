@@ -16,6 +16,7 @@ import javax.swing.JScrollPane;
 import Components.CustomChart;
 import Components.CustomTextFormField;
 import Components.ShowmodalBottomSheet;
+import Components.ShowModalCenter;
 
 public class TestChart {
     public static void main(String[] args) {
@@ -39,6 +40,10 @@ public class TestChart {
         // Add a button to show the modal bottom sheet
         JButton showModalButton = new JButton("Show Modal Bottom Sheet");
         frame.add(showModalButton, BorderLayout.SOUTH);
+
+        // Add a button to show the center modal
+        JButton showCenterModalButton = new JButton("Show Center Modal");
+        frame.add(showCenterModalButton, BorderLayout.NORTH);
 
         // Add action listener to the button
         showModalButton.addActionListener(e -> {
@@ -79,6 +84,28 @@ public class TestChart {
             scrollPane.setBorder(null); // Hilangkan border default
             scrollPane.setPreferredSize(new Dimension(frame.getWidth(), 300)); // Atur tinggi scroll
             ShowmodalBottomSheet.showBottomSheet(frame, scrollPane);
+        });
+
+        // Add action listener to the center modal button
+        showCenterModalButton.addActionListener(e -> {
+            JPanel content = new JPanel();
+            content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+            content.setBackground(Color.WHITE);
+
+            JLabel label = new JLabel("Ini modal di tengah!");
+            label.setFont(new Font("Arial", Font.BOLD, 16));
+            label.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            JButton closeButton = new JButton("Tutup");
+            closeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            closeButton.addActionListener(ev -> ShowModalCenter.closeCenterModal(frame));
+
+            content.add(Box.createRigidArea(new Dimension(0, 20)));
+            content.add(label);
+            content.add(Box.createRigidArea(new Dimension(0, 20)));
+            content.add(closeButton);
+
+            ShowModalCenter.showCenterModal(frame, content);
         });
 
         // Set JFrame properties

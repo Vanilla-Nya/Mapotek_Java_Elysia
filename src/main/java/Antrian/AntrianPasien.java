@@ -4,6 +4,7 @@ import Components.CustomDialog;
 import Components.CustomTable.CustomTable;
 import Components.Dropdown;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Transaksi.FormPembayaran;
@@ -142,7 +143,10 @@ public class AntrianPasien extends JPanel {
         tambahButton.setFont(new Font("Arial", Font.BOLD, 12));
         tambahButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                new TambahkanAntrian(model, AntrianPasien.this);  // Open Tambahkan Antrian frame
+                ShowModalCenter.showCenterModal(
+                    (JFrame) SwingUtilities.getWindowAncestor(AntrianPasien.this),
+                    new TambahkanAntrian(model, AntrianPasien.this)
+                );
             }
         });
 

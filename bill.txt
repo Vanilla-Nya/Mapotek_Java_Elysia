@@ -3,17 +3,52 @@ Name: Vanilla
 User: Elysia
 ====================
 PROMAG
+Jumlah: 2
+Harga: Rp. 13000.00
+  Signa: 3 x 1
+------------------------------------------------------------
+CHLORAMFECORT CREAM 10 G
+Jumlah: 20
+Harga: Rp. 250000.00
+  Signa: 3 x 1
+------------------------------------------------------------
+LASAL EXPECTORANT SIRUP 100 ML
+Jumlah: 1
+Harga: Rp. 200000.00
+  Signa: 3 x 1
+------------------------------------------------------------
+CHLORAMFECORT CREAM 10 G
+Jumlah: 1
+Harga: Rp. 10000.00
+  Signa: 
+------------------------------------------------------------
+PROMAG
 Jumlah: 10
 Harga: Rp. 24010.00
-  Signa: 3dd1
+  Signa: 21 x 53
 ------------------------------------------------------------
-Cefadroxill 250 mg
+PROMAG
+Jumlah: 10
+Harga: Rp. 115000.00
+  Signa: 3 x 1
+------------------------------------------------------------
+PROMAG
+Jumlah: 10
+Harga: Rp. 25000.00
+  Signa: 3 x 1
+------------------------------------------------------------
+PROMAG
+Jumlah: 10
+Harga: Rp. 25000.00
+  Signa: 3x1
+------------------------------------------------------------
+PROMAG
 Jumlah: 10
 Harga: Rp. 25000.00
   Signa: 3dd1
 ------------------------------------------------------------
-Total:                                Rp. 490100.00
-Payment:                                Rp. 1000000
-Change:                               Rp. 509900.00
+Total:                               Rp. 7376100.00
+Payment:                               Rp. 10000000
+Change:                              Rp. 2623900.00
 ====================
 Thank you for your payment!
