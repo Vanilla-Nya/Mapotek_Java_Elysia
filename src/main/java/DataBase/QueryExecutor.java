@@ -23,56 +23,39 @@ public class QueryExecutor {
 
     // Method to execute a SELECT query and return results as a List of Maps
     public List<Map<String, Object>> executeSelectQuery(String query, Object[] parameters) {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
         List<Map<String, Object>> resultList = new ArrayList<>();
-
-        try {
-            // Get the connection from the DatabaseUtil class
-            conn = DatabaseUtil.getConnection();
-
-            // Create PreparedStatement with the provided query
-            pstmt = conn.prepareStatement(query);
-
-            // Set the parameters dynamically
+    
+        try (
+            Connection conn = DatabaseUtil.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(query)
+        ) {
+            // Set parameters
             if (parameters != null) {
                 for (int i = 0; i < parameters.length; i++) {
                     pstmt.setObject(i + 1, parameters[i]);
                 }
             }
-
-            // Execute the query and get the result set
-            rs = pstmt.executeQuery();
-
-            // Get metadata (column names)
-            ResultSetMetaData metadata = rs.getMetaData();
-            int columnCount = metadata.getColumnCount();
-
-            // Process the result set into a list of maps
-            while (rs.next()) {
-                Map<String, Object> row = new HashMap<>();
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = metadata.getColumnLabel(i);
-                    Object value = rs.getObject(i);
-                    row.put(columnName, value);
+    
+            try (ResultSet rs = pstmt.executeQuery()) {
+                ResultSetMetaData metadata = rs.getMetaData();
+                int columnCount = metadata.getColumnCount();
+    
+                while (rs != null && rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metadata.getColumnLabel(i);
+                        Object value = rs.getObject(i);
+                        row.put(columnName, value);
+                    }
+                    resultList.add(row);
                 }
-                resultList.add(row);
             }
-
+    
         } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            // Close resources
-            try {
-                if (rs != null) rs.close();
-                if (pstmt != null) pstmt.close();
-            } catch (SQLException se) {
-                se.printStackTrace();
-            }
+            e.printStackTrace(); // Consider logging properly
         }
-
-        return resultList;  // Return the list of rows
+    
+        return resultList;
     }
     
     // Method to execute a UPDATE query

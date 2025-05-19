@@ -55,6 +55,7 @@ public class Drawer extends JFrame {
         BatchStatusScheduler.startScheduler();
         UserSessionCache cache = new UserSessionCache();
         String uuid = (String) cache.getUUID();
+        System.out.println("UUID: " + uuid);
         QueryExecutor executor = new QueryExecutor();
         String Query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
         Object[] userrole = new Object[]{uuid};
@@ -88,7 +89,7 @@ public class Drawer extends JFrame {
 
         // Toggle Button for Drawer Collapse/Expand
         toggleButton = new JButton("");
-        toggleButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/bars-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
+        toggleButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/bars-solid.png")).getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
         toggleButton.setFocusPainted(false);
         toggleButton.setForeground(Color.WHITE);
         toggleButton.setBackground(new Color(58, 64, 74));
@@ -143,6 +144,9 @@ public class Drawer extends JFrame {
         drawerPanel.add(absensiButton);
         drawerPanel.add(allAbsensiButton);
         drawerPanel.add(profileButton);
+
+
+        System.out.println("Role: " + role);
 
         switch (role) {
             case 1 -> {
