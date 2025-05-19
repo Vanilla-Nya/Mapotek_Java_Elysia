@@ -35,6 +35,7 @@ import Pasien.Pasien;
 import Pembukuan.Pembukuan;
 import Pemeriksaan.TablePemeriksaan;
 import User.User;
+import Profile.ProfileForm;
 
 public class Drawer extends JFrame {
 
@@ -45,7 +46,7 @@ public class Drawer extends JFrame {
     private final JLabel contentLabel;
     private boolean isDrawerCollapsed = false;
     private final JButton toggleButton;
-    private final JButton dashboardButton, pasienButton, obatButton, queueButton, pembukuanButton, pemeriksaanButton, userButton, absensiButton, allAbsensiButton;
+    private final JButton dashboardButton, pasienButton, obatButton, queueButton, pembukuanButton, pemeriksaanButton, userButton, absensiButton, allAbsensiButton, profileButton;
 
     // Single instance of Absensi class
     private Absensi absensiInstance;
@@ -104,6 +105,7 @@ public class Drawer extends JFrame {
         userButton = createDrawerButton(" Management User");
         absensiButton = createDrawerButton(" Absensi");
         allAbsensiButton = createDrawerButton(" All Absensi");
+        profileButton = createDrawerButton(" Profile");
 
         dashboardButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/house-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Dashboard
         pasienButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/hospital-user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pasien
@@ -114,6 +116,7 @@ public class Drawer extends JFrame {
         userButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Management User
         absensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Absensi
         allAbsensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for All Absensi
+        profileButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Profile
 
         // Add Action Listeners to Drawer Buttons
         dashboardButton.addActionListener(e -> showContent("Dashboard", this));
@@ -125,6 +128,7 @@ public class Drawer extends JFrame {
         userButton.addActionListener(e -> showContent("User", this));
         absensiButton.addActionListener(e -> showContent("Absensi", this));
         allAbsensiButton.addActionListener(e -> showContent("AllAbsensi", this));
+        profileButton.addActionListener(e -> showContent("Profile", this));
 
         // Add Components to Drawer
         drawerPanel.add(toggleButton);
@@ -138,6 +142,7 @@ public class Drawer extends JFrame {
         drawerPanel.add(userButton);
         drawerPanel.add(absensiButton);
         drawerPanel.add(allAbsensiButton);
+        drawerPanel.add(profileButton);
 
         switch (role) {
             case 1 -> {
@@ -234,6 +239,9 @@ public class Drawer extends JFrame {
 
         if (section.equals("Dashboard")) {
             mainPanel.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
+        } else if (section.equals("Profile")) {
+            UserSessionCache sessionCache = new UserSessionCache();
+            mainPanel.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
         } else if (section.equals("Pasien")) {
             mainPanel.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Obat")) {
@@ -278,6 +286,7 @@ public class Drawer extends JFrame {
             userButton.setText(" Management User");
             absensiButton.setText(" Absensi");
             allAbsensiButton.setText(" All Absensi");
+            profileButton.setText(" Profile");
 
         } else {
             drawerPanel.setPreferredSize(new Dimension(50, getHeight()));
@@ -292,6 +301,7 @@ public class Drawer extends JFrame {
             userButton.setText("");
             absensiButton.setText("");
             allAbsensiButton.setText("");
+            profileButton.setText("");
 
             // Optionally, set the button size if needed to fit the icons
             dashboardButton.setPreferredSize(new Dimension(40, 40));

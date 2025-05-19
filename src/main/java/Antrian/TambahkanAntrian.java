@@ -56,6 +56,9 @@ public class TambahkanAntrian extends JPanel {
     UserSessionCache cache = new UserSessionCache();
     String uuid = cache.getUUID();
 
+    private JPanel cardsPanel = new JPanel();
+    private Map<String, Object> selectedPasien = null;
+
     public TambahkanAntrian(DefaultTableModel model, AntrianPasien antrianPasien) {
         this.model = model;
         QueryExecutor namapasien = new QueryExecutor();
@@ -180,33 +183,6 @@ public class TambahkanAntrian extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(buttonPanel, gbc);
 
-        // Create a panel to display the patient card
-        JPanel patientCardPanel = new JPanel();
-        patientCardPanel.setLayout(new BoxLayout(patientCardPanel, BoxLayout.Y_AXIS));
-        patientCardPanel.setBorder(BorderFactory.createTitledBorder("Data Pasien"));
-
-        // Create labels for the card data
-        idPasienCardLabel = new JLabel("ID Pasien: ");
-        namaPasienCardLabel = new JLabel("Nama Pasien: ");
-        umurCardLabel = new JLabel("Umur: ");
-        jenisKelaminCardLabel = new JLabel("Jenis Kelamin: ");
-        alamatCardLabel = new JLabel("Alamat: ");
-        noTelpCardLabel = new JLabel("No. Telepon: ");
-
-        // Add the labels to the patient card panel
-        patientCardPanel.add(idPasienCardLabel);
-        patientCardPanel.add(namaPasienCardLabel);
-        patientCardPanel.add(umurCardLabel);
-        patientCardPanel.add(jenisKelaminCardLabel);
-        patientCardPanel.add(alamatCardLabel);
-        patientCardPanel.add(noTelpCardLabel);
-
-        // Add the patient card panel to the main panel
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        mainPanel.add(patientCardPanel, gbc);
-
         // Tambahkan komponen "pengisi" agar konten tetap di atas
         gbc.gridx = 0;
         gbc.gridy = 4;
@@ -216,44 +192,63 @@ public class TambahkanAntrian extends JPanel {
         // Add the mainPanel to this panel
         setLayout(new BorderLayout());
         add(mainPanel, BorderLayout.CENTER);
+
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        mainPanel.add(cardsPanel, gbc);
     }
 
     // Getter methods to access the text from the text fields
-    public void searchDatabase(String nik) {
+    public void searchDatabase(String keyword) {
         QueryExecutor executor = new QueryExecutor();
         String Query = """
-                       SELECT id_pasien,
-                           nik,
-                           nama AS nama_pasien,
-                           CONCAT(
-                               TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()), ' Tahun ',
-                               TIMESTAMPDIFF(MONTH, pasien.tanggal_lahir, CURDATE()) % 12, ' Bulan ',
-                               DATEDIFF(CURDATE(), DATE_ADD(pasien.tanggal_lahir, INTERVAL TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()) YEAR)) % 30, ' Hari'
-                           ) AS umur,
-                           jenis_kelamin,
-                           alamat,
-                           no_telepon AS no_telp FROM pasien WHERE nik = ? OR nama = ? OR rfid = ? LIMIT 1""";
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, new Object[]{nik, nik, nik});
+        SELECT id_pasien, nik, nama AS nama_pasien,
+            CONCAT(
+                TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()), ' Tahun ',
+                TIMESTAMPDIFF(MONTH, pasien.tanggal_lahir, CURDATE()) % 12, ' Bulan ',
+                DATEDIFF(CURDATE(), DATE_ADD(pasien.tanggal_lahir, INTERVAL TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()) YEAR)) % 30, ' Hari'
+            ) AS umur,
+            jenis_kelamin, alamat, no_telepon AS no_telp
+        FROM pasien
+        WHERE nik = ? OR nama LIKE ? OR rfid = ?
+        LIMIT 10
+    """;
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, new Object[]{
+            keyword, "%" + keyword + "%", keyword
+        });
 
-        System.out.println(results);
+        cardsPanel.removeAll();
         if (!results.isEmpty()) {
-            Map<String, Object> data = results.get(0);
-            idPasien = (int) data.get("id_pasien");
-            namaPasien = (String) data.get("nama_pasien");
-            idPasienCardLabel.setText("ID Pasien: " + data.get("id_pasien"));
-            namaPasienCardLabel.setText("Nama Pasien: " + data.get("nama_pasien"));
-            umurCardLabel.setText("Umur: " + data.get("umur"));
-            jenisKelaminCardLabel.setText("Jenis Kelamin: " + data.get("jenis_kelamin"));
-            alamatCardLabel.setText("Alamat: " + data.get("alamat"));
-            noTelpCardLabel.setText("No. Telepon: " + data.get("no_telp"));
+            for (Map<String, Object> data : results) {
+                JPanel card = new JPanel();
+                card.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+                card.add(new JLabel("ID: " + data.get("id_pasien")));
+                card.add(new JLabel("Nama: " + data.get("nama_pasien")));
+                card.add(new JLabel("Umur: " + data.get("umur")));
+                card.add(new JLabel("Alamat: " + data.get("alamat")));
+                card.add(new JLabel("No. Telp: " + data.get("no_telp")));
+
+                card.addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseClicked(java.awt.event.MouseEvent evt) {
+                        selectedPasien = data;
+                        idPasien = (int) data.get("id_pasien");
+                        // Highlight card terpilih (opsional)
+                        for (java.awt.Component comp : cardsPanel.getComponents()) {
+                            comp.setBackground(Color.WHITE);
+                        }
+                        card.setBackground(new Color(200, 230, 255));
+                    }
+                });
+                cardsPanel.add(card);
+            }
         } else {
-            idPasienCardLabel.setText("Maaf, Pasien Tidak Ditemukan");
-            namaPasienCardLabel.setText("");
-            umurCardLabel.setText("");
-            jenisKelaminCardLabel.setText("");
-            alamatCardLabel.setText("");
-            noTelpCardLabel.setText("");
+            cardsPanel.add(new JLabel("Tidak ada pasien ditemukan."));
         }
+        cardsPanel.revalidate();
+        cardsPanel.repaint();
     }
 
     public void refreshTableData() {
