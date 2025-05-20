@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -202,8 +203,11 @@ public class StockObatMenipis extends JPanel {
                     String barcode = String.valueOf(selectedObat.get("barcode"));
                     String idObat = String.valueOf(selectedObat.get("id_obat"));
 
-                    // Panggil EditObat dengan data yang sesuai
-                    new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, () -> refreshTableData());
+                    EditObat.showModalCenter(
+                        (JFrame) SwingUtilities.getWindowAncestor(this),
+                        namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat,
+                        () -> refreshTableData()
+                    );
                 } else {
                     JOptionPane.showMessageDialog(this, "Detail obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
                 }

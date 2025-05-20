@@ -1,6 +1,7 @@
 package Pasien;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -33,9 +34,9 @@ import Helpers.TypeNumberHelper;
  *
  * @author asuna
  */
-public class RegisterPasien extends JFrame {
+public class RegisterPasien extends JPanel {
 
-    private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID; // Add txtRFID
+    private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID;
     private Dropdown txtGender;
     private OnPasienAddedListener listener;
     private CustomDatePicker customDatePicker;
@@ -43,10 +44,9 @@ public class RegisterPasien extends JFrame {
     public RegisterPasien(OnPasienAddedListener listener, DefaultTableModel model) {
         this.listener = listener;
 
-        setTitle("Register Pasien");
-        setSize(450, 400);
         setLayout(new GridBagLayout());
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(450, 400)); // Tambahkan ini
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -170,8 +170,6 @@ public class RegisterPasien extends JFrame {
                             listener.onPasienAdded(isInserted.toString(), nik, name, BirthDate, gender, phone, address);
                             JOptionPane.showMessageDialog(this, "Insert Success with Name: " + name, "Success", JOptionPane.INFORMATION_MESSAGE);
                             System.out.println("Insert successful!");
-                            // Close the window after submission
-                            dispose();
                         } else {
                             JOptionPane.showMessageDialog(null, "Insert failed.", "Error", JOptionPane.ERROR_MESSAGE);
                             System.out.println("Insert failed.");
@@ -187,7 +185,11 @@ public class RegisterPasien extends JFrame {
         formPanel.add(submitButton, gbc);
 
         add(formPanel);
-        setLocationRelativeTo(null);
-        setVisible(true);
+    }
+
+    // Tambahkan static method untuk showModalCenter
+    public static void showModalCenter(JFrame parent, OnPasienAddedListener listener, DefaultTableModel model) {
+        RegisterPasien panel = new RegisterPasien(listener, model);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 }

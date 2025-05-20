@@ -1,6 +1,7 @@
 package Obat;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -31,7 +32,7 @@ import Global.UserSessionCache;
 import Helpers.OnObatAddedListener;
 import Helpers.OnObatUpdateListener;
 
-class RegisterObat extends JFrame {
+public class RegisterObat extends JPanel {
 
     private static final Logger LOGGER = Logger.getLogger(RegisterObat.class.getName());
 
@@ -42,9 +43,13 @@ class RegisterObat extends JFrame {
     private CustomDatePicker customDatePicker;
     private CustomTextField txtBarcode;
 
-    public RegisterObat(OnObatAddedListener listener, OnObatUpdateListener listenerUpdate) {
+    public RegisterObat(OnObatAddedListener listener, OnObatUpdateListener updateListener) {
         this.listener = listener;
-        this.updateListener = listenerUpdate;
+        this.updateListener = updateListener;
+        setLayout(new GridBagLayout());
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(500, 500)); // Tambahkan ini
+
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat()";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
@@ -61,11 +66,6 @@ class RegisterObat extends JFrame {
         // Convert the Set back to a List if needed (optional step)
         List<String> jenisObatList = new ArrayList<>(uniqueJenisObatSet);
         LOGGER.info("Unique jenisObatList: " + jenisObatList);
-
-        setTitle("Tambah Obat");
-        setSize(500, 500);
-        setLocationRelativeTo(null);
-        setLayout(new GridBagLayout());
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -259,10 +259,10 @@ class RegisterObat extends JFrame {
                         }
                     }
                     // Close the form after submission
-                    dispose();
+                    // dispose();
                 } else {
                     JOptionPane.showMessageDialog(null, "Data Obat Gagal Simpan, User Belum Login", "Error", JOptionPane.ERROR_MESSAGE);
-                    dispose();
+                    // dispose();
                 }
             }
         });
@@ -270,8 +270,11 @@ class RegisterObat extends JFrame {
 
         // Add form panel to main frame
         add(formPanel);
+    }
 
-        setLocationRelativeTo(null);
-        setVisible(true);
+    // Tambahkan static method untuk showModalCenter
+    public static void showModalCenter(JFrame parent, OnObatAddedListener listener, OnObatUpdateListener updateListener) {
+        RegisterObat panel = new RegisterObat(listener, updateListener);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 }

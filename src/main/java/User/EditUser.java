@@ -16,7 +16,7 @@ import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import java.util.Map;
 
-public class EditUser extends JFrame {
+public class EditUser extends JPanel {
 
     private CustomTextField txtName, txtphoneNum, txtAddress, txtRFID;
     private Dropdown cbGender, txtRole;
@@ -48,10 +48,9 @@ public class EditUser extends JFrame {
         
         this.listener = listener;
 
-        setTitle("Edit Data User");
-        setSize(450, 500);  // Increased size to accommodate RFID field
         setLayout(new GridBagLayout());
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(450, 500)); // Tambahkan ini
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -168,13 +167,13 @@ public class EditUser extends JFrame {
                         if (listener != null) {
                             listener.onUserUpdated(updatedName, updateRole, updatedGender, updatedPhone, updatedAddress, updatedRFID);
                         }
-                        dispose(); // Close the window
+                        Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(EditUser.this));
                     } else {
                         JOptionPane.showMessageDialog(EditUser.this, "Failed to update user data.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     JOptionPane.showMessageDialog(EditUser.this, "Failed to Edit User, User is Not Login", "Error", JOptionPane.ERROR_MESSAGE);
-                    dispose();
+                    Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(EditUser.this));
                 }
             }
         });
@@ -190,8 +189,12 @@ public class EditUser extends JFrame {
         txtphoneNum.setText(phone);
         txtAddress.setText(address);
         txtRFID.setText(rfid);
-        setLocationRelativeTo(null);
-        setVisible(true);
+    }
+
+    // Tambahkan static method untuk showModalCenter
+    public static void showModalCenter(JFrame parent, String userId, OnUserUpdatedListener listener) {
+        EditUser panel = new EditUser(userId, listener);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 
     // Listener interface for updating the user data

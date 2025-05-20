@@ -1,8 +1,7 @@
 package Components;
 
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.Timer;
 
@@ -48,22 +47,16 @@ public class ShowModalCenter {
         modalPanel.setBackground(Color.WHITE);
 
         modalPanel.add(content);
-
-        // Pastikan layout dan ukuran sudah benar
-        modalPanel.doLayout();
-        modalPanel.validate();
         modalPanel.setSize(modalPanel.getPreferredSize());
-
         int x = (frame.getWidth() - modalPanel.getWidth()) / 2;
         int y = (frame.getHeight() - modalPanel.getHeight()) / 2;
         modalPanel.setLocation(x, y);
-        modalPanel.setVisible(true);
+        modalPanel.setAlpha(0f);
+        modalPanel.setVisible(false);
 
-        // Panel glassPane gelap
         JPanel glassPane = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
                 g.setColor(new Color(0, 0, 0, 150));
                 g.fillRect(0, 0, getWidth(), getHeight());
             }
@@ -72,8 +65,8 @@ public class ShowModalCenter {
         glassPane.setSize(frame.getSize());
         glassPane.setLocation(0, 0);
         glassPane.setVisible(true);
-
-        // Tutup modal jika klik di luar modal
+        glassPane.addMouseListener(new MouseAdapter() {});
+        glassPane.addMouseMotionListener(new MouseMotionAdapter() {});
         glassPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -83,32 +76,36 @@ public class ShowModalCenter {
                 }
             }
         });
+        frame.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                glassPane.setSize(frame.getSize());
+            }
+        });
 
-        // LayeredPane
         JLayeredPane layeredPane = frame.getLayeredPane();
         layeredPane.add(glassPane, JLayeredPane.MODAL_LAYER);
-
-        // Posisikan modal di tengah (setelah modalPanel sudah tahu ukurannya)
-        modalPanel.setSize(modalPanel.getPreferredSize());
-        x = (frame.getWidth() - modalPanel.getWidth()) / 2;
-        y = (frame.getHeight() - modalPanel.getHeight()) / 2;
-        modalPanel.setLocation(x, y);
-        modalPanel.setVisible(true);
-
         layeredPane.add(modalPanel, JLayeredPane.POPUP_LAYER);
 
-        // Fade-in animasi
-        Timer timer = new Timer(10, null);
-        timer.addActionListener(e -> {
-            float alpha = modalPanel.getAlpha() + 0.05f;
-            if (alpha >= 1f) {
-                alpha = 1f;
-                timer.stop();
-            }
-            modalPanel.setAlpha(alpha);
+        layeredPane.revalidate();
+        layeredPane.repaint();
+
+        Timer showTimer = new Timer(30, evt -> {
+            modalPanel.setVisible(true);
+            modalPanel.requestFocusInWindow();
+            Timer timer = new Timer(10, null);
+            timer.addActionListener(e -> {
+                float alpha = modalPanel.getAlpha();
+                if (alpha < 1f) {
+                    modalPanel.setAlpha(Math.min(1f, alpha + 0.08f));
+                } else {
+                    timer.stop();
+                }
+            });
+            timer.start();
         });
-        modalPanel.setAlpha(0f);
-        timer.start();
+        showTimer.setRepeats(false);
+        showTimer.start();
 
         currentModal = modalPanel;
         return modalPanel;

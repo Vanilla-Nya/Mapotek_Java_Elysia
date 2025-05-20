@@ -2,6 +2,7 @@ package Obat;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -36,7 +37,7 @@ import Components.Dropdown;
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
 
-public class EditObat extends JFrame {
+public class EditObat extends JPanel {
 
     private static final Logger LOGGER = Logger.getLogger(EditObat.class.getName());
 
@@ -59,10 +60,9 @@ public class EditObat extends JFrame {
             return;
         }
 
-        setTitle("Edit Obat");
-        setSize(1280, 720);
         setLayout(new BorderLayout());
-        setLocationRelativeTo(null);
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(1000, 650)); // Tambahkan ini
 
         this.table = table;
         this.row = row;
@@ -239,6 +239,7 @@ public class EditObat extends JFrame {
 
         // Add the form panel to the main layout
         add(formPanel, BorderLayout.NORTH);
+        add(new JScrollPane(tableObatMasuk), BorderLayout.CENTER);
 
         // Create the table for "Obat Masuk"
         String[] columns = {"Nama Obat", "Stock", "Dibuat", "Expired", "Harga Beli", "Harga Jual", "Status", "AKSI"}; // Include "AKSI" column
@@ -276,7 +277,6 @@ public class EditObat extends JFrame {
         // Add the table to the main layout
         add(new JScrollPane(tableObatMasuk), BorderLayout.CENTER);
 
-        setLocationRelativeTo(null);
         setVisible(true);
     }
 
@@ -439,6 +439,11 @@ public class EditObat extends JFrame {
         } catch (NumberFormatException e) {
             return "Rp 0";
         }
+    }
+
+    public static void showModalCenter(JFrame parent, String namaObat, String jenisObat, String stock, String barcode, JTable table, int row, String idObat, Runnable refreshCallback) {
+        EditObat panel = new EditObat(namaObat, jenisObat, stock, barcode, table, row, idObat, refreshCallback);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 
     public static void main(String[] args) {

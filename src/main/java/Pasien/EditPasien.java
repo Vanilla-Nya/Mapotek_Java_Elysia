@@ -1,6 +1,7 @@
 package Pasien;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -29,7 +30,7 @@ import Helpers.TypeNumberHelper;
 /**
  *
  */
-public class EditPasien extends JFrame {
+public class EditPasien extends JPanel { // Ubah dari JFrame ke JPanel
 
     private CustomTextField txtnik, txtNamaPasien, txtUmur, txtNoTelp, txtAlamat, txtRFID;
     private Dropdown cbJenisKelamin;
@@ -39,10 +40,9 @@ public class EditPasien extends JFrame {
     public EditPasien(String id, String nik, String name, String age, String gender, String phone, String address, String rfid, OnPasienUpdatedListener listener) {
         this.listener = listener;
 
-        setTitle("Edit Data Pasien");
-        setSize(450, 450);  // Increased size to accommodate RFID field
         setLayout(new GridBagLayout());
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(500, 500)); // <-- Tambahkan ini
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -157,8 +157,6 @@ public class EditPasien extends JFrame {
                     listener.onPasienUpdated(UpdateNIK, updatedName, BirthDate, updatedGender, updatedPhone, updatedAddress, updatedRFID);
                     JOptionPane.showMessageDialog(this, "Update Success", "Success", JOptionPane.INFORMATION_MESSAGE);
                     System.out.println("Update successful!");
-                    // Close the window after submission
-                    dispose();
                 } else {
                     JOptionPane.showMessageDialog(null, "Update failed.", "Error", JOptionPane.ERROR_MESSAGE);
                     System.out.println("Update failed.");
@@ -194,8 +192,12 @@ public class EditPasien extends JFrame {
         txtAlamat.setText(address);
         txtRFID.setText(rfid);
 
-        setLocationRelativeTo(null);
-        setVisible(true);
+        // Tambahkan static method untuk showModalCenter
+    }
+
+    public static void showModalCenter(JFrame parent, String id, String nik, String name, String age, String gender, String phone, String address, String rfid, OnPasienUpdatedListener listener) {
+        EditPasien panel = new EditPasien(id, nik, name, age, gender, phone, address, rfid, listener);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 
     // Listener interface for updating the pasien data

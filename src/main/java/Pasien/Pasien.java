@@ -177,7 +177,13 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         addButton.setForeground(Color.WHITE);
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
         addButton.setPreferredSize(new Dimension(150, 40));
-        addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> new RegisterPasien(Pasien.this, model).setVisible(true)));
+        addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> {
+            RegisterPasien.showModalCenter(
+                (JFrame) SwingUtilities.getWindowAncestor(addButton),
+                Pasien.this,
+                model
+            );
+        }));
 
         // Search field with button (left side)
         CustomTextField searchField = new CustomTextField("Cari Pasien", 20, 30, Optional.empty());
@@ -387,7 +393,11 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
                         String rfid = (String) model.getValueAt(row, 7);
 
                         SwingUtilities.invokeLater(() -> {
-                            new EditPasien(id, nik, name, age, gender, phone, address, rfid, Pasien.this);
+                            EditPasien.showModalCenter(
+                            (JFrame) SwingUtilities.getWindowAncestor(editButton),
+                            id, nik, name, age, gender, phone, address, rfid,
+                            Pasien.this
+                        );
                         });
                     }
                 }

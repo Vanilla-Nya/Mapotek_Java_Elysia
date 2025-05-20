@@ -21,6 +21,7 @@ import java.util.Optional;
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -136,7 +137,13 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         addButton.setForeground(Color.WHITE);
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
         addButton.setPreferredSize(new Dimension(150, 40));
-        addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> new RegisterObat(Obat.this, Obat.this).setVisible(true)));
+        addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> {
+            RegisterObat.showModalCenter(
+                (JFrame) SwingUtilities.getWindowAncestor(addButton),
+                Obat.this,
+                Obat.this
+            );
+        }));
 
         // Search field with button (left side)
         CustomTextField searchField = new CustomTextField("Cari Obat", 20, 30, Optional.empty());
@@ -254,7 +261,11 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 String barcode = String.valueOf(obatTable.getValueAt(selectedRow, 1));
                 String idObat = String.valueOf(fullData[selectedRow][1]);
 
-                new EditObat(namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat, () -> refreshTableData());
+                EditObat.showModalCenter(
+                    (JFrame) SwingUtilities.getWindowAncestor(this),
+                    namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat,
+                    () -> refreshTableData()
+                );
             }
         });
 

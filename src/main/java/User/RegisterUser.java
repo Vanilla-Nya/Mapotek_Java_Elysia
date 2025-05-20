@@ -18,7 +18,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
-public class RegisterUser extends JFrame {
+public class RegisterUser extends JPanel {
 
     private CustomTextField txtName, txtAddress, txtPhone, txtPassword, txtRFID;
     private Dropdown txtRole, txtGender;
@@ -28,10 +28,9 @@ public class RegisterUser extends JFrame {
     public RegisterUser(OnUserAddedListener listener, DefaultTableModel model) {
         this.listener = listener;
 
-        setTitle("Tambahkan User");
-        setSize(450, 500);  // Increased size to accommodate RFID field
         setLayout(new GridBagLayout());
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(450, 500)); // Tambahkan ini
 
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -166,7 +165,7 @@ public class RegisterUser extends JFrame {
                             if (listener != null) {
                                 listener.onUserAdded(userId, role, name, gender, address, phone);
                             }
-                            dispose(); // Close the window after successful submission
+                            Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterUser.this));
                         } else {
                             JOptionPane.showMessageDialog(RegisterUser.this, "Failed to assign role to user.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
@@ -175,7 +174,7 @@ public class RegisterUser extends JFrame {
                     }
                 } else {
                     JOptionPane.showMessageDialog(RegisterUser.this, "Failed to Create User, User is Not Login", "Error", JOptionPane.ERROR_MESSAGE);
-                    dispose();
+                    Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterUser.this));
                 }
             }
         });
@@ -183,8 +182,10 @@ public class RegisterUser extends JFrame {
 
         // Add form panel to main frame
         add(formPanel);
+    }
 
-        setLocationRelativeTo(null);
-        setVisible(true);
+    public static void showModalCenter(JFrame parent, OnUserAddedListener listener, DefaultTableModel model) {
+        RegisterUser panel = new RegisterUser(listener, model);
+        Components.ShowModalCenter.showCenterModal(parent, panel);
     }
 }

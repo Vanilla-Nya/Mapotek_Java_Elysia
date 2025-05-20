@@ -114,12 +114,15 @@ public class User extends JFrame {
         addButton.setForeground(Color.WHITE);
         addButton.setFont(new Font("Arial", Font.BOLD, 14));
         addButton.setPreferredSize(new Dimension(150, 40));
-        addButton.addActionListener(e -> new RegisterUser(
+        addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> {
+            RegisterUser.showModalCenter(
+                (JFrame) SwingUtilities.getWindowAncestor(addButton),
                 (id, role, name, gender, address, phone) -> {
                     model.addRow(new Object[]{model.getRowCount() + 1, id, role, name, gender, address, phone, ""});
                 },
                 model
-        ).setVisible(true));
+            );
+        }));
 
         // Search field with button (left side)
         CustomTextField searchField = new CustomTextField("Cari User", 20, 30, Optional.empty());
@@ -378,8 +381,10 @@ public class User extends JFrame {
         }
 
         private void editUser(int row) {
-            // Open the EditUser window and pass the data for editing
-            new EditUser(
+            // Stop cell editing sebelum modal muncul (sudah dilakukan di action listener)
+            SwingUtilities.invokeLater(() -> {
+                EditUser.showModalCenter(
+                    (JFrame) SwingUtilities.getWindowAncestor(userTable),
                     (String) model.getValueAt(row, 1),
                     (updatedName, updatedRole, jenis_kelamin, updatedPhone, updatedAddress, updatedRFID) -> {
                         // Update the table with the updated values
@@ -390,7 +395,8 @@ public class User extends JFrame {
                         model.setValueAt(updatedPhone, row, 6);
                         model.setValueAt(updatedRFID, row, 7); // Assuming RFID is added to the table model
                     }
-            ).setVisible(true);
+                );
+            });
         }
 
         private void deleteUser(int row) {
