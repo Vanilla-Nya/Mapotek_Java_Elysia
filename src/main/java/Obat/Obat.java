@@ -34,6 +34,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
+import Components.CustomCard;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedButton;
@@ -56,7 +57,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
     public Obat() {
         // Frame setup
         setLayout(new BorderLayout());
-        setSize(800, 600);
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_obat()";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
@@ -100,13 +100,14 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         JPanel topPanel = createTopPanel();
 
         // Data Panel (Displays selected obat details)
-        RoundedPanel dataPanel = createDataPanel();
+        CustomCard dataPanel = createDataPanel();
 
         // Table Panel (Displays list of obats)
         JScrollPane tableScrollPane = createTablePanel();
 
         // Main Panel combining Data and Table Panels
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE); // <-- Tambahkan ini
         mainPanel.add(dataPanel, BorderLayout.NORTH);
         mainPanel.add(tableScrollPane, BorderLayout.CENTER);
 
@@ -226,10 +227,10 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         return topPanel;
     }
 
-    private RoundedPanel createDataPanel() {
-        RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
-        dataPanel.setLayout(new GridLayout(6, 2, 10, 10));
-        dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private CustomCard createDataPanel() {
+        JPanel dataPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        dataPanel.setOpaque(false);
+        dataPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Create Labels for data
         hargaLabel = createDataLabel("HARGA : ");
@@ -247,8 +248,13 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         dataPanel.add(stockLabel);
         dataPanel.add(new JLabel(""));
 
-        // Add "EDIT" and "HAPUS" buttons
-        JButton editButton = new RoundedButton("EDIT");
+        // Baris terakhir: tombol di kanan bawah
+        dataPanel.add(new JLabel("")); // Kolom kiri kosong
+
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonGroup.setOpaque(false);
+
+        JButton editButton = new RoundedButton("EDIT", 15);
         editButton.setBackground(new Color(255, 153, 51));
         editButton.setForeground(Color.WHITE);
         editButton.setFocusPainted(false);
@@ -266,10 +272,12 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                     namaObat, jenisObat, stock, barcode, obatTable, selectedRow, idObat,
                     () -> refreshTableData()
                 );
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih data obat terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
             }
         });
 
-        JButton hapusButton = new RoundedButton("HAPUS");
+        JButton hapusButton = new RoundedButton("HAPUS", 15);
         hapusButton.setBackground(new Color(255, 51, 51));
         hapusButton.setForeground(Color.WHITE);
         hapusButton.setFocusPainted(false);
@@ -297,14 +305,16 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                         ex.printStackTrace();
                     }
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih data obat terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
             }
         });
 
-        // Add buttons to the panel
-        dataPanel.add(editButton);
-        dataPanel.add(hapusButton);
+        buttonGroup.add(editButton);
+        buttonGroup.add(hapusButton);
+        dataPanel.add(buttonGroup); // Kolom kanan bawah
 
-        return dataPanel;
+        return new CustomCard("Detail Obat", dataPanel);
     }
 
     private JScrollPane createTablePanel() {
@@ -334,7 +344,16 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         setTableColumnWidths(obatTable);
 
         // Scroll pane for the table
-        return new JScrollPane(obatTable);
+        JScrollPane scrollPane = new JScrollPane(obatTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBackground(Color.WHITE);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+        // Tambahkan ini agar tinggi area tabel tetap dan scroll aktif jika data banyak
+        scrollPane.setPreferredSize(new Dimension(0, 300));
+
+        return scrollPane;
     }
 
     private JLabel createDataLabel(String text) {

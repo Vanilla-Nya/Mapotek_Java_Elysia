@@ -10,6 +10,7 @@ public class RoundedButton extends JButton {
 
     private Color borderColor = new Color(0, 150, 136); // Default border color
     private int borderThickness = 2; // Default border thickness
+    private int cornerRadius = 30; // Default corner radius
 
     public RoundedButton(String text) {
         super(text);
@@ -20,20 +21,26 @@ public class RoundedButton extends JButton {
         setOpaque(false); // Make it opaque
     }
 
+    // Tambahkan constructor baru untuk custom corner radius
+    public RoundedButton(String text, int cornerRadius) {
+        this(text);
+        this.cornerRadius = cornerRadius;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         // Draw the rounded rectangle background
         g.setColor(getBackground());
-        g.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30); // Draw rounded rectangle
+        g.fillRoundRect(0, 0, getWidth(), getHeight(), cornerRadius, cornerRadius); // Draw rounded rectangle
 
         // Draw the button text
         super.paintComponent(g);
 
         // Draw the border
         g.setColor(borderColor);
-        g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 30, 30); // Draw rounded border
+        g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius); // Draw rounded border
     }
 
     @Override
@@ -50,5 +57,10 @@ public class RoundedButton extends JButton {
     public void setBorderThickness(int thickness) {
         this.borderThickness = thickness;
         repaint(); // Repaint to apply the new border thickness
+    }
+
+    public void setCornerRadius(int radius) {
+        this.cornerRadius = radius;
+        repaint();
     }
 }
