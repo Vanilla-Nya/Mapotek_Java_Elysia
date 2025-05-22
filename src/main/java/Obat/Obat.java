@@ -93,11 +93,14 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         setLayout(new BorderLayout());
 
-        // Header Panel (Title)
-        JPanel headerPanel = createHeaderPanel();
-
         // Top Panel (Search and Add Buttons)
         JPanel topPanel = createTopPanel();
+
+        // Gabungkan headerPanel dan topPanel ke dalam satu panel
+        JPanel northPanel = new JPanel();
+        northPanel.setLayout(new BorderLayout());
+        northPanel.setBackground(Color.WHITE);
+        northPanel.add(topPanel, BorderLayout.CENTER);
 
         // Data Panel (Displays selected obat details)
         CustomCard dataPanel = createDataPanel();
@@ -107,24 +110,15 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         // Main Panel combining Data and Table Panels
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(Color.WHITE); // <-- Tambahkan ini
+        mainPanel.setBackground(Color.WHITE);
+        // Tambahkan padding di sini
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 20)); // padding bawah & kanan
         mainPanel.add(dataPanel, BorderLayout.NORTH);
         mainPanel.add(tableScrollPane, BorderLayout.CENTER);
 
         // Add components to the frame
-        add(headerPanel, BorderLayout.NORTH);
-        add(topPanel, BorderLayout.NORTH);
+        add(northPanel, BorderLayout.NORTH);
         add(mainPanel, BorderLayout.CENTER);
-    }
-
-    private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        JLabel titleLabel = new JLabel("OBAT");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-        return headerPanel;
     }
 
     private JPanel createTopPanel() {
@@ -314,7 +308,7 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
         buttonGroup.add(hapusButton);
         dataPanel.add(buttonGroup); // Kolom kanan bawah
 
-        return new CustomCard("Detail Obat", dataPanel);
+        return new CustomCard("DETAIL OBAT", dataPanel);
     }
 
     private JScrollPane createTablePanel() {
@@ -345,13 +339,11 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         // Scroll pane for the table
         JScrollPane scrollPane = new JScrollPane(obatTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        // Tambahkan padding atas agar ada jarak antara card dan tabel
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0)); // 20px jarak atas
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setBackground(Color.WHITE);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-        // Tambahkan ini agar tinggi area tabel tetap dan scroll aktif jika data banyak
-        scrollPane.setPreferredSize(new Dimension(0, 300));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         return scrollPane;
     }

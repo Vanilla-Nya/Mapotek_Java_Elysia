@@ -195,6 +195,7 @@ public class Drawer extends JFrame {
         contentLabel.setFont(new Font("Arial", Font.BOLD, 24));
         mainPanel.setBorder(new EmptyBorder(5, 5, 5, 5)); // 20px padding top/bottom, 30px left/right
         mainPanel.add(contentLabel, BorderLayout.CENTER);
+        mainPanel.setPreferredSize(new Dimension(1280 - 250, 720)); // 250 = lebar drawer
 
         // Add Drawer and Main Panel to Frame
         add(customTitleBar, BorderLayout.PAGE_START);

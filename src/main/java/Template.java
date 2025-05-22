@@ -7,35 +7,35 @@ import java.awt.Font;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 
 import Components.CustomChart;
+import Components.CustomTabbedPane;
 import Components.CustomTextFormField;
-import Components.ShowmodalBottomSheet;
+import Components.ExpandableCard;
+import Components.PieChart;
 import Components.ShowModalCenter;
+import Components.ShowmodalBottomSheet;
 
-public class TestChart {
+public class Template {
     public static void main(String[] args) {
         // Create a JFrame to hold the CustomChart
         JFrame frame = new JFrame("Income vs Outcome Chart");
 
-        // Example data for income and outcome
+        // Data untuk chart
         int[] incomeData = {30, 70, 50, 90, 60};
         int[] outcomeData = {20, 90, 40, 80, 70};
-
-        // Custom labels for the x-axis and y-axis
         String[] xLabels = {"Jan", "Feb", "Mar", "Apr", "May"};
         String[] yLabels = {"0", "20", "40", "60", "80", "100"};
 
-        // Create an instance of CustomChart with data and labels
         CustomChart chart = new CustomChart(incomeData, outcomeData, xLabels, yLabels);
-
-        // Add the CustomChart to the JFrame
-        frame.add(chart, BorderLayout.CENTER);
+        PieChart pieChart = new PieChart(300, 200);
 
         // Add a button to show the modal bottom sheet
         JButton showModalButton = new JButton("Show Modal Bottom Sheet");
@@ -44,6 +44,12 @@ public class TestChart {
         // Add a button to show the center modal
         JButton showCenterModalButton = new JButton("Show Center Modal");
         frame.add(showCenterModalButton, BorderLayout.NORTH);
+
+        // Misal di Template.java
+        String[] titles = {"Chart", "Pie Chart"};
+        JComponent[] contents = {chart, pieChart};
+        CustomTabbedPane tabbedPane = new CustomTabbedPane(titles, contents);
+        frame.add(tabbedPane, BorderLayout.CENTER);
 
         // Add action listener to the button
         showModalButton.addActionListener(e -> {
@@ -96,12 +102,24 @@ public class TestChart {
             label.setFont(new Font("Arial", Font.BOLD, 16));
             label.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+            // Tambahkan ExpandableCard
+            JPanel expandableContent = new JPanel();
+            expandableContent.setBackground(new Color(240, 240, 240));
+            expandableContent.add(new JLabel("Isi konten expandable di sini..."));
+
+            ExpandableCard expandableCard = new ExpandableCard(
+                "Expandable Card", "123", expandableContent, "bottom"
+            );
+            expandableCard.setAlignmentX(Component.CENTER_ALIGNMENT);
+
             JButton closeButton = new JButton("Tutup");
             closeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
             closeButton.addActionListener(ev -> ShowModalCenter.closeCenterModal(frame));
 
             content.add(Box.createRigidArea(new Dimension(0, 20)));
             content.add(label);
+            content.add(Box.createRigidArea(new Dimension(0, 20)));
+            content.add(expandableCard); // Tambahkan di sini
             content.add(Box.createRigidArea(new Dimension(0, 20)));
             content.add(closeButton);
 
@@ -112,5 +130,10 @@ public class TestChart {
         frame.setSize(600, 400); // Set the size of the window
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Close the app on exit
         frame.setVisible(true); // Make the window visible
+
+        SwingUtilities.invokeLater(() -> {
+            tabbedPane.setContentAnimated(0);
+            tabbedPane.highlightButton(0);
+        });
     }
 }

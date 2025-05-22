@@ -27,6 +27,7 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
+import Components.CustomCard;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedButton;
@@ -83,7 +84,7 @@ public class StockObatMenipis extends JPanel {
         JPanel topPanel = createTopPanel();
 
         // Data Panel (Displays selected obat details)
-        RoundedPanel dataPanel = createDataPanel();
+        CustomCard dataPanel = createDataPanel();
 
         // Table Panel (Displays list of obats)
         JScrollPane tableScrollPane = createTablePanel();
@@ -163,17 +164,16 @@ public class StockObatMenipis extends JPanel {
         return topPanel;
     }
 
-    private RoundedPanel createDataPanel() {
-        RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
-        dataPanel.setLayout(new GridLayout(6, 2, 10, 10));
-        dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private CustomCard createDataPanel() {
+        JPanel dataPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        dataPanel.setOpaque(false);
+        dataPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Create Labels for data
+        // Label
         namaObatLabel = createDataLabel("NAMA OBAT : ");
         stockLabel = createDataLabel("STOCK : ");
         jenisObatLabel = createDataLabel("JENIS OBAT : ");
 
-        // Add labels to the data panel
         dataPanel.add(namaObatLabel);
         dataPanel.add(new JLabel(""));
         dataPanel.add(jenisObatLabel);
@@ -181,8 +181,13 @@ public class StockObatMenipis extends JPanel {
         dataPanel.add(stockLabel);
         dataPanel.add(new JLabel(""));
 
-        // Add "EDIT" and "HAPUS" buttons
-        JButton editButton = new RoundedButton("EDIT");
+        // Baris terakhir: tombol di kanan bawah
+        dataPanel.add(new JLabel("")); // Kolom kiri kosong
+
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonGroup.setOpaque(false);
+
+        JButton editButton = new RoundedButton("EDIT", 15);
         editButton.setBackground(new Color(255, 153, 51));
         editButton.setForeground(Color.WHITE);
         editButton.setFocusPainted(false);
@@ -214,7 +219,7 @@ public class StockObatMenipis extends JPanel {
             }
         });
 
-        JButton hapusButton = new RoundedButton("HAPUS");
+        JButton hapusButton = new RoundedButton("HAPUS", 15);
         hapusButton.setBackground(new Color(255, 51, 51));
         hapusButton.setForeground(Color.WHITE);
         hapusButton.setFocusPainted(false);
@@ -232,11 +237,11 @@ public class StockObatMenipis extends JPanel {
             }
         });
 
-        // Add buttons to the panel
-        dataPanel.add(editButton);
-        dataPanel.add(hapusButton);
+        buttonGroup.add(editButton);
+        buttonGroup.add(hapusButton);
+        dataPanel.add(buttonGroup); // Kolom kanan bawah
 
-        return dataPanel;
+        return new CustomCard("DETAIL OBAT", dataPanel);
     }
 
      public void refreshTableData() {
@@ -297,7 +302,12 @@ public class StockObatMenipis extends JPanel {
         setTableColumnWidths(obatTable);
 
         // Scroll pane for the table
-        return new JScrollPane(obatTable);
+        JScrollPane scrollPane = new JScrollPane(obatTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0)); // 20px jarak atas
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBackground(Color.WHITE);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        return scrollPane;
     }
 
     private JLabel createDataLabel(String text) {

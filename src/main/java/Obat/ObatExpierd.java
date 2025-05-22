@@ -31,6 +31,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
+import Components.CustomCard;
 import Components.CustomDatePicker;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
@@ -89,7 +90,7 @@ public class ObatExpierd extends JPanel {
         JPanel topPanel = createTopPanel();
 
         // Data Panel (Displays selected obat details)
-        RoundedPanel dataPanel = createDataPanel();
+        CustomCard dataPanel = createDataPanel();
 
         // Table Panel (Displays list of obats)
         JScrollPane tableScrollPane = createTablePanel();
@@ -151,57 +152,61 @@ public class ObatExpierd extends JPanel {
         return topPanel;
     }
 
-    private RoundedPanel createDataPanel() {
-        RoundedPanel dataPanel = new RoundedPanel(15, Color.WHITE);
-        dataPanel.setLayout(new GridLayout(6, 2, 10, 10));
-        dataPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private CustomCard createDataPanel() {
+        JPanel dataPanel = new JPanel(new GridLayout(5, 1, 10, 10));
+        dataPanel.setOpaque(false);
+        dataPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Inisialisasi JTextField
-        namaObatField = new JLabel();
-        jenisObatField = new JLabel();
-        tanggalExpiredField = new JLabel();
-        stokField = new JLabel();
+        // Label + Value digabung dalam satu JLabel
+        JLabel namaObatLabel = createDataLabel("NAMA OBAT : ");
+        JLabel jenisObatLabel = createDataLabel("JENIS OBAT : ");
+        JLabel tanggalExpiredLabel = createDataLabel("TANGGAL EXPIRED : ");
+        JLabel stockLabel = createDataLabel("STOK : ");
 
-        // Tambahkan ke panel
-        dataPanel.add(new JLabel("NAMA OBAT : "));
-        dataPanel.add(namaObatField);
-        dataPanel.add(new JLabel("JENIS OBAT : "));
-        dataPanel.add(jenisObatField);
-        dataPanel.add(new JLabel("TANGGAL EXPIRED : "));
-        dataPanel.add(tanggalExpiredField);
-        dataPanel.add(new JLabel("STOK : "));
-        dataPanel.add(stokField);
+        // Inisialisasi value (akan di-update di updateDataPanel)
+        namaObatLabel.setText("NAMA OBAT : ");
+        jenisObatLabel.setText("JENIS OBAT : ");
+        tanggalExpiredLabel.setText("TANGGAL EXPIRED : ");
+        stockLabel.setText("STOK : ");
 
-        // Tambahkan tombol "RESTOCK"
-        JButton restockButton = new RoundedButton("RESTOCK");
+        // Simpan ke field agar bisa di-update
+        this.namaObatField = namaObatLabel;
+        this.jenisObatField = jenisObatLabel;
+        this.tanggalExpiredField = tanggalExpiredLabel;
+        this.stokField = stockLabel;
+
+        dataPanel.add(namaObatLabel);
+        dataPanel.add(jenisObatLabel);
+        dataPanel.add(tanggalExpiredLabel);
+        dataPanel.add(stockLabel);
+
+        // Baris terakhir: tombol di kanan bawah
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonGroup.setOpaque(false);
+
+        JButton restockButton = new RoundedButton("RESTOCK", 15);
         restockButton.setBackground(new Color(255, 153, 51));
         restockButton.setForeground(Color.WHITE);
         restockButton.setFocusPainted(false);
         restockButton.addActionListener(e -> {
             if (selectedRow >= 0) {
-                // Ambil data dari results berdasarkan selectedRow
                 Map<String, Object> detail = results.get(selectedRow);
-                String idDetailObat = String.valueOf(detail.get("id_detail_obat")); // ID Detail Obat Lama
-                String idObat = String.valueOf(detail.get("id_obat")); // ID Obat
+                String idDetailObat = String.valueOf(detail.get("id_detail_obat"));
+                String idObat = String.valueOf(detail.get("id_obat"));
                 String namaObat = String.valueOf(detail.get("nama_obat"));
                 String jenisObat = String.valueOf(detail.get("nama_jenis_obat"));
                 String tanggalExpiredLama = String.valueOf(detail.get("tanggal_expired"));
                 String stokLama = String.valueOf(detail.get("stock"));
                 String hargaBeliLama = String.valueOf(detail.get("harga_beli"));
                 String hargaJualLama = String.valueOf(detail.get("harga_jual"));
-
-                // Panggil dialog Restock
                 Restock.showRestockDialog(idObat, idDetailObat, namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
-
-                // Refresh data tabel setelah Restock
                 refreshTableData();
             } else {
                 JOptionPane.showMessageDialog(this, "Pilih obat yang ingin direstock!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        // Tambahkan tombol "BUANG"
-        JButton buangButton = new RoundedButton("BUANG");
+        JButton buangButton = new RoundedButton("BUANG", 15);
         buangButton.setBackground(new Color(255, 51, 51));
         buangButton.setForeground(Color.WHITE);
         buangButton.setFocusPainted(false);
@@ -213,18 +218,14 @@ public class ObatExpierd extends JPanel {
                     JOptionPane.YES_NO_OPTION);
 
                 if (response == JOptionPane.YES_OPTION) {
-                    // Ambil data dari results berdasarkan selectedRow
                     Map<String, Object> detail = results.get(selectedRow);
-                    String idDetailObat = String.valueOf(detail.get("id_detail_obat")); // ID Detail Obat
-
-                    // Perbarui status_batch menjadi 'dibuang'
+                    String idDetailObat = String.valueOf(detail.get("id_detail_obat"));
                     QueryExecutor executor = new QueryExecutor();
                     String query = "UPDATE detail_obat SET status_batch = 'dibuang' WHERE id_detail_obat = ?";
                     boolean success = executor.executeUpdateQuery(query, new Object[]{idDetailObat});
-
                     if (success) {
                         JOptionPane.showMessageDialog(null, "Obat berhasil dibuang.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                        refreshTableData(); // Refresh data tabel
+                        refreshTableData();
                     } else {
                         JOptionPane.showMessageDialog(null, "Gagal membuang obat.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -232,11 +233,17 @@ public class ObatExpierd extends JPanel {
             }
         });
 
-        // Tambahkan tombol ke panel
-        dataPanel.add(restockButton);
-        dataPanel.add(buangButton);
+        buttonGroup.add(restockButton);
+        buttonGroup.add(buangButton);
+        dataPanel.add(buttonGroup);
 
-        return dataPanel;
+        return new CustomCard("DETAIL OBAT", dataPanel);
+    }
+
+    private JLabel createDataLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        return label;
     }
 
     private JScrollPane createTablePanel() {
@@ -266,21 +273,19 @@ public class ObatExpierd extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(obatTable);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0)); // 20px jarak atas
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBackground(Color.WHITE);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         return scrollPane;
     }
 
     private void updateDataPanel(JTable table, int row) {
-        selectedRow = row; // Simpan indeks baris yang dipilih
-        String namaObat = String.valueOf(table.getValueAt(row, 1));  // Kolom 1: NAMA OBAT
-        String jenisObat = String.valueOf(table.getValueAt(row, 2));  // Kolom 2: JENIS OBAT
-        String tanggalExpired = String.valueOf(table.getValueAt(row, 3)); // Kolom 3: TANGGAL EXPIRED
-        String stock = String.valueOf(table.getValueAt(row, 4));      // Kolom 4: STOCK
-
-        // Perbarui label di panel detail
-        namaObatField.setText(namaObat);
-        jenisObatField.setText(jenisObat);
-        tanggalExpiredField.setText(tanggalExpired);
-        stokField.setText(stock);
+        selectedRow = row;
+        namaObatField.setText("NAMA OBAT : " + table.getValueAt(row, 1));
+        jenisObatField.setText("JENIS OBAT : " + table.getValueAt(row, 2));
+        tanggalExpiredField.setText("TANGGAL EXPIRED : " + table.getValueAt(row, 3));
+        stokField.setText("STOK : " + table.getValueAt(row, 4));
     }
 
     private void setTableColumnWidths(JTable table) {
