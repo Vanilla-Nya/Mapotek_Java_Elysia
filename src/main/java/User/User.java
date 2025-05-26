@@ -6,7 +6,10 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,6 +27,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
+import Components.CustomCard;
 import Components.CustomDialog;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
@@ -41,30 +45,34 @@ public class User extends JFrame {
 
     public User() {
         executor = new QueryExecutor();
-        QueryExecutor executor = new QueryExecutor();
+
+        // Inisialisasi model lebih awal
+        model = new DefaultTableModel(
+            new Object[0][0],
+            new String[]{"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"}
+        );
+
         String queryPengeluaran = "CALL all_user";
         java.util.List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{});
 
         for (int i = 0; i < resultPengeluaran.size(); i++) {
             Object[] dataFromDatabase = new Object[]{
-                i + 1, resultPengeluaran.get(i).get("id_user"), resultPengeluaran.get(i).get("highest_role"), resultPengeluaran.get(i).get("username"),
-                resultPengeluaran.get(i).get("jenis_kelamin"), resultPengeluaran.get(i).get("alamat"), resultPengeluaran.get(i).get("no_telp"), ""
+                i + 1,
+                resultPengeluaran.get(i).get("id_user"),
+                resultPengeluaran.get(i).get("highest_role"),
+                resultPengeluaran.get(i).get("username"),
+                resultPengeluaran.get(i).get("jenis_kelamin"),
+                resultPengeluaran.get(i).get("alamat"),
+                resultPengeluaran.get(i).get("no_telp")
             };
-            // Create a new array with an additional row
             Object[][] newData = new Object[data.length + 1][];
-
-            // Copy the old data to the new array
             System.arraycopy(data, 0, newData, 0, data.length);
-
-            // Add the new row to the new array
             newData[data.length] = dataFromDatabase;
-
-            // Send back to original
             data = newData;
         }
+        model.setDataVector(data, new String[]{"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"});
 
         setTitle("User Management");
-        setSize(800, 600);
         setBackground(Color.WHITE);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -77,7 +85,7 @@ public class User extends JFrame {
         JPanel searchPanel = createSearchPanel();
 
         // Data Panel (Displays user details)
-        RoundedPanel detailPanel = createDetailPanel();
+        CustomCard detailPanel = createDetailPanel();
 
         // Table Panel (Displays list of users)
         JScrollPane tableScrollPane = createTablePanel();
@@ -87,9 +95,13 @@ public class User extends JFrame {
         mainPanel.add(detailPanel, BorderLayout.NORTH);
         mainPanel.add(tableScrollPane, BorderLayout.CENTER);
 
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.add(headerPanel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.SOUTH);
+
         // Add components to the frame
-        add(headerPanel, BorderLayout.NORTH);
-        add(searchPanel, BorderLayout.NORTH);
+        add(topPanel, BorderLayout.NORTH); // Hanya satu kali add ke NORTH
         add(mainPanel, BorderLayout.CENTER);
     }
 
@@ -118,7 +130,7 @@ public class User extends JFrame {
             RegisterUser.showModalCenter(
                 (JFrame) SwingUtilities.getWindowAncestor(addButton),
                 (id, role, name, gender, address, phone) -> {
-                    model.addRow(new Object[]{model.getRowCount() + 1, id, role, name, gender, address, phone, ""});
+                    model.addRow(new Object[]{model.getRowCount() + 1, id, role, name, gender, address, phone});
                 },
                 model
             );
@@ -155,35 +167,120 @@ public class User extends JFrame {
         return searchPanel;
     }
 
-    private RoundedPanel createDetailPanel() {
-        // Panel detail data user dengan RoundedPanel
-        RoundedPanel detailPanel = new RoundedPanel(15, Color.WHITE);
-        detailPanel.setLayout(new BorderLayout());
-        detailPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private CustomCard createDetailPanel() {
+        JPanel dataPanel = new JPanel(new GridBagLayout());
+        dataPanel.setOpaque(false);
+        dataPanel.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
 
-        // Create two sub-panels (left and right)
-        JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new GridLayout(3, 1, 5, 10));  // 3 rows, 2 columns for labels and values
-        leftPanel.setBackground(Color.WHITE);
+        // Baris 0: ID (kiri), Jenis Kelamin (kanan)
+        JLabel lblIDLabel = new JLabel("ID :");
+        lblIDLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblID = new JLabel("-");
+        lblID.setFont(new Font("Arial", Font.PLAIN, 14));
+        JLabel lblJKLabel = new JLabel("Jenis Kelamin :");
+        lblJKLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblJenisKelamin = new JLabel("-");
+        lblJenisKelamin.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 0; dataPanel.add(lblIDLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblID, gbc);
+        gbc.gridx = 2; dataPanel.add(lblJKLabel, gbc);
+        gbc.gridx = 3; dataPanel.add(lblJenisKelamin, gbc);
 
-        JPanel rightPanel = new JPanel();
-        rightPanel.setLayout(new GridLayout(3, 1, 5, 10));  // 3 rows, 2 columns for labels and values
-        rightPanel.setBackground(Color.WHITE);
+        // Baris 1: Nama (kiri), Alamat (kanan)
+        JLabel lblNamaLabel = new JLabel("Nama :");
+        lblNamaLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblNamaUser = new JLabel("-");
+        lblNamaUser.setFont(new Font("Arial", Font.PLAIN, 14));
+        JLabel lblAlamatLabel = new JLabel("Alamat :");
+        lblAlamatLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblAlamat = new JLabel("-");
+        lblAlamat.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 1; dataPanel.add(lblNamaLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblNamaUser, gbc);
+        gbc.gridx = 2; dataPanel.add(lblAlamatLabel, gbc);
+        gbc.gridx = 3; dataPanel.add(lblAlamat, gbc);
 
-        // Labels and values for left panel
-        rightPanel.add(lblJenisKelamin = createPlainDetailValueLabel("Jenis Kelamin:"));
-        rightPanel.add(lblAlamat = createPlainDetailValueLabel("Alamat:"));
-        rightPanel.add(lblNoTelp = createPlainDetailValueLabel("No Telp:"));
+        // Baris 2: No.Telp (kiri)
+        JLabel lblNoTelpLabel = new JLabel("No.Telp :");
+        lblNoTelpLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblNoTelp = new JLabel("-");
+        lblNoTelp.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 2; dataPanel.add(lblNoTelpLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblNoTelp, gbc);
 
-        // Labels and values for right panel
-        leftPanel.add(lblID = createPlainDetailValueLabel("ID:"));
-        leftPanel.add(lblNamaUser = createPlainDetailValueLabel("Nama:"));
+        // Baris 3: tombol di kanan bawah (span 4 kolom)
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4; gbc.anchor = GridBagConstraints.EAST;
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonGroup.setOpaque(false);
 
-        // Add both panels to the main detailPanel
-        detailPanel.add(leftPanel, BorderLayout.WEST);
-        detailPanel.add(rightPanel, BorderLayout.EAST);
+        JButton editButton = new RoundedButton("EDIT");
+        editButton.setBackground(new Color(255, 153, 51));
+        editButton.setForeground(Color.WHITE);
+        editButton.setFocusPainted(false);
+        editButton.addActionListener(e -> {
+                int row = userTable.getSelectedRow();
+                if (row != -1) {
+                    String id = (String) model.getValueAt(row, 1);
+                    String name = (String) model.getValueAt(row, 3);
+                    String role = (String) model.getValueAt(row, 2);
+                    String gender = (String) model.getValueAt(row, 4);
+                    String address = (String) model.getValueAt(row, 5);
+                    String phone = (String) model.getValueAt(row, 6);
+                    SwingUtilities.invokeLater(() -> {
+                        EditUser.showModalCenter(
+                            (JFrame) SwingUtilities.getWindowAncestor(userTable),
+                            id,
+                            (updatedName, updatedRole, updatedGender, updatedPhone, updatedAddress, updatedRFID) -> {
+                                model.setValueAt(updatedName, row, 3);
+                                model.setValueAt(updatedRole, row, 2);
+                                model.setValueAt(updatedGender, row, 4);
+                                model.setValueAt(updatedAddress, row, 5);
+                                model.setValueAt(updatedPhone, row, 6);
+                                // Jika ada kolom RFID, tambahkan di sini
+                            }
+                        );
+                    });
+                } else {
+                    JOptionPane.showMessageDialog(this, "Silakan pilih user terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                    SwingUtilities.invokeLater(() -> {
+                        this.getContentPane().repaint();
+                        this.getContentPane().revalidate();
+                    });
+                    return;
+                }
+        });
 
-        return detailPanel;
+        JButton hapusButton = new RoundedButton("HAPUS");
+        hapusButton.setBackground(new Color(255, 51, 51));
+        hapusButton.setForeground(Color.WHITE);
+        hapusButton.setFocusPainted(false);
+        hapusButton.addActionListener(e -> {
+            int row = userTable.getSelectedRow();
+            if (row != -1) {
+                String id = (String) model.getValueAt(row, 1);
+                CustomDialog confirmDialog = new CustomDialog(null, "Apakah Anda yakin ingin menghapus user ini?", "Konfirmasi Penghapusan");
+                int response = confirmDialog.showDialog();
+                if (response == JOptionPane.YES_OPTION) {
+                    String deletedQuery = "UPDATE user SET user.delete = ? WHERE id_user = ?";
+                    QueryExecutor.executeUpdateQuery(deletedQuery, new Object[]{1, id});
+                    JOptionPane.showMessageDialog(this, "User berhasil dihapus.");
+                    resetTable();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih user terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        buttonGroup.add(editButton);
+        buttonGroup.add(hapusButton);
+        dataPanel.add(buttonGroup, gbc);
+
+        return new CustomCard("DETAIL USER", dataPanel);
     }
 
     private JLabel createPlainDetailValueLabel(String labelText) {
@@ -214,21 +311,11 @@ public class User extends JFrame {
 
     private JScrollPane createTablePanel() {
         // Table data and columns setup
-        String[] columns = {"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp", "Aksi"};
-
-        // Table model
-        model = new DefaultTableModel(data, columns) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 7; // Only "Aksi" column is editable
-            }
-        };
+        String[] columns = {"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"};
 
         userTable = new CustomTable(model);
-        userTable.getColumnModel().getColumn(7).setCellRenderer(new ActionCellRenderer());
-        userTable.getColumnModel().getColumn(7).setCellEditor(new ActionCellEditor());
 
-        // Add listener to detect row selection and update user detail panel
+        // Listener untuk update detail panel saat baris dipilih
         userTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = userTable.getSelectedRow();
@@ -239,14 +326,13 @@ public class User extends JFrame {
                     String gender = (String) model.getValueAt(selectedRow, 4);
                     String address = (String) model.getValueAt(selectedRow, 5);
                     String phone = (String) model.getValueAt(selectedRow, 6);
-
-                    // Update the details panel with selected user's data
                     updateDetailPanel(id, role, name, gender, address, phone);
+                } else {
+                    resetDetailPanel(); // Reset detail panel jika tidak ada baris yang dipilih
                 }
             }
         });
 
-        // Adjust table column widths
         setTableColumnWidths(userTable);
 
         return new JScrollPane(userTable);
@@ -269,7 +355,6 @@ public class User extends JFrame {
         table.getColumnModel().getColumn(4).setPreferredWidth(150);  // Jenis Kelamin column
         table.getColumnModel().getColumn(5).setPreferredWidth(250);  // Alamat column
         table.getColumnModel().getColumn(6).setPreferredWidth(200);  // No.Telp column
-        table.getColumnModel().getColumn(7).setPreferredWidth(200);  // Aksi column
     }
 
     private void filterTable(String searchText) {
@@ -285,7 +370,7 @@ public class User extends JFrame {
         for (int i = 0; i < resultPengeluaran.size(); i++) {
             Object[] dataFromDatabase = new Object[]{
                 i + 1, resultPengeluaran.get(i).get("id_user"), resultPengeluaran.get(i).get("highest_role"), resultPengeluaran.get(i).get("username"),
-                resultPengeluaran.get(i).get("jenis_kelamin"), resultPengeluaran.get(i).get("alamat"), resultPengeluaran.get(i).get("no_telp"), ""
+                resultPengeluaran.get(i).get("jenis_kelamin"), resultPengeluaran.get(i).get("alamat"), resultPengeluaran.get(i).get("no_telp")
             };
             // Create a new array with an additional row
             Object[][] newData = new Object[data.length + 1][];
@@ -300,118 +385,23 @@ public class User extends JFrame {
             data = newData;
         }
         // Update the table model with the refreshed data
-        model.setDataVector(data, new String[]{"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp", "Aksi"});
-
-        // Reapply the button rendering and editing to the "AKSI" column
-        userTable.getColumnModel().getColumn(7).setCellRenderer(new ActionCellRenderer());
-        userTable.getColumnModel().getColumn(7).setCellEditor(new ActionCellEditor());
+        model.setDataVector(data, new String[]{"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"});
         setTableColumnWidths(userTable);
+        resetDetailPanel(); // Tambahkan ini
     }
 
     public void onUserAdded(String id, String role, String name, String gender, String address, String phone) {
         int newRowNumber = model.getRowCount() + 1;
-        model.addRow(new Object[]{newRowNumber, id, role, name, gender, address, phone, ""});
+        model.addRow(new Object[]{newRowNumber, id, role, name, gender, address, phone});
     }
 
-    // Renderer untuk kolom "Aksi"
-    class ActionCellRenderer extends JPanel implements TableCellRenderer {
 
-        public ActionCellRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            add(editButton);
-            setBackground(Color.WHITE);
-
-            JButton deleteButton = new RoundedButton("HAPUS");
-            deleteButton.setBackground(new Color(255, 51, 51));
-            deleteButton.setForeground(Color.WHITE);
-            deleteButton.setFocusPainted(false);
-            add(deleteButton);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            return this;
-        }
-    }
-
-    // Editor untuk kolom "Aksi"
-    class ActionCellEditor extends AbstractCellEditor implements TableCellEditor {
-
-        JPanel panel;
-        int row;
-
-        public ActionCellEditor() {
-            panel = new JPanel();
-            panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-
-            // Edit Button
-            JButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            editButton.addActionListener(e -> {
-                editUser(row); // Call editUser method when the Edit button is pressed
-                stopCellEditing(); // Stop editing the cell
-            });
-            panel.add(editButton);
-
-            // Delete Button
-            JButton deleteButton = new RoundedButton("HAPUS");
-            deleteButton.setBackground(new Color(255, 51, 51));
-            deleteButton.setForeground(Color.WHITE);
-            deleteButton.setFocusPainted(false);
-            deleteButton.addActionListener(e -> {
-                deleteUser(row);
-            });
-            panel.add(deleteButton);
-        }
-
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            this.row = row; // Set the row number
-            return panel; // Return the panel containing buttons
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null; // No value is actually set since it's just actions
-        }
-
-        private void editUser(int row) {
-            // Stop cell editing sebelum modal muncul (sudah dilakukan di action listener)
-            SwingUtilities.invokeLater(() -> {
-                EditUser.showModalCenter(
-                    (JFrame) SwingUtilities.getWindowAncestor(userTable),
-                    (String) model.getValueAt(row, 1),
-                    (updatedName, updatedRole, jenis_kelamin, updatedPhone, updatedAddress, updatedRFID) -> {
-                        // Update the table with the updated values
-                        model.setValueAt(updatedName, row, 3);
-                        model.setValueAt(updatedRole, row, 2);
-                        model.setValueAt(jenis_kelamin, row, 4);
-                        model.setValueAt(updatedAddress, row, 5);
-                        model.setValueAt(updatedPhone, row, 6);
-                        model.setValueAt(updatedRFID, row, 7); // Assuming RFID is added to the table model
-                    }
-                );
-            });
-        }
-
-        private void deleteUser(int row) {
-            // Create and show the confirmation dialog
-            CustomDialog confirmDialog = new CustomDialog(null, "Apakah Anda yakin ingin menghapus user ini?", "Konfirmasi Penghapusan");
-            // Get the user's response
-
-            int response = confirmDialog.showDialog();
-            if (response == JOptionPane.YES_OPTION) {
-                String deletedQuery = "UPDATE user SET user.delete = ? WHERE id_user = ?";
-                QueryExecutor.executeUpdateQuery(deletedQuery, new Object[]{1, (String) model.getValueAt(row, 1)});
-                JOptionPane.showMessageDialog(null, "User berhasil dihapus.");
-                resetTable();
-            }
-        }
+    private void resetDetailPanel() {
+        lblID.setText("ID: -");
+        lblNamaUser.setText("Nama: -");
+        lblJenisKelamin.setText("Jenis Kelamin: -");
+        lblAlamat.setText("Alamat: -");
+        lblNoTelp.setText("No Telp: -");
     }
 
     public static void main(String[] args) {

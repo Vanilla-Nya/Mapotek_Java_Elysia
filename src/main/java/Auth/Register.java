@@ -28,20 +28,19 @@ import Global.UserSessionCache;
 import Helpers.TypeNumberHelper;
 import Main.Drawer;
 
-public class Register extends JFrame {
+public class Register extends JPanel {
 
     private CustomTextField fullNameField, nomerteleponField, usernameField, passwordField, confirmCustomTextField, rfidField;
+    private AuthFrame parentFrame;
 
-    public Register() {
-        // Set frame properties
-        setTitle("Mapotek Registration");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600); // Increase the size for better layout
+    public Register(AuthFrame parentFrame) {
+        this.parentFrame = parentFrame;
+
         setLayout(new BorderLayout());
 
         // Main container with curved panel
         CustomPanel mainPanel = new CustomPanel(25);
-        mainPanel.setCurved(true); // Set the panel to be curved
+        mainPanel.setCurved(true);
         mainPanel.setLayout(new GridBagLayout());
         add(mainPanel);
 
@@ -57,7 +56,7 @@ public class Register extends JFrame {
         gbcRight.insets = new Insets(0, 0, 0, 0); // Adjust insets to center the logo
         gbcRight.anchor = GridBagConstraints.CENTER;
         JLabel logoLabel = new JLabel("MAPOTEK");
-        logoLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        logoLabel.setFont(new Font("Arial", Font.BOLD, 40));
         logoLabel.setForeground(new Color(0, 160, 136));
         rightPanel.add(logoLabel, gbcRight);
 
@@ -151,9 +150,9 @@ public class Register extends JFrame {
 
         loginLink.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // Open the Login window when the login link is clicked
-                new Login().setVisible(true);
-                dispose(); // Close the Register window
+                if (parentFrame != null) {
+                    parentFrame.showLogin();
+                }
             }
         });
 
@@ -215,7 +214,9 @@ public class Register extends JFrame {
                                 cache.login(username, uuid);
                                 JOptionPane.showMessageDialog(Register.this, "Selamat Datang " + getData.get("nama_lengkap"), (String) getData.get("message"), JOptionPane.INFORMATION_MESSAGE);
                                 new Drawer().setVisible(true);
-                                this.dispose();
+                                if (parentFrame != null) {
+                                    parentFrame.setVisible(false); // atau parentFrame.dispose();
+                                }
                             }
                         }
                     } else {
@@ -251,13 +252,5 @@ public class Register extends JFrame {
         mainGbc.weightx = 0.5; // Set weight for horizontal resizing
         mainGbc.weighty = 1.0; // Set weight for vertical resizing
         mainPanel.add(rightPanel, mainGbc);
-
-        // Make frame visible
-        setVisible(true);
-        setLocationRelativeTo(null);
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(Register::new);
     }
 }

@@ -1,5 +1,6 @@
 package Pasien;
 
+import Components.CustomCard;
 import Components.CustomDialog;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
@@ -12,12 +13,12 @@ import Pasien.EditPasien.OnPasienUpdatedListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
 
 public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpdatedListener {
 
@@ -28,34 +29,33 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
     private int role;
     Object[][] data = {};
 
+    // List to keep track of id_pasien for each row
+    private List<String> idPasienList = new ArrayList<>();
+
     public Pasien(int role) {
         this.role = role;
-        setSize(1000, 600);
         setLocationRelativeTo(null);
         QueryExecutor executor = new QueryExecutor();
         String query = "CALL all_pasien()";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
 
+        int no = 1;
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 var alamat = "".equals(result.get("alamat").toString()) ? "-" : result.get("alamat");
                 var no_telp = "".equals(result.get("no_telp").toString()) ? "-" : result.get("no_telp");
-                var rfid = result.get("rfid") != null ? result.get("rfid").toString() : "-"; // Handle null RFID
+                var rfid = result.get("rfid") != null ? result.get("rfid").toString() : "-";
+                // Simpan id_pasien asli
+                idPasienList.add(String.valueOf(result.get("id_pasien")));
+                // Isi tabel: kolom 0 = nomor urut (tanpa id_pasien)
                 Object[] dataFromDatabase = new Object[]{
-                    result.get("id_pasien"), result.get("nik"), result.get("nama_pasien"), result.get("umur"),
-                    result.get("jenis_kelamin"), alamat, no_telp, rfid, ""
+                    no++, // nomor urut
+                    result.get("nik"), result.get("nama_pasien"), result.get("umur"),
+                    result.get("jenis_kelamin"), alamat, no_telp, rfid
                 };
-
-                // Create a new array with an additional row
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
             }
         }
@@ -70,7 +70,7 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         JPanel searchPanel = createSearchPanel(role);
 
         // Data Panel (Displays patient details)
-        RoundedPanel detailPanel = createDetailPanel();
+        CustomCard detailPanel = createDetailPanel();
 
         // Table Panel (Displays list of patients)
         tableScrollPane = createTablePanel(role);
@@ -87,27 +87,14 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
     }
 
     private JScrollPane createTablePanel(int role) {
-        // Table data and columns setup
-        String[] columnNames;
-        if (role == 1) {
-            columnNames = new String[]{"ID", "NIK", "Nama pasien", "Umur", "Jenis Kelamin", "Alamat", "No.Telp", "RFID"};
-        } else {
-            columnNames = new String[]{"ID", "NIK", "Nama pasien", "Umur", "Jenis Kelamin", "Alamat", "No.Telp", "RFID", "Aksi"};
-        }
-
-        // Table model
+        String[] columnNames = new String[]{"No", "NIK", "Nama pasien", "Umur", "Jenis Kelamin", "Alamat", "No.Telp", "RFID"};
         model = new DefaultTableModel(data, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 8; // Only "Aksi" column is editable
+                return false;
             }
         };
-
         CustomTable pasienTable = new CustomTable(model);
-        if (role != 1) {
-            pasienTable.getColumn("Aksi").setCellRenderer(new ActionCellRenderer());
-            pasienTable.getColumn("Aksi").setCellEditor(new ActionCellEditor());
-        }
 
         // MouseListener to handle click on table rows
         pasienTable.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -115,28 +102,15 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = pasienTable.getSelectedRow();
                 if (row != -1) {
-                    // Get data from selected row
-                    String id = (String) String.valueOf(model.getValueAt(row, 0));
-                    String nik = (String) model.getValueAt(row, 1);
-                    String name = (String) model.getValueAt(row, 2);
-                    String age = (String) model.getValueAt(row, 3);
-                    String gender = (String) model.getValueAt(row, 4);
-                    String address = (String) model.getValueAt(row, 5);
-                    String phone = (String) model.getValueAt(row, 6);
-                    String rfid = (String) model.getValueAt(row, 7);
-
-                    // Update labels with selected data, including labels with prefixes
-                    lblID.setText(id);
-                    lblnik.setText(nik);
-                    lblNamaPasien.setText(name);
-                    lblUmur.setText(age);
-                    lblJenisKelamin.setText(gender);
-                    lblAlamat.setText(address);
-                    lblNoTelp.setText(phone);
+                    lblnik.setText(String.valueOf(model.getValueAt(row, 1)));
+                    lblNamaPasien.setText(String.valueOf(model.getValueAt(row, 2)));
+                    lblUmur.setText(String.valueOf(model.getValueAt(row, 3)));
+                    lblJenisKelamin.setText(String.valueOf(model.getValueAt(row, 4)));
+                    lblAlamat.setText(String.valueOf(model.getValueAt(row, 5)));
+                    lblNoTelp.setText(String.valueOf(model.getValueAt(row, 6)));
                 }
             }
         });
-        // Adjust table column widths
         setTableColumnWidths(pasienTable, role);
 
         return new JScrollPane(pasienTable);
@@ -151,9 +125,6 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         table.getColumnModel().getColumn(5).setPreferredWidth(50);
         table.getColumnModel().getColumn(6).setPreferredWidth(100);
         table.getColumnModel().getColumn(7).setPreferredWidth(100);
-        if (role != 1) {
-            table.getColumnModel().getColumn(8).setPreferredWidth(200);
-        }
     }
 
     private JPanel createHeaderPanel() {
@@ -217,49 +188,109 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         return searchPanel;
     }
 
-    private RoundedPanel createDetailPanel() {
-        // Panel detail data pasien dengan RoundedPanel
-        RoundedPanel detailPanel = new RoundedPanel(15, Color.WHITE);
-        detailPanel.setLayout(new BorderLayout());
-        detailPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private CustomCard createDetailPanel() {
+        JPanel dataPanel = new JPanel(new GridBagLayout());
+        dataPanel.setOpaque(false);
+        dataPanel.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1;
 
-        // Create two sub-panels (left and right)
-        JPanel leftPanel = new JPanel();
-        leftPanel.setLayout(new GridLayout(4, 2, 5, 10));  // 3 rows, 2 columns for labels and values
-        leftPanel.setBackground(Color.WHITE);
+        // Baris 0: NIK (kiri), Jenis Kelamin (kanan)
+        JLabel lblNikLabel = new JLabel("NIK :");
+        lblNikLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblnik = new JLabel("-");
+        lblnik.setFont(new Font("Arial", Font.PLAIN, 14));
+        JLabel lblJKLabel = new JLabel("Jenis Kelamin :");
+        lblJKLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblJenisKelamin = new JLabel("-");
+        lblJenisKelamin.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 0; dataPanel.add(lblNikLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblnik, gbc);
+        gbc.gridx = 2; dataPanel.add(lblJKLabel, gbc);
+        gbc.gridx = 3; dataPanel.add(lblJenisKelamin, gbc);
 
-        JPanel rightPanel = new JPanel();
-        rightPanel.setLayout(new GridLayout(3, 2, 50, 10));  // 3 rows, 2 columns for labels and values
-        rightPanel.setBackground(Color.WHITE);
+        // Baris 1: Nama Pasien (kiri), Alamat (kanan)
+        JLabel lblNamaLabel = new JLabel("Nama :");
+        lblNamaLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblNamaPasien = new JLabel("-");
+        lblNamaPasien.setFont(new Font("Arial", Font.PLAIN, 14));
+        JLabel lblAlamatLabel = new JLabel("Alamat :");
+        lblAlamatLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblAlamat = new JLabel("-");
+        lblAlamat.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 1; dataPanel.add(lblNamaLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblNamaPasien, gbc);
+        gbc.gridx = 2; dataPanel.add(lblAlamatLabel, gbc);
+        gbc.gridx = 3; dataPanel.add(lblAlamat, gbc);
 
-        // Labels and values for right panel
-        rightPanel.add(new JLabel("Jenis Kelamin: "));
-        rightPanel.add(lblJenisKelamin = createPlainDetailValueLabel());
+        // Baris 3: Umur (kiri), No.Telp (kanan)
+        JLabel lblUmurLabel = new JLabel("Umur :");
+        lblUmurLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblUmur = new JLabel("-");
+        lblUmur.setFont(new Font("Arial", Font.PLAIN, 14));
+        JLabel lblNoTelpLabel = new JLabel("No.Telp :");
+        lblNoTelpLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        lblNoTelp = new JLabel("-");
+        lblNoTelp.setFont(new Font("Arial", Font.PLAIN, 14));
+        gbc.gridx = 0; gbc.gridy = 3; dataPanel.add(lblUmurLabel, gbc);
+        gbc.gridx = 1; dataPanel.add(lblUmur, gbc);
+        gbc.gridx = 2; dataPanel.add(lblNoTelpLabel, gbc);
+        gbc.gridx = 3; dataPanel.add(lblNoTelp, gbc);
 
-        rightPanel.add(new JLabel("Alamat: "));
-        rightPanel.add(lblAlamat = createPlainDetailValueLabel());
+        // Baris 4: tombol di kanan bawah (span 4 kolom)
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 4; gbc.anchor = GridBagConstraints.EAST;
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonGroup.setOpaque(false);
 
-        rightPanel.add(new JLabel("No.Telp: "));
-        rightPanel.add(lblNoTelp = createPlainDetailValueLabel());
+        JButton editButton = new RoundedButton("EDIT");
+        editButton.setBackground(new Color(255, 153, 51));
+        editButton.setForeground(Color.WHITE);
+        editButton.setFocusPainted(false);
+        editButton.addActionListener(e -> {
+            int row = getSelectedRowInTable();
+            if (row != -1) {
+                String id = idPasienList.get(row); // id_pasien asli
+                String nik = String.valueOf(model.getValueAt(row, 1));
+                String name = String.valueOf(model.getValueAt(row, 2));
+                String age = String.valueOf(model.getValueAt(row, 3));
+                String gender = String.valueOf(model.getValueAt(row, 4));
+                String address = String.valueOf(model.getValueAt(row, 5));
+                String phone = String.valueOf(model.getValueAt(row, 6));
+                String rfid = String.valueOf(model.getValueAt(row, 7));
+                SwingUtilities.invokeLater(() -> {
+                    EditPasien.showModalCenter(
+                        (JFrame) SwingUtilities.getWindowAncestor(editButton),
+                        id, nik, name, age, gender, phone, address, rfid,
+                        Pasien.this
+                    );
+                });
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih data pasien terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            }
+        });
 
-        // Labels and values for left panel
-        leftPanel.add(new JLabel("ID: "));
-        leftPanel.add(lblID = createPlainDetailValueLabel());
+        JButton hapusButton = new RoundedButton("HAPUS");
+        hapusButton.setBackground(new Color(255, 51, 51));
+        hapusButton.setForeground(Color.WHITE);
+        hapusButton.setFocusPainted(false);
+        hapusButton.addActionListener(e -> {
+            int row = getSelectedRowInTable();
+            if (row != -1) {
+                String id = idPasienList.get(row); // id_pasien asli
+                deletePasien(row, id);
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih data pasien terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            }
+        });
 
-        leftPanel.add(new JLabel("NIK: "));
-        leftPanel.add(lblnik = createPlainDetailValueLabel());
+        buttonGroup.add(editButton);
+        buttonGroup.add(hapusButton);
+        dataPanel.add(buttonGroup, gbc);
 
-        leftPanel.add(new JLabel("Nama Pasien: "));
-        leftPanel.add(lblNamaPasien = createPlainDetailValueLabel());
-
-        leftPanel.add(new JLabel("Umur: "));
-        leftPanel.add(lblUmur = createPlainDetailValueLabel());
-
-        // Add both panels to the main detailPanel
-        detailPanel.add(leftPanel, BorderLayout.WEST);
-        detailPanel.add(rightPanel, BorderLayout.EAST);
-
-        return detailPanel;
+        return new CustomCard("DETAIL PASIEN", dataPanel);
     }
 
     private JLabel createPlainDetailValueLabel() {
@@ -330,159 +361,20 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         }
     }
 
-    // Inner class for ActionCellRenderer (for rendering the edit button)
-    class ActionCellRenderer extends JPanel implements TableCellRenderer {
-
-        private final JButton editButton, deleteButton;
-
-        public ActionCellRenderer() {
-            editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-            add(editButton);
-            deleteButton = new RoundedButton("Delete");
-            deleteButton.setBackground(Color.RED);
-            deleteButton.setForeground(Color.WHITE);
-            deleteButton.setFocusPainted(false);
-            add(deleteButton);
-            setBackground(Color.WHITE);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            return this;
-        }
-
-        public JButton getEditButton() {
-            return editButton;
-        }
-    }
-
-    // Inner class for ActionCellEditor (for handling button clicks)
-    class ActionCellEditor extends AbstractCellEditor implements TableCellEditor {
-
-        JPanel panel;
-        private int row;
-
-        public ActionCellEditor() {
-            panel = new JPanel();
-            panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
-        }
-
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            // Clear previous buttons
-            panel.removeAll();
-            this.row = row;
-            RoundedButton editButton = new RoundedButton("EDIT");
-            editButton.setBackground(new Color(255, 153, 51));
-            editButton.setForeground(Color.WHITE);
-            editButton.setFocusPainted(false);
-
-            editButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    if (row != -1) {
-                        String id = (String) String.valueOf(model.getValueAt(row, 0));
-                        String nik = (String) model.getValueAt(row, 1);
-                        String name = (String) model.getValueAt(row, 2);
-                        String age = (String) model.getValueAt(row, 3);
-                        String gender = (String) model.getValueAt(row, 4);
-                        String address = (String) model.getValueAt(row, 5);
-                        String phone = "-".equals((String) model.getValueAt(row, 6)) ? "0" : (String) model.getValueAt(row, 6);
-                        String rfid = (String) model.getValueAt(row, 7);
-
-                        SwingUtilities.invokeLater(() -> {
-                            EditPasien.showModalCenter(
-                            (JFrame) SwingUtilities.getWindowAncestor(editButton),
-                            id, nik, name, age, gender, phone, address, rfid,
-                            Pasien.this
-                        );
-                        });
-                    }
-                }
-            });
-            RoundedButton deleteButton = new RoundedButton("Delete");
-            deleteButton.setBackground(Color.RED);
-            deleteButton.setForeground(Color.WHITE);
-            deleteButton.setFocusPainted(false);
-            deleteButton.addActionListener(e -> {
-                // Check if the row index is valid before attempting to remove
-                if (row >= 0 && row < model.getRowCount()) {
-
-                    // Check if the table was in an editing state and stop editing
-                    if (table.isEditing()) {
-                        table.getCellEditor().stopCellEditing();  // Stop editing the cell if it is being edited
-                        System.out.println("Cell editing stopped.");
-                    }
-
-                    // Log the row index and row count before removal for debugging
-                    System.out.println("Attempting to remove row: " + row);
-
-                    // Call the deletePasien method to handle the deletion
-                    deletePasien(row);
-
-                    // Refresh the table view after the row is removed
-                    table.revalidate();
-                    table.repaint();
-
-                    // Handle edge case if the last row was removed
-                    if (model.getRowCount() == 0) {
-                        System.out.println("Last row deleted, table is empty.");
-                    } else {
-                        // After removing the last row, we might want to focus or highlight the new "last row"
-                        int lastRowIndex = model.getRowCount() - 1;
-                        table.setRowSelectionInterval(lastRowIndex, lastRowIndex);
-                    }
-                } else {
-                    System.out.println("Invalid row index for deletion: " + row);
-                }
-            });
-            panel.add(editButton);
-            panel.add(deleteButton);
-            panel.revalidate();
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null;
-        }
-
-        @Override
-        public boolean stopCellEditing() {
-            fireEditingStopped();
-            return true;
-        }
-    }
-
-    private void deletePasien(int row) {
-        // Create and show the confirmation dialog
+    private void deletePasien(int row, String pasienId) {
         CustomDialog confirmDialog = new CustomDialog(null, "Apakah Anda yakin ingin menandai pasien ini sebagai dihapus?", "Konfirmasi Penghapusan");
-
-        // Get the user's response
         int response = confirmDialog.showDialog();
-
         if (response == JOptionPane.YES_OPTION) {
-            // Get the ID of the pasien from the first column (adjust the column index if necessary)
-            String pasienId = (String) model.getValueAt(row, 0);  // Assuming column 0 holds the 'id_pasien'
-
-            // Query to mark the pasien as deleted (update 'is_deleted' column)
             String deletedQuery = "UPDATE pasien SET is_deleted = 1 WHERE id_pasien = ?";
-
-            // Execute the update query
             boolean isUpdated = QueryExecutor.executeUpdateQuery(deletedQuery, new Object[]{pasienId});
-
             if (isUpdated) {
-                // If the update was successful, remove the row from the table
                 model.removeRow(row);
+                idPasienList.remove(row);
                 JOptionPane.showMessageDialog(null, "Pasien berhasil ditandai sebagai dihapus.");
             } else {
-                // If something went wrong with the update
                 JOptionPane.showMessageDialog(null, "Gagal menandai pasien sebagai dihapus.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
-            // Handle cancel or close action
             JOptionPane.showMessageDialog(null, "Penghapusan dibatalkan.", "Informasi", JOptionPane.INFORMATION_MESSAGE);
         }
     }

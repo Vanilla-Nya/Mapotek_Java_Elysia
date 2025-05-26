@@ -91,7 +91,6 @@ public class LupaPasword extends JFrame {
         backButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 // Open the Login window when the login link is clicked
-                new Login().setVisible(true);
                 dispose(); // Close the Register window
             }
         });

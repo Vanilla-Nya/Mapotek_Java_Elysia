@@ -12,8 +12,11 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.URL;
+
 import javax.swing.*;
 import javax.swing.text.*;
+
+import Auth.AuthFrame;
 
 /**
  *
@@ -171,7 +174,7 @@ public class Mapotek extends JFrame {
         registerButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 // Open the Login window when the login link is clicked
-                new Register().setVisible(true);
+                new AuthFrame().setVisible(true);
                 dispose(); // Close the Register window
             }
         });
@@ -193,8 +196,8 @@ public class Mapotek extends JFrame {
         // Add action listeners for buttons
         loginButton.addActionListener(e -> {
             System.out.println("Login button clicked");
-            Login login = new Login();
-            login.setVisible(true);
+            AuthFrame AuthFrame = new AuthFrame();
+            AuthFrame.setVisible(true);
             this.dispose();
         });
 

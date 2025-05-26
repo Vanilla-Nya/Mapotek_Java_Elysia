@@ -1,9 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package Auth;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -32,6 +29,7 @@ import javax.swing.event.DocumentListener;
     
 import com.formdev.flatlaf.FlatLightLaf;
 
+import Auth.Auth_Animations.LoginSuccessAnimation;
 import Components.CustomPanel;
 import Components.CustomTextField;
 import Components.RoundedButton;
@@ -46,15 +44,18 @@ import Main.Drawer;
  */ 
 
 
-public class Login extends JFrame {
+public class Login extends JPanel {
 
-    public Login() {
+    // Tambahkan referensi ke AuthFrame (atau callback)
+    private AuthFrame parentFrame;
 
-        // Frame setup  
-        setTitle("Mapotek App - Login");
-        setSize(800, 500); // Match size of Mapotek app
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+    // Konstruktor menerima AuthFrame sebagai parameter
+    public Login(AuthFrame parentFrame) {
+        this.parentFrame = parentFrame;
+
+        // Hilangkan setTitle, setSize, setDefaultCloseOperation, setLocationRelativeTo
+
+        setLayout(new BorderLayout());
 
         // Set FlatLaf theme with custom rounded corners
         FlatLightLaf.setup();
@@ -64,9 +65,9 @@ public class Login extends JFrame {
 
         // Create a main container with GridBagLayout
         CustomPanel mainPanel = new CustomPanel(25);
-        mainPanel.setCurved(true); // Set the panel to be curved
+        mainPanel.setCurved(true);
         mainPanel.setLayout(new GridBagLayout());
-        add(mainPanel);
+        add(mainPanel, BorderLayout.CENTER);
 
         // Create the left panel
         JPanel leftPanel = new JPanel();
@@ -81,6 +82,18 @@ public class Login extends JFrame {
         rightPanel.setOpaque(false); // Make panel transparent
         rightPanel.setPreferredSize(new Dimension(400, getHeight())); // Set size to half of the full page
         rightPanel.setLayout(new GridBagLayout());
+
+        // Tambahkan label MAPOTEK ke rightPanel
+        GridBagConstraints gbcRight = new GridBagConstraints();
+        gbcRight.gridx = 0;
+        gbcRight.gridy = 0;
+        gbcRight.insets = new Insets(0, 0, 0, 0);
+        gbcRight.anchor = GridBagConstraints.CENTER;
+
+        JLabel logoLabel = new JLabel("MAPOTEK");
+        logoLabel.setFont(new Font("Arial", Font.BOLD, 40));
+        logoLabel.setForeground(new Color(0, 160, 136));
+        rightPanel.add(logoLabel, gbcRight);
 
         // Create the login card panel and position it
         JPanel cardPanel = createLoginCard();
@@ -159,9 +172,10 @@ public class Login extends JFrame {
 
         registerlink.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                // Open the Register window when the register link is clicked
-                new Register().setVisible(true);
-                dispose(); // Close the Login window
+                // Panggil parentFrame.showRegister()
+                if (parentFrame != null) {
+                    parentFrame.showRegister();
+                }
             }
         });
 
@@ -205,27 +219,22 @@ public class Login extends JFrame {
                 Long code = (Long) getData.get("code");
                 if (code.equals(200L)) {
                     String uuid = (String) getData.get("user_id");
-                    String username = (String) getData.get("username"); // Retrieve the username from the result
+                    String username = (String) getData.get("username");
                     UserSessionCache cache = new UserSessionCache();
                     cache.login(username, uuid);
-                    JOptionPane.showMessageDialog(Login.this, "Selamat Datang " + getData.get("nama_lengkap"), (String) getData.get("message"), JOptionPane.INFORMATION_MESSAGE);
-                    
-                    // Debugging statements
-                    System.out.println("Login successful. User ID: " + uuid + ", Username: " + username);
-                    
-                    // Instantiate Drawer and make it visible
-                    Drawer drawer = new Drawer();
-                    drawer.setVisible(true);
-                    
-                    // Debugging statement
-                    System.out.println("Drawer instantiated and set visible.");
-                    
-                    // Ensure Drawer is visible before disposing of Login window
-                    if (drawer.isVisible()) {
-                        this.dispose();
-                    } else {
-                        System.out.println("Drawer is not visible. Login window will not be closed.");
-                    }
+
+                    String welcomeMessage = "Selamat Datang " + getData.get("nama_lengkap");
+
+                    // Buat frame baru untuk animasi
+                    JFrame animationFrame = new JFrame();
+                    animationFrame.setUndecorated(true); // Hilangkan border frame
+                    animationFrame.setSize(parentFrame.getSize());
+                    animationFrame.setLocationRelativeTo(parentFrame);
+                    animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage));
+                    animationFrame.setVisible(true);
+
+                    // Sembunyikan frame login
+                    parentFrame.setVisible(false);
                 } else {
                     JOptionPane.showMessageDialog(Login.this, "Login gagal", (String) getData.get("message"), JOptionPane.ERROR_MESSAGE);
                 }
@@ -280,7 +289,6 @@ public class Login extends JFrame {
                             cache.login(username, uuid);
                             JOptionPane.showMessageDialog(Login.this, "Selamat Datang " + getData.get("nama_lengkap"), (String) getData.get("message"), JOptionPane.INFORMATION_MESSAGE);
                             new Drawer().setVisible(true);
-                            Login.this.dispose();
                         } else {
                             JOptionPane.showMessageDialog(Login.this, "Login gagal", (String) getData.get("message"), JOptionPane.ERROR_MESSAGE);
                         }
@@ -299,11 +307,5 @@ public class Login extends JFrame {
                         new EmptyBorder(5, 0, 5, 0)
                 ), title, TitledBorder.LEFT, TitledBorder.ABOVE_TOP, null, Color.WHITE
         );
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new Login().setVisible(true);
-        });
-    }       
+    }    
 }

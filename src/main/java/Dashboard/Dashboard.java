@@ -6,10 +6,14 @@ import Components.CustomPanel;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Main.Drawer;
+
 import java.awt.*;
 import java.util.Calendar;
 import java.util.Map;
+
 import javax.swing.*;
+
+import Auth.AuthFrame;
 
 /**
  *
@@ -246,13 +250,13 @@ public class Dashboard extends JFrame {
         logoutButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         logoutButton.addActionListener(e -> {
             cache.clearCache();
-            // Close the dashboard window after showing the message
-            setVisible(false);
-
-            // Show the login window again
+            drawer.dispose();
+            dispose();
+            // Buka AuthFrame baru dan reset ke login
             SwingUtilities.invokeLater(() -> {
-                new Login().setVisible(true);
-                drawer.dispose();
+                AuthFrame auth = new AuthFrame();
+                auth.setVisible(true);
+                auth.resetToLogin(); // <--- Tambahkan baris ini
             });
         });
 
