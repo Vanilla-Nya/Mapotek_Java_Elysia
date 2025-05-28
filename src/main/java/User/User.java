@@ -10,6 +10,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.Map;
 import java.util.Optional;
 
@@ -103,6 +105,14 @@ public class User extends JFrame {
         // Add components to the frame
         add(topPanel, BorderLayout.NORTH); // Hanya satu kali add ke NORTH
         add(mainPanel, BorderLayout.CENTER);
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                mainPanel.revalidate();
+                mainPanel.repaint();
+            }
+        });
     }
 
     private JPanel createHeaderPanel() {
@@ -154,7 +164,7 @@ public class User extends JFrame {
         searchPanel.add(searchBoxPanel, BorderLayout.WEST); // Search panel on left
         searchPanel.add(addButton, BorderLayout.EAST);      // "Tambahkan User" button on right
 
-        // Search functionality
+        // Search functionality 
         searchButton.addActionListener(e -> {
             String searchText = searchField.getText().trim().toLowerCase();
             if (!searchText.isEmpty()) {
@@ -223,36 +233,35 @@ public class User extends JFrame {
         editButton.setForeground(Color.WHITE);
         editButton.setFocusPainted(false);
         editButton.addActionListener(e -> {
-                int row = userTable.getSelectedRow();
-                if (row != -1) {
-                    String id = (String) model.getValueAt(row, 1);
-                    String name = (String) model.getValueAt(row, 3);
-                    String role = (String) model.getValueAt(row, 2);
-                    String gender = (String) model.getValueAt(row, 4);
-                    String address = (String) model.getValueAt(row, 5);
-                    String phone = (String) model.getValueAt(row, 6);
-                    SwingUtilities.invokeLater(() -> {
-                        EditUser.showModalCenter(
-                            (JFrame) SwingUtilities.getWindowAncestor(userTable),
-                            id,
-                            (updatedName, updatedRole, updatedGender, updatedPhone, updatedAddress, updatedRFID) -> {
-                                model.setValueAt(updatedName, row, 3);
-                                model.setValueAt(updatedRole, row, 2);
-                                model.setValueAt(updatedGender, row, 4);
-                                model.setValueAt(updatedAddress, row, 5);
-                                model.setValueAt(updatedPhone, row, 6);
-                                // Jika ada kolom RFID, tambahkan di sini
-                            }
-                        );
-                    });
-                } else {
-                    JOptionPane.showMessageDialog(this, "Silakan pilih user terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-                    SwingUtilities.invokeLater(() -> {
-                        this.getContentPane().repaint();
-                        this.getContentPane().revalidate();
-                    });
-                    return;
-                }
+            if (model.getRowCount() == 0) { // Cek apakah tabel kosong
+                JOptionPane.showMessageDialog(this, "Tidak ada data untuk diedit!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int row = userTable.getSelectedRow();
+            if (row != -1) {
+                // Lanjutkan dengan logika EDIT
+                String id = (String) model.getValueAt(row, 1);
+                String name = (String) model.getValueAt(row, 3);
+                String role = (String) model.getValueAt(row, 2);
+                String gender = (String) model.getValueAt(row, 4);
+                String address = (String) model.getValueAt(row, 5);
+                String phone = (String) model.getValueAt(row, 6);
+                SwingUtilities.invokeLater(() -> {
+                    EditUser.showModalCenter(
+                        (JFrame) SwingUtilities.getWindowAncestor(userTable),
+                        id,
+                        (updatedName, updatedRole, updatedGender, updatedPhone, updatedAddress, updatedRFID) -> {
+                            model.setValueAt(updatedName, row, 3);
+                            model.setValueAt(updatedRole, row, 2);
+                            model.setValueAt(updatedGender, row, 4);
+                            model.setValueAt(updatedAddress, row, 5);
+                            model.setValueAt(updatedPhone, row, 6);
+                        }
+                    );
+                });
+            } else {
+                JOptionPane.showMessageDialog(this, "Silakan pilih user terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            }
         });
 
         JButton hapusButton = new RoundedButton("HAPUS");
@@ -260,6 +269,10 @@ public class User extends JFrame {
         hapusButton.setForeground(Color.WHITE);
         hapusButton.setFocusPainted(false);
         hapusButton.addActionListener(e -> {
+            if (model.getRowCount() == 0) { // Cek apakah tabel kosong
+                JOptionPane.showMessageDialog(this, "Tidak ada data untuk dihapus!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             int row = userTable.getSelectedRow();
             if (row != -1) {
                 String id = (String) model.getValueAt(row, 1);

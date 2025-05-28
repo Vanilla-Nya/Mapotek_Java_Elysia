@@ -13,6 +13,8 @@ import Pasien.EditPasien.OnPasienUpdatedListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,15 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         add(headerPanel, BorderLayout.NORTH);
         add(searchPanel, BorderLayout.NORTH);
         add(mainPanel, BorderLayout.CENTER);
+
+        // Refresh layout on resize
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                getContentPane().revalidate();
+                getContentPane().repaint();
+            }
+        });
     }
 
     private JScrollPane createTablePanel(int role) {
@@ -251,6 +262,10 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         editButton.setFocusPainted(false);
         editButton.addActionListener(e -> {
             int row = getSelectedRowInTable();
+            if (model.getRowCount() == 0) { // Cek apakah tabel kosong
+                JOptionPane.showMessageDialog(this, "Tidak ada data untuk diedit!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             if (row != -1) {
                 String id = idPasienList.get(row); // id_pasien asli
                 String nik = String.valueOf(model.getValueAt(row, 1));
@@ -278,6 +293,10 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         hapusButton.setFocusPainted(false);
         hapusButton.addActionListener(e -> {
             int row = getSelectedRowInTable();
+            if (model.getRowCount() == 0) { // Cek apakah tabel kosong
+                JOptionPane.showMessageDialog(this, "Tidak ada data untuk dihapus!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             if (row != -1) {
                 String id = idPasienList.get(row); // id_pasien asli
                 deletePasien(row, id);
@@ -377,5 +396,9 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         } else {
             JOptionPane.showMessageDialog(null, "Penghapusan dibatalkan.", "Informasi", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private boolean isTableEmpty() {
+        return model.getRowCount() == 0;
     }
 }

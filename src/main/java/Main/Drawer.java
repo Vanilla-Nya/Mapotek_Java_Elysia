@@ -20,6 +20,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
 import Absensi.Absensi;
@@ -47,9 +49,17 @@ public class Drawer extends JFrame {
     private boolean isDrawerCollapsed = false;
     private final JButton toggleButton;
     private final JButton dashboardButton, pasienButton, obatButton, queueButton, pembukuanButton, pemeriksaanButton, userButton, absensiButton, allAbsensiButton, profileButton;
+    private final java.util.List<JButton> drawerButtons = new java.util.ArrayList<>();
 
     // Single instance of Absensi class
     private Absensi absensiInstance;
+
+    private final boolean[] isTextAnimationRunning = {false};
+
+    private Timer drawerTimer;
+
+    // Tambahkan di bagian atas kelas Drawer
+    private boolean isDrawerAnimationRunning = false;
 
     public Drawer() {
         BatchStatusScheduler.startScheduler();
@@ -88,12 +98,12 @@ public class Drawer extends JFrame {
         drawerPanel.setPreferredSize(new Dimension(250, getHeight()));
 
         // Toggle Button for Drawer Collapse/Expand
-        toggleButton = new JButton("");
-        toggleButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/bars-solid.png")).getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
-        toggleButton.setFocusPainted(false);
-        toggleButton.setForeground(Color.WHITE);
-        toggleButton.setBackground(new Color(58, 64, 74));
-        toggleButton.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        toggleButton = createDrawerButton(" Menu");
+        toggleButton.setIcon(new ImageIcon(new ImageIcon(
+            getClass().getClassLoader().getResource("assets/bars-solid.png")
+        ).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH))); // Ikon ukuran 20x20
+
+        // Tambahkan ActionListener untuk toggle drawer
         toggleButton.addActionListener(e -> toggleDrawer());
 
         // Buttons for the Drawer
@@ -107,6 +117,18 @@ public class Drawer extends JFrame {
         absensiButton = createDrawerButton(" Absensi");
         allAbsensiButton = createDrawerButton(" All Absensi");
         profileButton = createDrawerButton(" Profile");
+
+        // Add buttons to drawerButtons list for easy management
+        drawerButtons.add(dashboardButton);
+        drawerButtons.add(pasienButton);
+        drawerButtons.add(obatButton);
+        drawerButtons.add(queueButton);
+        drawerButtons.add(pemeriksaanButton);
+        drawerButtons.add(pembukuanButton);
+        drawerButtons.add(userButton);
+        drawerButtons.add(absensiButton);
+        drawerButtons.add(allAbsensiButton);
+        drawerButtons.add(profileButton);
 
         dashboardButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/house-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Dashboard
         pasienButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/hospital-user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pasien
@@ -133,8 +155,9 @@ public class Drawer extends JFrame {
 
         // Add Components to Drawer
         drawerPanel.add(toggleButton);
-        drawerPanel.add(Box.createRigidArea(new Dimension(0, 10)));  // Spacing
+        drawerPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Spasi vertikal 10px
         drawerPanel.add(dashboardButton);
+        drawerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         drawerPanel.add(pasienButton);
         drawerPanel.add(obatButton);
         drawerPanel.add(queueButton);
@@ -220,8 +243,9 @@ public class Drawer extends JFrame {
         button.setForeground(Color.WHITE);
         button.setBackground(new Color(58, 64, 74));
         button.setFont(new Font("Arial", Font.PLAIN, 18));
-        button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding atas, kiri, bawah, kanan
+        button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon tetap di kiri
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50)); // Lebar penuh, tinggi 50px
 
         // Button hover effect
         button.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -246,7 +270,23 @@ public class Drawer extends JFrame {
             mainPanel.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Profile")) {
             UserSessionCache sessionCache = new UserSessionCache();
-            mainPanel.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() {
+                    // Operasi berat di sini (misalnya, memuat data dari database)
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    // Tambahkan konten ke mainPanel setelah operasi selesai
+                    mainPanel.removeAll();
+                    mainPanel.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+                    mainPanel.revalidate();
+                    mainPanel.repaint();
+                }
+            };
+            worker.execute();
         } else if (section.equals("Pasien")) {
             mainPanel.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Obat")) {
@@ -278,50 +318,88 @@ public class Drawer extends JFrame {
 
     // Method to toggle the drawer's collapsed state
     private void toggleDrawer() {
+        int targetWidth = isDrawerCollapsed ? 250 : 50; // Ukuran akhir drawer
+        int currentWidth = drawerPanel.getWidth(); // Ukuran saat ini
+        int step = isDrawerCollapsed ? 10 : -10; // Langkah perubahan ukuran
 
-        if (isDrawerCollapsed) {
-            drawerPanel.setPreferredSize(new Dimension(250, getHeight()));  // Expand drawer
-            toggleButton.setText("");  // Change to collapse icon/text
-            dashboardButton.setText(" Dashboard");
-            pasienButton.setText(" Pasien");
-            obatButton.setText(" Obat");
-            queueButton.setText(" Antrian");
-            pemeriksaanButton.setText(" Pemeriksaan");
-            pembukuanButton.setText(" Pembukuan");
-            userButton.setText(" Management User");
-            absensiButton.setText(" Absensi");
-            allAbsensiButton.setText(" All Absensi");
-            profileButton.setText(" Profile");
+        Timer animationTimer = new Timer(10, null); // Timer dengan interval 10ms
+        animationTimer.addActionListener(e -> {
+            int newWidth = drawerPanel.getWidth() + step; // Hitung ukuran baru
+            if ((step > 0 && newWidth >= targetWidth) || (step < 0 && newWidth <= targetWidth)) {
+                newWidth = targetWidth; // Pastikan ukuran tidak melebihi target
+                animationTimer.stop(); // Hentikan animasi
+                isDrawerCollapsed = !isDrawerCollapsed; // Toggle status drawer
 
-        } else {
-            drawerPanel.setPreferredSize(new Dimension(50, getHeight()));
+                // Perbarui tampilan tombol berdasarkan status drawer
+                if (isDrawerCollapsed) {
+                    for (JButton button : drawerButtons) {
+                        button.setText(""); // Hapus teks
+                        button.setHorizontalAlignment(SwingConstants.CENTER); // Ikon di tengah
+                        button.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0)); // Padding untuk ikon di tengah
+                    }
+                    toggleButton.setText(""); // Hapus teks untuk toggleButton
+                    toggleButton.setHorizontalAlignment(SwingConstants.CENTER);
+                    toggleButton.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+                } else {
+                    for (JButton button : drawerButtons) {
+                        if (button == dashboardButton) button.setText(" Dashboard");
+                        else if (button == pasienButton) button.setText(" Pasien");
+                        else if (button == obatButton) button.setText(" Obat");
+                        else if (button == queueButton) button.setText(" Antrian");
+                        else if (button == pemeriksaanButton) button.setText(" Pemeriksaan");
+                        else if (button == pembukuanButton) button.setText(" Pembukuan");
+                        else if (button == userButton) button.setText(" Management User");
+                        else if (button == absensiButton) button.setText(" Absensi");
+                        else if (button == allAbsensiButton) button.setText(" All Absensi");
+                        else if (button == profileButton) button.setText(" Profile");
 
-            // Hide text in collapsed state
-            dashboardButton.setText("");  // Hide text in collapsed state
-            pasienButton.setText("");
-            obatButton.setText("");
-            queueButton.setText("");
-            pemeriksaanButton.setText("");
-            pembukuanButton.setText("");
-            userButton.setText("");
-            absensiButton.setText("");
-            allAbsensiButton.setText("");
-            profileButton.setText("");
+                        button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
+                        button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
+                    }
+                    toggleButton.setText(" Menu");
+                    toggleButton.setHorizontalAlignment(SwingConstants.LEFT);
+                    toggleButton.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+                }
+            }
 
-            // Optionally, set the button size if needed to fit the icons
-            dashboardButton.setPreferredSize(new Dimension(40, 40));
-            pasienButton.setPreferredSize(new Dimension(40, 40));
-            obatButton.setPreferredSize(new Dimension(40, 40));
-            queueButton.setPreferredSize(new Dimension(40, 40));
-            pemeriksaanButton.setPreferredSize(new Dimension(40, 40));
-            pembukuanButton.setPreferredSize(new Dimension(40, 40));
-            userButton.setPreferredSize(new Dimension(40, 40));
-            absensiButton.setPreferredSize(new Dimension(40, 40));
-            allAbsensiButton.setPreferredSize(new Dimension(40, 40));
-        }
-        isDrawerCollapsed = !isDrawerCollapsed;
-        revalidate();  // Refresh the layout
-        repaint();
+            drawerPanel.setPreferredSize(new Dimension(newWidth, getHeight())); // Ubah ukuran drawer
+            drawerPanel.revalidate(); // Perbarui tata letak
+            drawerPanel.repaint(); // Perbarui tampilan
+        });
+
+        animationTimer.start(); // Mulai animasi
+    }
+
+    // Method to start the text animation when expanding the drawer
+    private void startTextAnimation() {
+        Timer textTimer = new Timer(50, null);
+        final int[] textIndex = {0}; // Indeks untuk teks yang sedang diubah
+        isTextAnimationRunning[0] = true; // Set flag animasi tombol berjalan
+
+        textTimer.addActionListener(te -> {
+            if (textIndex[0] < drawerButtons.size()) {
+                JButton button = drawerButtons.get(textIndex[0]);
+                if (button == dashboardButton) button.setText(" Dashboard");
+                else if (button == pasienButton) button.setText(" Pasien");
+                else if (button == obatButton) button.setText(" Obat");
+                else if (button == queueButton) button.setText(" Antrian");
+                else if (button == pemeriksaanButton) button.setText(" Pemeriksaan");
+                else if (button == pembukuanButton) button.setText(" Pembukuan");
+                else if (button == userButton) button.setText(" Management User");
+                else if (button == absensiButton) button.setText(" Absensi");
+                else if (button == allAbsensiButton) button.setText(" All Absensi");
+                else if (button == profileButton) button.setText(" Profile");
+
+                button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
+                button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
+                textIndex[0]++;
+            } else {
+                textTimer.stop();
+                isTextAnimationRunning[0] = false; // Set flag animasi tombol selesai
+            }
+        });
+
+        textTimer.start();
     }
 
     public static void main(String[] args) {

@@ -1,7 +1,11 @@
 package Auth;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 public class AuthFrame extends JFrame {
@@ -14,9 +18,8 @@ public class AuthFrame extends JFrame {
         setSize(1280, 720);
         setLocationRelativeTo(null);
 
-        // cardLayout = new CardLayout(); // HAPUS
         cardPanel = new JPanel(null); // null layout untuk animasi manual
-        cardPanel.setBackground(Color.WHITE); // opsional, biar tidak transparan
+        cardPanel.setBackground(Color.WHITE);
 
         Login loginPanel = new Login(this);
         Register registerPanel = new Register(this);
@@ -25,7 +28,15 @@ public class AuthFrame extends JFrame {
         registerPanel.setBounds(0, 0, 1280, 720);
         cardPanel.add(loginPanel);
         cardPanel.add(registerPanel);
-        registerPanel.setLocation(cardPanel.getWidth(), 0); // pastikan register di luar layar
+
+        // Atur posisi dan visibilitas awal
+        SwingUtilities.invokeLater(() -> {
+            loginPanel.setVisible(true);  // Tampilkan login panel
+            registerPanel.setVisible(false); // Sembunyikan register panel
+            registerPanel.setLocation(cardPanel.getWidth(), 0); // Pastikan register di luar layar
+            cardPanel.repaint();
+            cardPanel.revalidate();
+        });
 
         add(cardPanel);
         // cardLayout.show(cardPanel, "login"); // HAPUS
@@ -42,37 +53,31 @@ public class AuthFrame extends JFrame {
             if (x <= 0) {
                 to.setLocation(0, 0);
                 from.setLocation(-width, 0);
-                from.setVisible(false);
+                from.setVisible(false); // Pastikan panel sebelumnya disembunyikan
                 timer.stop();
             } else {
                 to.setLocation(Math.max(0, x - 40), 0);
                 from.setLocation(to.getLocation().x - width, 0);
-                cardPanel.repaint();
+                cardPanel.repaint(); // Perbarui tampilan
             }
         });
         timer.start();
     }
 
     public void showLogin() {
-        Component current = null;
         for (Component c : cardPanel.getComponents()) {
-            if (c.isVisible()) {
-                current = c;
-                break;
-            }
+            c.setVisible(false); // Sembunyikan semua panel
         }
-        animatePanelSwitch((JPanel) current, (JPanel) cardPanel.getComponent(0)); // 0 = login
+        cardPanel.getComponent(0).setVisible(true); // Tampilkan login panel
+        animatePanelSwitch((JPanel) cardPanel.getComponent(1), (JPanel) cardPanel.getComponent(0));
     }
 
     public void showRegister() {
-        Component current = null;
         for (Component c : cardPanel.getComponents()) {
-            if (c.isVisible()) {
-                current = c;
-                break;
-            }
+            c.setVisible(false); // Sembunyikan semua panel
         }
-        animatePanelSwitch((JPanel) current, (JPanel) cardPanel.getComponent(1)); // 1 = register
+        cardPanel.getComponent(1).setVisible(true); // Tampilkan register panel
+        animatePanelSwitch((JPanel) cardPanel.getComponent(0), (JPanel) cardPanel.getComponent(1));
     }
 
     public void resetToLogin() {
@@ -82,6 +87,7 @@ public class AuthFrame extends JFrame {
         cardPanel.getComponent(0).setLocation(0, 0);
         cardPanel.getComponent(1).setLocation(cardPanel.getWidth(), 0);
         cardPanel.repaint();
+        cardPanel.revalidate();
     }
 
     public static void main(String[] args) {
