@@ -22,6 +22,7 @@ import Components.ExpandableCard;
 import Components.PieChart;
 import Components.ShowModalCenter;
 import Components.ShowmodalBottomSheet;
+import Components.Stepper;
 
 public class Template {
     public static void main(String[] args) {
@@ -45,6 +46,10 @@ public class Template {
         JButton showCenterModalButton = new JButton("Show Center Modal");
         frame.add(showCenterModalButton, BorderLayout.NORTH);
 
+        // Add a button to show the Stepper modal
+        JButton showStepperModalButton = new JButton("Show Stepper Modal");
+        frame.add(showStepperModalButton, BorderLayout.WEST);
+
         // Misal di Template.java
         String[] titles = {"Chart", "Pie Chart"};
         JComponent[] contents = {chart, pieChart};
@@ -66,7 +71,6 @@ public class Template {
             CustomTextFormField customTextField = new CustomTextFormField("Enter your text");
             customTextField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-            
             CustomTextFormField customTextField1 = new CustomTextFormField("Enter your text");
             customTextField.setAlignmentX(Component.CENTER_ALIGNMENT);
 
@@ -124,6 +128,28 @@ public class Template {
             content.add(closeButton);
 
             ShowModalCenter.showCenterModal(frame, content);
+        });
+
+        // Add action listener to the Stepper modal button
+        showStepperModalButton.addActionListener(e -> {
+            Stepper stepper = new Stepper();
+
+            // Step 1
+            JPanel step1 = new JPanel();
+            step1.add(new JLabel("This is Step 1"));
+            stepper.addStep("Step 1", step1);
+
+            // Step 2
+            JPanel step2 = new JPanel();
+            step2.add(new JLabel("This is Step 2"));
+            stepper.addStep("Step 2", step2);
+
+            // Step 3
+            JPanel step3 = new JPanel();
+            step3.add(new JLabel("This is Step 3"));
+            stepper.addStep("Step 3", step3);
+
+            ShowModalCenter.showCenterModal(frame, stepper);
         });
 
         // Set JFrame properties

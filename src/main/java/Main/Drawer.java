@@ -17,6 +17,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -27,6 +28,7 @@ import javax.swing.border.EmptyBorder;
 import Absensi.Absensi;
 import Absensi.AllAbsensi;
 import Antrian.AntrianPasien;
+import Auth.AuthFrame;
 import Components.CustomTitleBarFrame;
 import Dashboard.Dashboard;
 import DataBase.QueryExecutor;
@@ -60,6 +62,9 @@ public class Drawer extends JFrame {
 
     // Tambahkan di bagian atas kelas Drawer
     private boolean isDrawerAnimationRunning = false;
+
+    // Tambahkan tombol Logout di deklarasi variabel
+    private final JButton logoutButton;
 
     public Drawer() {
         BatchStatusScheduler.startScheduler();
@@ -102,6 +107,34 @@ public class Drawer extends JFrame {
         toggleButton.setIcon(new ImageIcon(new ImageIcon(
             getClass().getClassLoader().getResource("assets/bars-solid.png")
         ).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH))); // Ikon ukuran 20x20
+
+        logoutButton = createDrawerButton(" Logout");
+        logoutButton.setIcon(new ImageIcon(new ImageIcon(
+            getClass().getClassLoader().getResource("assets/house-solid.png")
+        ).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
+        logoutButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin keluar?",
+                "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Bersihkan sesi pengguna
+                UserSessionCache sessionCache = new UserSessionCache();
+                sessionCache.clearCache();
+
+                // Tutup frame Drawer dan kembali ke halaman login
+                dispose();
+                SwingUtilities.invokeLater(() -> {
+                    AuthFrame authFrame = new AuthFrame();
+                    authFrame.setVisible(true);
+                    authFrame.resetToLogin(); // Pastikan kembali ke panel login
+                });
+            }
+        }); // Example action, replace as needed
 
         // Tambahkan ActionListener untuk toggle drawer
         toggleButton.addActionListener(e -> toggleDrawer());
@@ -155,18 +188,21 @@ public class Drawer extends JFrame {
 
         // Add Components to Drawer
         drawerPanel.add(toggleButton);
-        drawerPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Spasi vertikal 10px
         drawerPanel.add(dashboardButton);
-        drawerPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         drawerPanel.add(pasienButton);
-        drawerPanel.add(obatButton);
-        drawerPanel.add(queueButton);
+        drawerPanel.add(obatButton);    
+        drawerPanel.add(profileButton);
         drawerPanel.add(pemeriksaanButton);
         drawerPanel.add(pembukuanButton);
         drawerPanel.add(userButton);
         drawerPanel.add(absensiButton);
         drawerPanel.add(allAbsensiButton);
-        drawerPanel.add(profileButton);
+
+        // Tambahkan glue untuk mendorong tombol Logout ke bawah
+        drawerPanel.add(Box.createVerticalGlue());
+
+        // Tambahkan tombol Logout di bagian paling bawah
+        drawerPanel.add(logoutButton);
 
 
         System.out.println("Role: " + role);
@@ -337,11 +373,20 @@ public class Drawer extends JFrame {
                         button.setHorizontalAlignment(SwingConstants.CENTER); // Ikon di tengah
                         button.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0)); // Padding untuk ikon di tengah
                     }
+                    // Perbarui tombol Logout
+                    logoutButton.setText(""); // Hapus teks
+                    logoutButton.setHorizontalAlignment(SwingConstants.CENTER); // Ikon di tengah
+                    logoutButton.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0)); // Padding untuk ikon di tengah
+
                     toggleButton.setText(""); // Hapus teks untuk toggleButton
                     toggleButton.setHorizontalAlignment(SwingConstants.CENTER);
                     toggleButton.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
                 } else {
                     for (JButton button : drawerButtons) {
+                        button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
+                        button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
+
+                        // Tambahkan teks kembali ke tombol
                         if (button == dashboardButton) button.setText(" Dashboard");
                         else if (button == pasienButton) button.setText(" Pasien");
                         else if (button == obatButton) button.setText(" Obat");
@@ -352,10 +397,12 @@ public class Drawer extends JFrame {
                         else if (button == absensiButton) button.setText(" Absensi");
                         else if (button == allAbsensiButton) button.setText(" All Absensi");
                         else if (button == profileButton) button.setText(" Profile");
-
-                        button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
-                        button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
                     }
+                    // Perbarui tombol Logout
+                    logoutButton.setText(" Logout");
+                    logoutButton.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
+                    logoutButton.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
+
                     toggleButton.setText(" Menu");
                     toggleButton.setHorizontalAlignment(SwingConstants.LEFT);
                     toggleButton.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
@@ -368,38 +415,6 @@ public class Drawer extends JFrame {
         });
 
         animationTimer.start(); // Mulai animasi
-    }
-
-    // Method to start the text animation when expanding the drawer
-    private void startTextAnimation() {
-        Timer textTimer = new Timer(50, null);
-        final int[] textIndex = {0}; // Indeks untuk teks yang sedang diubah
-        isTextAnimationRunning[0] = true; // Set flag animasi tombol berjalan
-
-        textTimer.addActionListener(te -> {
-            if (textIndex[0] < drawerButtons.size()) {
-                JButton button = drawerButtons.get(textIndex[0]);
-                if (button == dashboardButton) button.setText(" Dashboard");
-                else if (button == pasienButton) button.setText(" Pasien");
-                else if (button == obatButton) button.setText(" Obat");
-                else if (button == queueButton) button.setText(" Antrian");
-                else if (button == pemeriksaanButton) button.setText(" Pemeriksaan");
-                else if (button == pembukuanButton) button.setText(" Pembukuan");
-                else if (button == userButton) button.setText(" Management User");
-                else if (button == absensiButton) button.setText(" Absensi");
-                else if (button == allAbsensiButton) button.setText(" All Absensi");
-                else if (button == profileButton) button.setText(" Profile");
-
-                button.setHorizontalAlignment(SwingConstants.LEFT); // Ikon dan teks sejajar ke kiri
-                button.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20)); // Padding untuk ikon dan teks
-                textIndex[0]++;
-            } else {
-                textTimer.stop();
-                isTextAnimationRunning[0] = false; // Set flag animasi tombol selesai
-            }
-        });
-
-        textTimer.start();
     }
 
     public static void main(String[] args) {
