@@ -109,10 +109,11 @@ public class Template {
             // Tambahkan ExpandableCard
             JPanel expandableContent = new JPanel();
             expandableContent.setBackground(new Color(240, 240, 240));
+            expandableContent.setPreferredSize(new Dimension(400, 400)); // Atur ukuran preferensi
             expandableContent.add(new JLabel("Isi konten expandable di sini..."));
 
             ExpandableCard expandableCard = new ExpandableCard(
-                "Expandable Card", "123", expandableContent, "bottom"
+                "Expandable Card", expandableContent, "right"
             );
             expandableCard.setAlignmentX(Component.CENTER_ALIGNMENT);
 

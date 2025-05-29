@@ -33,6 +33,7 @@ import Components.CustomPanel;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.Dropdown;
+import Components.ExpandableCard;
 import Components.PieChart;
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
@@ -216,13 +217,6 @@ public class Pembukuan extends JPanel {
         filterModalButton.setForeground(Color.WHITE);
         filterModalButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         filterModalButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        filterModalButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showFilterBottomSheet(); // Call the method to display the bottom sheet
-            }
-        });
 
         // Tambahkan tombol ke footer panel
         footerPanel.add(filterModalButton);
@@ -508,17 +502,30 @@ public class Pembukuan extends JPanel {
         }
     }
 
-    private void showFilterBottomSheet() {
-        // Buat panel untuk konten filter
-        JPanel filterPanel = new JPanel(new GridLayout(2, 1, 10, 10)); // Ubah menjadi 2 baris
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        filterPanel.setBackground(Color.WHITE);
+    private void createSummaryPanel() {
+        // Panel utama untuk summary
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
 
-        // Tambahkan komponen filter (Start Date dan End Date)
-        filterPanel.add(createFilterComponent("Start Date", startDatePicker));
-        filterPanel.add(createFilterComponent("End Date", endDatePicker));
+        // ExpandableCard untuk informasi tambahan
+        JPanel expandableContent = new JPanel();
+        expandableContent.setLayout(new BoxLayout(expandableContent, BoxLayout.Y_AXIS));
+        expandableContent.setBackground(Color.WHITE);
 
-        // Tambahkan tombol "Terapkan Filter"
+        // Panel untuk menempatkan startDatePicker dan endDatePicker di baris yang sama
+        JPanel dateFilterPanel = new JPanel(new GridLayout(1, 2, 10, 0)); // 1 row, 2 columns, 10px horizontal gap
+        dateFilterPanel.setBackground(Color.WHITE);
+
+        // Tambahkan startDatePicker di kiri dan endDatePicker di kanan
+        dateFilterPanel.add(createFilterComponent("Start Date", startDatePicker));
+        dateFilterPanel.add(createFilterComponent("End Date", endDatePicker));
+
+        // Tambahkan panel dateFilterPanel ke expandableContent
+        expandableContent.add(dateFilterPanel);
+
+        // Tambahkan tombol "Terapkan Filter" di tengah
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); // FlowLayout dengan alignment di tengah
         JButton applyButton = new JButton("Terapkan Filter");
         applyButton.setBackground(new Color(33, 150, 243));
         applyButton.setForeground(Color.WHITE);
@@ -537,17 +544,17 @@ public class Pembukuan extends JPanel {
             }
 
             refreshTable(); // Refresh tabel dengan filter yang diterapkan
-            ShowmodalBottomSheet.closeBottomSheet((JFrame) SwingUtilities.getWindowAncestor(this)); // Tutup bottom sheet
         });
 
-        // Tambahkan tombol ke panel filter
-        filterPanel.add(applyButton);
+        buttonPanel.add(applyButton); // Tambahkan tombol ke panel
+        expandableContent.add(buttonPanel); // Tambahkan panel tombol ke expandableContent
 
-        // Tampilkan bottom sheet
-        ShowmodalBottomSheet.showBottomSheet((JFrame) SwingUtilities.getWindowAncestor(this), filterPanel);
-    }
+        ExpandableCard expandableCard = new ExpandableCard(
+            "FILTER DATA", 
+            expandableContent, 
+            "bottom"
+        );
 
-    private void createSummaryPanel() {
         // Panel untuk card summary (Total Pemasukan, Total Pengeluaran, Total Keuntungan)
         JPanel cardPanel = new JPanel();
         cardPanel.setLayout(new GridLayout(1, 3, 20, 0)); // 3 cards in a row
@@ -570,8 +577,12 @@ public class Pembukuan extends JPanel {
         cardPanel.add(pengeluaranCard);
         cardPanel.add(keuntunganCard);
 
-        // Tambahkan cardPanel langsung ke layout utama
-        add(cardPanel, BorderLayout.NORTH);
+        // Tambahkan ExpandableCard dan cardPanel ke mainPanel
+        mainPanel.add(expandableCard, BorderLayout.NORTH);
+        mainPanel.add(cardPanel, BorderLayout.CENTER);
+
+        // Tambahkan mainPanel ke layout utama
+        add(mainPanel, BorderLayout.NORTH);
     }
 
     private JPanel createCard(String title, String value) {

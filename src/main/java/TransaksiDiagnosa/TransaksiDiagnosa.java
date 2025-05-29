@@ -21,6 +21,7 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -86,28 +87,61 @@ public class TransaksiDiagnosa extends JPanel {
 //        patientDataPanel.setBorder(border);
 
         // Title for Patient Data (centered)
-        JLabel patientTitleLabel = new JLabel("Patient Information");
-        patientTitleLabel.setFont(new Font("Arial", Font.BOLD, 22));
-        patientTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);  // Center the title
+        JLabel patientTitleLabel = new JLabel("Informasi Pasien");
+        patientTitleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        patientTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT); // Judul di tengah
         patientDataPanel.add(patientTitleLabel);
 
-        // Create a panel for patient info with left alignment
+        // Tambahkan jarak vertikal antara judul dan isi
+        patientDataPanel.add(Box.createVerticalStrut(10));
+
+        // Panel untuk isi detail pasien
         JPanel patientInfoPanel = new JPanel();
-        patientInfoPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));  // Left-align patient info
-
-        // Example patient data labels (aligned to the left)
-        JLabel nameLabel = new JLabel("Name: " + dataFromParent[3]);
-        patientInfoPanel.add(nameLabel);
-
-        JLabel ageLabel = new JLabel("Age: " + dataFromParent[5]);
-        patientInfoPanel.add(ageLabel);
-
-        JLabel genderLabel = new JLabel("Gender: " + dataFromParent[6]);
-        patientInfoPanel.add(genderLabel);
-
+        patientInfoPanel.setLayout(new GridBagLayout()); // Gunakan GridBagLayout
+        patientInfoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Tambahkan padding
         patientInfoPanel.setBackground(Color.WHITE);
-        patientInfoPanel.setMaximumSize(new Dimension(500, 50));
-        // Add the patient info panel to the patient data panel
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); // Tambahkan margin antar elemen
+        gbc.anchor = GridBagConstraints.WEST; // Rata kiri
+
+        // Label untuk Nama
+        JLabel nameLabel = new JLabel("Nama: ");
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        patientInfoPanel.add(nameLabel, gbc);
+
+        JLabel nameValue = new JLabel((String) dataFromParent[3]);
+        nameValue.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 1;
+        patientInfoPanel.add(nameValue, gbc);
+
+        // Label untuk Umur
+        JLabel umurLabel = new JLabel("Umur: ");
+        umurLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        patientInfoPanel.add(umurLabel, gbc);
+
+        JLabel umurValue = new JLabel((String) dataFromParent[5]);
+        umurValue.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 1;
+        patientInfoPanel.add(umurValue, gbc);
+
+        // Label untuk Jenis Kelamin
+        JLabel genderLabel = new JLabel("Jenis Kelamin: ");
+        genderLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        patientInfoPanel.add(genderLabel, gbc);
+
+        JLabel genderValue = new JLabel((String) dataFromParent[6]);
+        genderValue.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 1;
+        patientInfoPanel.add(genderValue, gbc);
+
+        // Tambahkan panel isi ke panel utama
         patientDataPanel.add(patientInfoPanel);
 
         patientDataPanel.add(Box.createVerticalStrut(10));  // Space before next section
@@ -123,7 +157,7 @@ public class TransaksiDiagnosa extends JPanel {
         diagnosisPanel.setLayout(new BoxLayout(diagnosisPanel, BoxLayout.Y_AXIS));
         diagnosisPanel.setBackground(Color.WHITE);
 
-        JLabel diagnosisLabel = new JLabel("Diagnosis Information");
+        JLabel diagnosisLabel = new JLabel("Diagnosa PAsien");
         diagnosisLabel.setFont(new Font("Arial", Font.BOLD, 22));
         diagnosisLabel.setAlignmentX(Component.CENTER_ALIGNMENT);  // Center the title
         diagnosisPanel.add(diagnosisLabel);
@@ -201,7 +235,7 @@ public class TransaksiDiagnosa extends JPanel {
         drugDataPanel.add(Box.createVerticalStrut(10));
 
         // Title for DrugData (centered)
-        JLabel drugLabel = new JLabel("Drug Recommendations");
+        JLabel drugLabel = new JLabel("Obat");
         drugLabel.setFont(new Font("Arial", Font.BOLD, 22));
         drugLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         drugDataPanel.add(drugLabel);
@@ -212,29 +246,37 @@ public class TransaksiDiagnosa extends JPanel {
         drugInfoPanel.setLayout(new BoxLayout(drugInfoPanel, BoxLayout.Y_AXIS));  // Left-align patient info
         String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "HARGA", "SIGNA", "AKSI"};
         model = new DefaultTableModel(data, columnNames) {
+            @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 5;  // Only "AKSI" column is editable
+                return column == 5;  // Hanya kolom "AKSI" yang editable
             }
         };
+
+        // Gunakan CustomTable
         CustomTable table = new CustomTable(model);
+
+        // Nonaktifkan resize dan reorder
+        table.setRowResizable(false);
+        table.setRowReorderable(false);
+
+        // Renderer dan editor untuk kolom "AKSI"
         table.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
         table.getColumn("AKSI").setCellEditor(new ActionCellEditor(model));
         table.getColumn("AKSI").setMinWidth(150);
 
+        // Perbesar font untuk tabel
+        table.setFont(new Font("Arial", Font.PLAIN, 14)); // Isi tabel
+        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16)); // Header tabel
+
         JScrollPane drugPanelChild = new JScrollPane(table);
 
         // Atur ukuran tabel
-        table.setPreferredScrollableViewportSize(new Dimension(950, 400));
+        table.setPreferredScrollableViewportSize(new Dimension(1200, 400));
 
         // Atur ukuran JScrollPane
-        drugPanelChild.setPreferredSize(new Dimension(950, 400));
+        drugPanelChild.setPreferredSize(new Dimension(1200, 400));
 
-        // Atur ukuran panel yang membungkus tabel
-        drugInfoPanel.setPreferredSize(new Dimension(1000, 450));
-        drugInfoPanel.setMaximumSize(new Dimension(1000, 450)); // Sesuaikan ukuran maksimum
-
-        // Gunakan BorderLayout untuk memastikan tabel mengisi ruang
-        drugInfoPanel.setLayout(new BorderLayout());
+        // Tambahkan JScrollPane ke drugInfoPanel
         drugInfoPanel.add(drugPanelChild, BorderLayout.CENTER);
 
         // Hapus batasan ukuran pada drugDataPanel
@@ -255,7 +297,7 @@ public class TransaksiDiagnosa extends JPanel {
         drugDataPanel.add(Box.createVerticalStrut(10));
 
         RoundedButton addButton = new RoundedButton("Tambah");
-        addButton.setFont(new Font("Arial", Font.BOLD, 14));
+        addButton.setFont(new Font("Arial", Font.BOLD, 16));
         addButton.setBackground(new Color(33, 150, 243));  // Blue background for Finish button
         addButton.setForeground(Color.WHITE);
         addButton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -276,7 +318,7 @@ public class TransaksiDiagnosa extends JPanel {
         });
 
         finalButton = new RoundedButton("Finish");
-        finalButton.setFont(new Font("Arial", Font.BOLD, 14));
+        finalButton.setFont(new Font("Arial", Font.BOLD, 16));
         finalButton.setBackground(new Color(33, 150, 243));  // Blue background for Finish button
         finalButton.setForeground(Color.WHITE);
         finalButton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -465,20 +507,20 @@ public class TransaksiDiagnosa extends JPanel {
         JPanel totalPanel = new JPanel();
         totalPanel.setSize(new Dimension(400, 20));
         totalPanel.setLayout(new GridBagLayout());  // Using GridBagLayout
-        GridBagConstraints gbc = new GridBagConstraints();
+        GridBagConstraints gbcTotal = new GridBagConstraints();
         totalPanel.setBackground(Color.WHITE);
 
         // Place hargaJasa on the left
-        gbc.gridx = 0;
-        gbc.weightx = 0.5;  // Give some weight for left alignment
-        gbc.anchor = GridBagConstraints.WEST;
-        totalPanel.add(hargaJasa, gbc);
+        gbcTotal.gridx = 0;
+        gbcTotal.weightx = 0.5;  // Give some weight for left alignment
+        gbcTotal.anchor = GridBagConstraints.WEST;
+        totalPanel.add(hargaJasa, gbcTotal);
 
         // Place totalLabel on the right
-        gbc.gridx = 1;
-        gbc.weightx = 0.5;  // Give some weight for right alignment
-        gbc.anchor = GridBagConstraints.EAST;
-        totalPanel.add(totalLabel, gbc);
+        gbcTotal.gridx = 1;
+        gbcTotal.weightx = 0.5;  // Give some weight for right alignment
+        gbcTotal.anchor = GridBagConstraints.EAST;
+        totalPanel.add(totalLabel, gbcTotal);
 
         drugDataPanel.add(totalPanel);
         drugDataPanel.add(Box.createVerticalStrut(10));
