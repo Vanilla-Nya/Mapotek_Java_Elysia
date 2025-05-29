@@ -42,6 +42,10 @@ public class ShowModalCenter {
     }
 
     public static JPanel showCenterModal(JFrame frame, JComponent content) {
+        return showCenterModal(frame, content, false);
+    }
+
+    public static JPanel showCenterModal(JFrame frame, JComponent content, boolean requireConfirmation) {
         FadePanel modalPanel = new FadePanel();
         modalPanel.setLayout(new BoxLayout(modalPanel, BoxLayout.Y_AXIS));
         modalPanel.setBackground(Color.WHITE);
@@ -65,17 +69,35 @@ public class ShowModalCenter {
         glassPane.setSize(frame.getSize());
         glassPane.setLocation(0, 0);
         glassPane.setVisible(true);
-        glassPane.addMouseListener(new MouseAdapter() {});
-        glassPane.addMouseMotionListener(new MouseMotionAdapter() {});
+
+        // Tambahkan logika untuk konfirmasi opsional
         glassPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 Point pt = SwingUtilities.convertPoint(glassPane, e.getPoint(), modalPanel.getParent());
                 if (!modalPanel.getBounds().contains(pt)) {
-                    closeCenterModal(frame);
+                    if (requireConfirmation) {
+                        // Tampilkan dialog konfirmasi
+                        int result = JOptionPane.showConfirmDialog(
+                            frame,
+                            "Apakah Anda ingin membatalkan diagnosis ini?", // Pesan konfirmasi
+                            "Konfirmasi Pembatalan", // Judul dialog
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                        );
+
+                        // Jika pengguna memilih "Yes", tutup modal
+                        if (result == JOptionPane.YES_OPTION) {
+                            closeCenterModal(frame);
+                        }
+                    } else {
+                        // Tutup modal langsung tanpa konfirmasi
+                        closeCenterModal(frame);
+                    }
                 }
             }
         });
+
         frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -157,5 +179,94 @@ public class ShowModalCenter {
                 isClosing = false;
             }
         }
+    }
+
+    public static void closeCenterModal(JFrame frame, String message, String title) {
+        if (currentModal != null && !isClosing) {
+            // Tampilkan dialog konfirmasi
+            int result = JOptionPane.showConfirmDialog(
+                frame,
+                message, // Pesan yang ditampilkan
+                title,  // Judul dialog
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+            );
+
+            // Jika pengguna memilih "Yes", lanjutkan untuk menutup modal
+            if (result == JOptionPane.YES_OPTION) {
+                isClosing = true;
+                if (currentModal instanceof FadePanel) {
+                    FadePanel modalPanel = (FadePanel) currentModal;
+                    Timer timer = new Timer(10, null);
+                    timer.addActionListener(e -> {
+                        float alpha = modalPanel.getAlpha() - 0.05f;
+                        if (alpha <= 0f) {
+                            modalPanel.setAlpha(0f); // Pastikan benar-benar 0 dan repaint terakhir
+                            timer.stop();
+                            // Hapus modal dan glassPane setelah repaint terakhir
+                            Timer cleanupTimer = new Timer(20, ev -> {
+                                JLayeredPane layeredPane = frame.getLayeredPane();
+                                layeredPane.remove(modalPanel);
+                                for (Component comp : layeredPane.getComponentsInLayer(JLayeredPane.MODAL_LAYER)) {
+                                    if (comp instanceof JPanel) {
+                                        layeredPane.remove(comp);
+                                    }
+                                }
+                                layeredPane.repaint();
+                                currentModal = null;
+                                isClosing = false;
+                            });
+                            cleanupTimer.setRepeats(false);
+                            cleanupTimer.start();
+                        } else {
+                            modalPanel.setAlpha(alpha);
+                        }
+                    });
+                    timer.start();
+                } else {
+                    // Fallback jika bukan FadePanel
+                    JLayeredPane layeredPane = frame.getLayeredPane();
+                    layeredPane.remove(currentModal);
+                    for (Component comp : layeredPane.getComponentsInLayer(JLayeredPane.MODAL_LAYER)) {
+                        if (comp instanceof JPanel) {
+                            layeredPane.remove(comp);
+                        }
+                    }
+                    layeredPane.repaint();
+                    currentModal = null;
+                    isClosing = false;
+                }
+            }
+        }
+    }
+
+    public static void showModalCenter(JFrame parent, JComponent content) {
+        JDialog dialog = new JDialog(parent, true); // Create a modal dialog
+        dialog.setUndecorated(true); // Remove window decorations
+        dialog.setLayout(new BorderLayout());
+        dialog.add(content, BorderLayout.CENTER); // Add the content to the dialog
+
+        // Center the dialog relative to the parent frame
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+
+        // Add a fade-in effect (optional)
+        Timer fadeInTimer = new Timer(10, null);
+        fadeInTimer.addActionListener(new ActionListener() {
+            float opacity = 0f;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                opacity += 0.05f;
+                if (opacity >= 1f) {
+                    opacity = 1f;
+                    fadeInTimer.stop();
+                }
+                dialog.setOpacity(opacity);
+            }
+        });
+        fadeInTimer.start();
+
+        dialog.setVisible(true); // Show the dialog
     }
 }

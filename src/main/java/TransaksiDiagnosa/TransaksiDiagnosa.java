@@ -1,5 +1,6 @@
 package TransaksiDiagnosa;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -40,10 +41,11 @@ import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedBorder;
 import Components.RoundedButton;
+import Components.Stepper;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 
-public class TransaksiDiagnosa extends JFrame {
+public class TransaksiDiagnosa extends JPanel {
 
     private DefaultTableModel model;
     Object[][] data = {};
@@ -61,19 +63,16 @@ public class TransaksiDiagnosa extends JFrame {
     java.util.List idList = new ArrayList<>();
     private Object[] patientData;
     private List<Object[]> drugData;
+    private Stepper stepper; // Tambahkan instance Stepper
 
     public TransaksiDiagnosa(OnPemeriksaanUpdatedListener listener, String idAntrian, Object[] dataFromParent) {
         System.out.println(Arrays.toString(dataFromParent));
         QueryExecutor executor = new QueryExecutor();
         this.listener = listener;
-        setTitle("Medical Diagnosis Form");
-        setSize(720, 720); // Increase size for more space
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Main Panel with BoxLayout
         mainPanel = new CustomPanel(30);
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBackground(new Color(240, 240, 240)); // Light gray background for the main panel
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
@@ -135,16 +134,20 @@ public class TransaksiDiagnosa extends JFrame {
 
         // Panel untuk ICDX
         JPanel icdxPanel = new JPanel();
-        icdxPanel.setLayout(new BoxLayout(icdxPanel, BoxLayout.Y_AXIS));
+        icdxPanel.setLayout(new BorderLayout()); // Gunakan BorderLayout untuk konsistensi
+
+        // Tabel ICDX
         String[] icdxColumns = {"Kode ICDX", "Deskripsi", "Aksi"};
         DefaultTableModel icdxTableModel = new DefaultTableModel(icdxColumns, 0);
         JTable icdxTable = new JTable(icdxTableModel);
+
+        // Tambahkan JScrollPane ke bagian tengah panel
         JScrollPane icdxScrollPane = new JScrollPane(icdxTable);
-        icdxPanel.add(icdxScrollPane);
+        icdxPanel.add(icdxScrollPane, BorderLayout.CENTER);
 
         // Tombol Tambah untuk ICDX
         RoundedButton addICDXButton = new RoundedButton("Tambah ICDX");
-        addICDXButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        addICDXButton.setPreferredSize(new Dimension(150, 30)); // Atur ukuran tombol
         addICDXButton.addActionListener(e -> {
             ICDXForm icdxForm = new ICDXForm(selectedData -> {
                 // Tambahkan data ke tabel ICDX
@@ -152,16 +155,22 @@ public class TransaksiDiagnosa extends JFrame {
             });
             icdxForm.setVisible(true);
         });
-        icdxPanel.add(Box.createVerticalStrut(10));
-        icdxPanel.add(addICDXButton);
+
+        // Tambahkan tombol di bagian bawah panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0)); // Atur margin horizontal dan vertikal menjadi 0
+        buttonPanel.add(addICDXButton);
+        icdxPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         // Panel untuk ICDIX
         JPanel icdixPanel = new JPanel();
         icdixPanel.setLayout(new BoxLayout(icdixPanel, BoxLayout.Y_AXIS));
         String[] icdixColumns = {"Kode ICDIX", "Deskripsi", "Aksi"};
         DefaultTableModel icdixTableModel = new DefaultTableModel(icdixColumns, 0);
         JTable icdixTable = new JTable(icdixTableModel);
+        // Tambahkan JScrollPane ke icdixPanel
         JScrollPane icdixScrollPane = new JScrollPane(icdixTable);
-        icdixPanel.add(icdixScrollPane);
+        icdixPanel.setLayout(new BorderLayout());
+        icdixPanel.add(icdixScrollPane, BorderLayout.CENTER);
 
         // Tombol Tambah untuk ICDIX
         RoundedButton addICDIXButton = new RoundedButton("Tambah ICDIX");
@@ -173,8 +182,7 @@ public class TransaksiDiagnosa extends JFrame {
             });
             icdixForm.setVisible(true);
         });
-        icdixPanel.add(Box.createVerticalStrut(10));
-        icdixPanel.add(addICDIXButton);
+        icdixPanel.add(addICDIXButton, BorderLayout.SOUTH);
 
         // Tambahkan tab ke JTabbedPane
         diagnosisTabbedPane.addTab("ICDX", icdxPanel);
@@ -183,24 +191,13 @@ public class TransaksiDiagnosa extends JFrame {
         // Tambahkan JTabbedPane ke diagnosisPanel
         diagnosisPanel.add(diagnosisTabbedPane);
 
-        // "Next" button
-        nextButton = new RoundedButton("Next");
-        nextButton.setFont(new Font("Arial", Font.BOLD, 14));
-        nextButton.setBackground(new Color(76, 175, 80));  // Green background for Next button
-        nextButton.setForeground(Color.WHITE);
-        nextButton.setFocusPainted(false);
-        nextButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        diagnosisPanel.add(Box.createVerticalStrut(10));  // Space before button
-        diagnosisPanel.add(nextButton);
-        diagnosisPanel.add(Box.createVerticalStrut(10));
-
         // Create Drug Data Panel
         drugDataPanel = new CustomPanel(30);
         drugDataPanel.setBorder(border);
         drugDataPanel.setLayout(new BoxLayout(drugDataPanel, BoxLayout.Y_AXIS));  // Use BoxLayout for vertical layout
         drugDataPanel.setBackground(Color.WHITE);
         drugDataPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        drugDataPanel.setPreferredSize(new Dimension(680, 400));
+        drugDataPanel.setPreferredSize(new Dimension(1000, 600));
         drugDataPanel.add(Box.createVerticalStrut(10));
 
         // Title for DrugData (centered)
@@ -226,6 +223,28 @@ public class TransaksiDiagnosa extends JFrame {
 
         JScrollPane drugPanelChild = new JScrollPane(table);
 
+        // Atur ukuran tabel
+        table.setPreferredScrollableViewportSize(new Dimension(950, 400));
+
+        // Atur ukuran JScrollPane
+        drugPanelChild.setPreferredSize(new Dimension(950, 400));
+
+        // Atur ukuran panel yang membungkus tabel
+        drugInfoPanel.setPreferredSize(new Dimension(1000, 450));
+        drugInfoPanel.setMaximumSize(new Dimension(1000, 450)); // Sesuaikan ukuran maksimum
+
+        // Gunakan BorderLayout untuk memastikan tabel mengisi ruang
+        drugInfoPanel.setLayout(new BorderLayout());
+        drugInfoPanel.add(drugPanelChild, BorderLayout.CENTER);
+
+        // Hapus batasan ukuran pada drugDataPanel
+        drugDataPanel.setMaximumSize(new Dimension(1000, 600)); // Sesuaikan ukuran maksimum
+
+        // Pastikan perubahan diterapkan
+        drugDataPanel.revalidate();
+        drugDataPanel.repaint();
+
+        // Tambahkan JScrollPane ke drugInfoPanel
         drugInfoPanel.add(drugPanelChild);
 
         drugInfoPanel.setBackground(Color.WHITE);
@@ -414,7 +433,6 @@ public class TransaksiDiagnosa extends JFrame {
 
                                 if (isAntrianUpdated) {
                                     JOptionPane.showMessageDialog(this, "Proses selesai. Halaman akan ditutup.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                                    dispose(); // Tutup halaman hanya setelah semua proses selesai
                                 } else {
                                     JOptionPane.showMessageDialog(this, "Gagal memperbarui status antrian.", "Error", JOptionPane.ERROR_MESSAGE);
                                 }
@@ -437,12 +455,12 @@ public class TransaksiDiagnosa extends JFrame {
             }
         });
 
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));  // Use BoxLayout for vertical layout
-        buttonPanel.setBackground(Color.WHITE);
-        buttonPanel.add(addButton);
-        buttonPanel.add(Box.createHorizontalStrut(10));
-        buttonPanel.add(finalButton);
+        JPanel drugButtonPanel = new JPanel();
+        drugButtonPanel.setLayout(new BoxLayout(drugButtonPanel, BoxLayout.X_AXIS));  // Use BoxLayout for vertical layout
+        drugButtonPanel.setBackground(Color.WHITE);
+        drugButtonPanel.add(addButton);
+        drugButtonPanel.add(Box.createHorizontalStrut(10));
+        drugButtonPanel.add(finalButton);
 
         JPanel totalPanel = new JPanel();
         totalPanel.setSize(new Dimension(400, 20));
@@ -464,7 +482,7 @@ public class TransaksiDiagnosa extends JFrame {
 
         drugDataPanel.add(totalPanel);
         drugDataPanel.add(Box.createVerticalStrut(10));
-        drugDataPanel.add(buttonPanel);
+        drugDataPanel.add(drugButtonPanel);
 
         drugDataPanel.add(Box.createVerticalStrut(10));
         drugDataPanel.setMaximumSize(new Dimension(680, 300));
@@ -472,26 +490,26 @@ public class TransaksiDiagnosa extends JFrame {
         // Initially set the drug panel to be invisible
         drugDataPanel.setVisible(false);
 
-        // Add panels to the main panel
-        mainPanel.add(diagnosisPanel);
-        mainPanel.add(Box.createVerticalStrut(10));
-        mainPanel.add(drugDataPanel);
+        // Inisialisasi Stepper
+        stepper = new Stepper();
 
-        // Add the scrollable panel to the frame
-        scrollPane = new JScrollPane(mainPanel);
-        add(scrollPane);
-        setBackground(Color.WHITE);
+        // Tambahkan langkah-langkah ke Stepper
+        stepper.addStep("Patient Info", patientDataPanel);
+        stepper.addStep("Diagnosis", diagnosisPanel);
+        stepper.addStep("Drug Recommendations", drugDataPanel);
 
-        setLocationRelativeTo(null);
-        setVisible(true);
+        // Tambahkan Stepper ke layout utama
+        setLayout(new BorderLayout());
+        add(stepper, BorderLayout.CENTER);
 
-        // Action listener for the "Next" button
-        nextButton.addActionListener((ActionEvent e) -> {
-            // Switch to the drug recommendation panel by making it visible
-            drugDataPanel.setVisible(true);
-            nextButton.setVisible(false);
-            finalButton.setEnabled(true); // Enable the finish button
-        });
+        // Hapus penambahan langsung ke mainPanel
+        // mainPanel.add(patientDataPanel);
+        // mainPanel.add(diagnosisPanel);
+        // mainPanel.add(drugDataPanel);
+
+        // Tambahkan scrollPane jika diperlukan
+        scrollPane = new JScrollPane(stepper);
+        add(scrollPane, BorderLayout.CENTER);
     }
 
     public Object[] getPatientData() {

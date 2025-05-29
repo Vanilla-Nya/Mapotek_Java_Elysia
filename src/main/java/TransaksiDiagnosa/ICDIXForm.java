@@ -23,7 +23,7 @@ public class ICDIXForm extends JFrame {
         this.listener = listener;
 
         setTitle("Pencarian ICDIX");
-        setSize(600, 400);
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -40,6 +40,11 @@ public class ICDIXForm extends JFrame {
         String[] columns = {"Kode ICDIX", "Deskripsi"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
+
+        // Atur lebar kolom
+        table.getColumnModel().getColumn(0).setPreferredWidth(70); // Lebar kolom "Kode ICDIX" lebih kecil
+        table.getColumnModel().getColumn(1).setPreferredWidth(500); // Lebar kolom "Deskripsi" lebih besar
+
         JScrollPane tableScrollPane = new JScrollPane(table);
 
         // Tombol "Pilih"

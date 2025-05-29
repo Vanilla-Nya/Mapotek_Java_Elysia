@@ -191,12 +191,13 @@ public class Drawer extends JFrame {
         drawerPanel.add(dashboardButton);
         drawerPanel.add(pasienButton);
         drawerPanel.add(obatButton);    
-        drawerPanel.add(profileButton);
+        drawerPanel.add(queueButton);
         drawerPanel.add(pemeriksaanButton);
         drawerPanel.add(pembukuanButton);
         drawerPanel.add(userButton);
         drawerPanel.add(absensiButton);
         drawerPanel.add(allAbsensiButton);
+        drawerPanel.add(profileButton);
 
         // Tambahkan glue untuk mendorong tombol Logout ke bawah
         drawerPanel.add(Box.createVerticalGlue());

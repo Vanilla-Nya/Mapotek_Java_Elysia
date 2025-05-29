@@ -6,6 +6,7 @@ package Pemeriksaan;
 
 import Components.CustomTable.CustomTable;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import TransaksiDiagnosa.TransaksiDiagnosa;
 import TransaksiDiagnosa.TransaksiDiagnosa.OnPemeriksaanUpdatedListener;
@@ -182,26 +183,27 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
             panel = new JPanel();
             panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 3));
 
-            PeriksaButton = new RoundedButton("PERIKSA");
-            PeriksaButton.setBackground(Color.GREEN);
-            PeriksaButton.setForeground(Color.WHITE);
-            PeriksaButton.setFocusPainted(false);
-            PeriksaButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    SwingUtilities.invokeLater(() -> {
-                        // Ambil data lengkap dari fullData[row]
-                        Object[] dataForTransaksiDiagnosa = fullData[row];
-                        String idAntrian = dataForTransaksiDiagnosa[0].toString(); // Ambil id_antrian
-                        System.out.println("ID Antrian yang diteruskan: " + idAntrian); // Debugging
+            JButton periksaButton = new RoundedButton("PERIKSA");
+            periksaButton.setBackground(Color.GREEN);
+            periksaButton.setForeground(Color.WHITE);
+            periksaButton.setFocusPainted(false);
+            periksaButton.addActionListener(e -> {
+                SwingUtilities.invokeLater(() -> {
+                    // Ambil data lengkap dari fullData[row]
+                    Object[] dataForTransaksiDiagnosa = fullData[row];
+                    String idAntrian = dataForTransaksiDiagnosa[0].toString(); // Ambil id_antrian
+                    System.out.println("ID Antrian yang diteruskan: " + idAntrian); // Debugging
 
-                        // Teruskan data lengkap ke TransaksiDiagnosa
-                        new TransaksiDiagnosa(TablePemeriksaan.this, idAntrian, fullData[row]);
-                    });
-                }
+                    // Tampilkan TransaksiDiagnosa sebagai modal dengan konfirmasi
+                    TransaksiDiagnosa transaksiDiagnosa = new TransaksiDiagnosa(TablePemeriksaan.this, idAntrian, dataForTransaksiDiagnosa);
+                    ShowModalCenter.showCenterModal(
+                        (JFrame) SwingUtilities.getWindowAncestor(panel), // Parent frame
+                        transaksiDiagnosa,
+                        true // Aktifkan konfirmasi saat glassPane diklik
+                    );
+                });
             });
-            add(PeriksaButton);
-            setBackground(Color.WHITE);
-            panel.add(PeriksaButton);
+            panel.add(periksaButton);
         }
 
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
