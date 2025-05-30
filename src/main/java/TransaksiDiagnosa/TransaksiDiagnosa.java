@@ -23,6 +23,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -38,6 +39,7 @@ import javax.swing.table.TableCellRenderer;
 
 import Components.CustomDialog;
 import Components.CustomPanel;
+import Components.CustomTabbedPane;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedBorder;
@@ -157,7 +159,7 @@ public class TransaksiDiagnosa extends JPanel {
         diagnosisPanel.setLayout(new BoxLayout(diagnosisPanel, BoxLayout.Y_AXIS));
         diagnosisPanel.setBackground(Color.WHITE);
 
-        JLabel diagnosisLabel = new JLabel("Diagnosa PAsien");
+        JLabel diagnosisLabel = new JLabel("Diagnosa Pasien");
         diagnosisLabel.setFont(new Font("Arial", Font.BOLD, 22));
         diagnosisLabel.setAlignmentX(Component.CENTER_ALIGNMENT);  // Center the title
         diagnosisPanel.add(diagnosisLabel);
@@ -172,8 +174,25 @@ public class TransaksiDiagnosa extends JPanel {
 
         // Tabel ICDX
         String[] icdxColumns = {"Kode ICDX", "Deskripsi", "Aksi"};
-        DefaultTableModel icdxTableModel = new DefaultTableModel(icdxColumns, 0);
+        DefaultTableModel icdxTableModel = new DefaultTableModel(icdxColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Semua sel tidak dapat diedit
+            }
+        };
         JTable icdxTable = new JTable(icdxTableModel);
+
+        // Atur ukuran kolom untuk tabel ICDX
+        icdxTable.getColumnModel().getColumn(0).setPreferredWidth(50); // Kolom "Kode ICDX"
+        icdxTable.getColumnModel().getColumn(1).setPreferredWidth(500); // Kolom "Deskripsi"
+        icdxTable.getColumnModel().getColumn(2).setPreferredWidth(50);  // Kolom "Aksi"
+
+        // Nonaktifkan resize dan reorder untuk tabel ICDX
+        icdxTable.getTableHeader().setResizingAllowed(false);
+        icdxTable.getTableHeader().setReorderingAllowed(false);
+
+        // Atur tinggi baris untuk tabel ICDX
+        icdxTable.setRowHeight(30); // Tinggi baris 30 piksel
 
         // Tambahkan JScrollPane ke bagian tengah panel
         JScrollPane icdxScrollPane = new JScrollPane(icdxTable);
@@ -191,24 +210,43 @@ public class TransaksiDiagnosa extends JPanel {
         });
 
         // Tambahkan tombol di bagian bawah panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0)); // Atur margin horizontal dan vertikal menjadi 0
-        buttonPanel.add(addICDXButton);
-        icdxPanel.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel icdxButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        icdxButtonPanel.add(addICDXButton);
+        icdxPanel.add(icdxButtonPanel, BorderLayout.SOUTH);
 
         // Panel untuk ICDIX
         JPanel icdixPanel = new JPanel();
-        icdixPanel.setLayout(new BoxLayout(icdixPanel, BoxLayout.Y_AXIS));
-        String[] icdixColumns = {"Kode ICDIX", "Deskripsi", "Aksi"};
-        DefaultTableModel icdixTableModel = new DefaultTableModel(icdixColumns, 0);
-        JTable icdixTable = new JTable(icdixTableModel);
-        // Tambahkan JScrollPane ke icdixPanel
-        JScrollPane icdixScrollPane = new JScrollPane(icdixTable);
         icdixPanel.setLayout(new BorderLayout());
+
+        // Tabel ICDIX
+        String[] icdixColumns = {"Kode ICDIX", "Deskripsi", "Aksi"};
+        DefaultTableModel icdixTableModel = new DefaultTableModel(icdixColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Semua sel tidak dapat diedit
+            }
+        };
+        JTable icdixTable = new JTable(icdixTableModel);
+
+        // Atur ukuran kolom untuk tabel ICDIX
+        icdixTable.getColumnModel().getColumn(0).setPreferredWidth(50); // Kolom "Kode ICDIX"
+        icdixTable.getColumnModel().getColumn(1).setPreferredWidth(500); // Kolom "Deskripsi"
+        icdixTable.getColumnModel().getColumn(2).setPreferredWidth(50);  // Kolom "Aksi"
+
+        // Nonaktifkan resize dan reorder untuk tabel ICDX
+        icdixTable.getTableHeader().setResizingAllowed(false);
+        icdixTable.getTableHeader().setReorderingAllowed(false);
+
+        // Atur tinggi baris untuk tabel ICDX
+        icdixTable.setRowHeight(30); // Tinggi baris 30 piksel
+
+        // Tambahkan JScrollPane ke bagian tengah panel
+        JScrollPane icdixScrollPane = new JScrollPane(icdixTable);
         icdixPanel.add(icdixScrollPane, BorderLayout.CENTER);
 
         // Tombol Tambah untuk ICDIX
         RoundedButton addICDIXButton = new RoundedButton("Tambah ICDIX");
-        addICDIXButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        addICDIXButton.setPreferredSize(new Dimension(150, 30));
         addICDIXButton.addActionListener(e -> {
             ICDIXForm icdixForm = new ICDIXForm(selectedData -> {
                 // Tambahkan data ke tabel ICDIX
@@ -216,14 +254,19 @@ public class TransaksiDiagnosa extends JPanel {
             });
             icdixForm.setVisible(true);
         });
-        icdixPanel.add(addICDIXButton, BorderLayout.SOUTH);
 
-        // Tambahkan tab ke JTabbedPane
-        diagnosisTabbedPane.addTab("ICDX", icdxPanel);
-        diagnosisTabbedPane.addTab("ICDIX", icdixPanel);
+        // Tambahkan tombol di bagian bawah panel
+        JPanel icdixButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        icdixButtonPanel.add(addICDIXButton);
+        icdixPanel.add(icdixButtonPanel, BorderLayout.SOUTH);
 
-        // Tambahkan JTabbedPane ke diagnosisPanel
-        diagnosisPanel.add(diagnosisTabbedPane);
+        // Buat CustomTabbedPane
+        String[] tabTitles = {"ICDX", "ICDIX"};
+        JComponent[] tabContents = {icdxPanel, icdixPanel};
+        CustomTabbedPane customTabbedPane = new CustomTabbedPane(tabTitles, tabContents);
+
+        // Tambahkan CustomTabbedPane ke diagnosisPanel
+        diagnosisPanel.add(customTabbedPane);
 
         // Create Drug Data Panel
         drugDataPanel = new CustomPanel(30);
@@ -241,9 +284,10 @@ public class TransaksiDiagnosa extends JPanel {
         drugDataPanel.add(drugLabel);
         drugDataPanel.add(Box.createVerticalStrut(10));
 
-        // Create a panel for Drug info with left alignment
+        // Create a panel for Drug info with full width
         JPanel drugInfoPanel = new JPanel();
-        drugInfoPanel.setLayout(new BoxLayout(drugInfoPanel, BoxLayout.Y_AXIS));  // Left-align patient info
+        drugInfoPanel.setLayout(new BorderLayout()); // Gunakan BorderLayout untuk full width
+
         String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "HARGA", "SIGNA", "AKSI"};
         model = new DefaultTableModel(data, columnNames) {
             @Override
@@ -268,31 +312,17 @@ public class TransaksiDiagnosa extends JPanel {
         table.setFont(new Font("Arial", Font.PLAIN, 14)); // Isi tabel
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 16)); // Header tabel
 
+        // Tambahkan JScrollPane ke tabel
         JScrollPane drugPanelChild = new JScrollPane(table);
 
-        // Atur ukuran tabel
-        table.setPreferredScrollableViewportSize(new Dimension(1200, 400));
-
-        // Atur ukuran JScrollPane
-        drugPanelChild.setPreferredSize(new Dimension(1200, 400));
+        // Atur ukuran JScrollPane agar mengisi penuh
+        drugPanelChild.setPreferredSize(new Dimension(0, 400)); // Tinggi tetap, lebar otomatis
+        drugPanelChild.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         // Tambahkan JScrollPane ke drugInfoPanel
         drugInfoPanel.add(drugPanelChild, BorderLayout.CENTER);
 
-        // Hapus batasan ukuran pada drugDataPanel
-        drugDataPanel.setMaximumSize(new Dimension(1000, 600)); // Sesuaikan ukuran maksimum
-
-        // Pastikan perubahan diterapkan
-        drugDataPanel.revalidate();
-        drugDataPanel.repaint();
-
-        // Tambahkan JScrollPane ke drugInfoPanel
-        drugInfoPanel.add(drugPanelChild);
-
-        drugInfoPanel.setBackground(Color.WHITE);
-        drugInfoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        drugInfoPanel.setMaximumSize(new Dimension(680, 200));
-        // Add the patient info panel to the patient data panel
+        // Tambahkan drugInfoPanel ke drugDataPanel
         drugDataPanel.add(drugInfoPanel);
         drugDataPanel.add(Box.createVerticalStrut(10));
 
@@ -536,9 +566,9 @@ public class TransaksiDiagnosa extends JPanel {
         stepper = new Stepper();
 
         // Tambahkan langkah-langkah ke Stepper
-        stepper.addStep("Patient Info", patientDataPanel);
-        stepper.addStep("Diagnosis", diagnosisPanel);
-        stepper.addStep("Drug Recommendations", drugDataPanel);
+        stepper.addStep("Informasi Pasien", patientDataPanel);
+        stepper.addStep("Diagnosa Pasien", diagnosisPanel);
+        stepper.addStep("Obat", drugDataPanel);
 
         // Tambahkan Stepper ke layout utama
         setLayout(new BorderLayout());
@@ -552,6 +582,36 @@ public class TransaksiDiagnosa extends JPanel {
         // Tambahkan scrollPane jika diperlukan
         scrollPane = new JScrollPane(stepper);
         add(scrollPane, BorderLayout.CENTER);
+
+        // Tambahkan MouseListener ke tabel ICDX
+        icdxTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int row = icdxTable.rowAtPoint(evt.getPoint());
+                int col = icdxTable.columnAtPoint(evt.getPoint());
+                if (col == 2) { // Kolom "Aksi"
+                    int confirm = JOptionPane.showConfirmDialog(null, "Apakah Anda yakin ingin menghapus baris ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        icdxTableModel.removeRow(row); // Hapus baris dari tabel
+                    }
+                }
+            }
+        });
+
+        // Tambahkan MouseListener ke tabel ICDIX
+        icdixTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int row = icdixTable.rowAtPoint(evt.getPoint());
+                int col = icdixTable.columnAtPoint(evt.getPoint());
+                if (col == 2) { // Kolom "Aksi"
+                    int confirm = JOptionPane.showConfirmDialog(null, "Apakah Anda yakin ingin menghapus baris ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        icdixTableModel.removeRow(row); // Hapus baris dari tabel
+                    }
+                }
+            }
+        });
     }
 
     public Object[] getPatientData() {
@@ -603,6 +663,61 @@ public class TransaksiDiagnosa extends JPanel {
 
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             return this;
+        }
+    }
+
+    // Renderer untuk kolom "Hapus"
+    class DeleteButtonRenderer extends JPanel implements TableCellRenderer {
+        public DeleteButtonRenderer() {
+            JButton deleteButton = new RoundedButton("Hapus");
+            deleteButton.setBackground(new Color(255, 51, 51));
+            deleteButton.setForeground(Color.WHITE);
+            deleteButton.setFocusPainted(false);
+            add(deleteButton);
+            setBackground(Color.WHITE);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            return this;
+        }
+    }
+
+    // Editor untuk kolom "Hapus"
+    class DeleteButtonEditor extends AbstractCellEditor implements TableCellEditor {
+        private JPanel panel;
+        private JButton deleteButton;
+        private DefaultTableModel tableModel;
+        private int row;
+
+        public DeleteButtonEditor(DefaultTableModel tableModel) {
+            this.tableModel = tableModel;
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 3));
+            deleteButton = new RoundedButton("Hapus");
+            deleteButton.setBackground(new Color(255, 51, 51));
+            deleteButton.setForeground(Color.WHITE);
+            deleteButton.setFocusPainted(false);
+
+            deleteButton.addActionListener(e -> {
+                // Konfirmasi penghapusan
+                int confirm = JOptionPane.showConfirmDialog(null, "Apakah Anda yakin ingin menghapus baris ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+                if (confirm == JOptionPane.YES_OPTION) {
+                    tableModel.removeRow(row); // Hapus baris dari tabel
+                }
+            });
+
+            panel.add(deleteButton);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            this.row = row; // Simpan indeks baris yang sedang diedit
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return null;
         }
     }
 
