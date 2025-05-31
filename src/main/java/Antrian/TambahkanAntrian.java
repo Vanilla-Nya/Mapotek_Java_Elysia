@@ -26,6 +26,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.JScrollPane;
+import java.awt.GridLayout;
 
 import Components.CustomTextField;
 import Components.Dropdown;
@@ -193,11 +195,30 @@ public class TambahkanAntrian extends JPanel {
         setLayout(new BorderLayout());
         add(mainPanel, BorderLayout.CENTER);
 
-        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
+        // Atur ulang ukuran cardsPanel agar cukup besar untuk menampung 3 kartu per baris
+        cardsPanel.setLayout(new GridBagLayout());
+        GridBagConstraints cardConstraints = new GridBagConstraints();
+        cardConstraints.insets = new Insets(10, 10, 10, 10); // Jarak antar kartu
+        cardConstraints.fill = GridBagConstraints.HORIZONTAL;
+
+        // Bungkus cardsPanel dengan JScrollPane
+        JScrollPane scrollPane = new JScrollPane(cardsPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder()); // Opsional: hapus border scroll pane
+
+        // Tambahkan scrollPane ke mainPanel
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
-        mainPanel.add(cardsPanel, gbc);
+        gbc.weightx = 1; // Agar scrollPane mengisi ruang horizontal
+        gbc.weighty = 1; // Agar scrollPane mengisi ruang vertikal
+        gbc.fill = GridBagConstraints.BOTH; // Isi ruang secara horizontal dan vertikal
+        mainPanel.add(scrollPane, gbc);
+    
+
+        System.out.println("cardsPanel size: " + cardsPanel.getSize());
+        System.out.println("scrollPane size: " + scrollPane.getSize());
     }
 
     // Getter methods to access the text from the text fields
@@ -212,8 +233,7 @@ public class TambahkanAntrian extends JPanel {
             ) AS umur,
             jenis_kelamin, alamat, no_telepon AS no_telp
         FROM pasien
-        WHERE nik = ? OR nama LIKE ? OR rfid = ?
-        LIMIT 10
+        WHERE is_deleted = 0 AND (nik = ? OR nama LIKE ? OR rfid = ?)
     """;
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, new Object[]{
             keyword, "%" + keyword + "%", keyword
@@ -221,8 +241,12 @@ public class TambahkanAntrian extends JPanel {
 
         cardsPanel.removeAll();
         if (!results.isEmpty()) {
+            // Track the column and row for GridBagLayout
+            int col = 0;
+            int row = 0;
             for (Map<String, Object> data : results) {
                 JPanel card = new JPanel();
+                card.setPreferredSize(new Dimension(200, 115)); // Ukuran kartu
                 card.setBorder(BorderFactory.createLineBorder(Color.GRAY));
                 card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
                 card.add(new JLabel("ID: " + data.get("id_pasien")));
@@ -242,7 +266,21 @@ public class TambahkanAntrian extends JPanel {
                         card.setBackground(new Color(200, 230, 255));
                     }
                 });
-                cardsPanel.add(card);
+
+                // Set GridBagConstraints for the card
+                GridBagConstraints cardConstraints = new GridBagConstraints();
+                cardConstraints.insets = new Insets(10, 10, 10, 10); // Jarak antar kartu
+                cardConstraints.fill = GridBagConstraints.HORIZONTAL;
+                cardConstraints.gridx = col;
+                cardConstraints.gridy = row;
+
+                cardsPanel.add(card, cardConstraints);
+
+                col++;
+                if (col == 3) { // Pindah ke baris berikutnya setelah 3 kartu
+                    col = 0;
+                    row++;
+                }
             }
         } else {
             cardsPanel.add(new JLabel("Tidak ada pasien ditemukan."));

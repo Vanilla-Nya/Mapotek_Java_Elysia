@@ -31,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -44,6 +45,7 @@ import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedBorder;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import Components.Stepper;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
@@ -332,9 +334,14 @@ public class TransaksiDiagnosa extends JPanel {
         addButton.setForeground(Color.WHITE);
         addButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         addButton.addActionListener(e -> {
-            // Instantiate and show the AddDrugs form
-            AddDrugs addDrugsForm = new AddDrugs(this);
-            addDrugsForm.setVisible(true);
+            JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            if (parentFrame == null) {
+                JOptionPane.showMessageDialog(this, "Parent frame tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            AddDrugs addDrugsDialog = new AddDrugs(parentFrame, this); // Pastikan konstruktor ini ada
+            addDrugsDialog.setVisible(true); // Tampilkan modal kedua
         });
 
         hargaJasa = new CustomTextField("Harga Jasa", 20, 30, Optional.empty());
@@ -505,6 +512,8 @@ public class TransaksiDiagnosa extends JPanel {
 
                                 if (isAntrianUpdated) {
                                     JOptionPane.showMessageDialog(this, "Proses selesai. Halaman akan ditutup.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                                    ShowModalCenter.closeCenterModal(parentFrame); // Menutup modal
                                 } else {
                                     JOptionPane.showMessageDialog(this, "Gagal memperbarui status antrian.", "Error", JOptionPane.ERROR_MESSAGE);
                                 }

@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -13,12 +14,16 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -27,9 +32,10 @@ import Components.CustomDialog;
 import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 
-public class AddDrugs extends JFrame {
+public class AddDrugs extends JDialog {
 
     private CustomTextField namaObatField, jenisObatField, hargaField, stockField, usageField;
     private String namaObat, jenisObat, usageInstructions;
@@ -43,69 +49,65 @@ public class AddDrugs extends JFrame {
     Object[][] data = {};
     java.util.List id = new ArrayList<>();
 
-    public AddDrugs(TransaksiDiagnosa parent) {
-        this.parentForm = parent;
+    public AddDrugs(JFrame parent, TransaksiDiagnosa parentForm) {
+        super(parent, "Tambah Obat", true); // Modal dialog
+        this.parentForm = parentForm;
+
+        // Setup dialog
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // Tambahkan komponen
+        JPanel headerPanel = createHeaderPanel();
+        JPanel topPanel = createTopPanel();
+        JPanel dataPanel = createDataPanel();
+        JScrollPane tableScrollPane = createTablePanel();
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(dataPanel, BorderLayout.NORTH);
+        mainPanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        add(headerPanel, BorderLayout.NORTH);
+        add(topPanel, BorderLayout.NORTH);
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Atur ukuran tabel
+        obatTable.setPreferredScrollableViewportSize(new Dimension(600, 200)); // Lebar 600px, tinggi 200px
+
+        // Panggil pack() untuk menyesuaikan ukuran
+        pack();
+        setLocationRelativeTo(parent); // Posisikan di tengah parent
+
+        // Atur ukuran maksimum dialog jika diperlukan
+        setMaximumSize(new Dimension(800, 600)); // Maksimum lebar 800px, tinggi 600px
+
+        // Posisikan di tengah parent frame
+        setLocationRelativeTo(parent);
 
         // Fetch data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL get_all_obat_selling()"; // Use the new procedure
+        String query = "CALL all_obat()"; // Use the new procedure
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 id.add(result.get("id_obat"));
                 Object[] dataFromDatabase = new Object[]{
-                    data.length + 1, 
-                    result.get("barcode"), 
-                    result.get("nama_obat"), 
-                    result.get("nama_jenis_obat"), 
-                    result.get("harga_jual_terbaru"), // Use the latest price
-                    result.get("total_stock"),       // Use the total stock
+                    data.length + 1,
+                    result.get("barcode") != null ? result.get("barcode") : "", // Ganti null dengan string kosong
+                    result.get("nama_obat") != null ? result.get("nama_obat") : "", // Ganti null dengan string kosong
+                    result.get("nama_jenis_obat") != null ? result.get("nama_jenis_obat") : "", // Ganti null dengan string kosong
+                    result.get("harga_jual") != null ? result.get("harga_jual") : 0, // Ganti null dengan 0
+                    result.get("stock") != null ? result.get("stock") : 0, // Ganti null dengan 0
                     ""
                 };
 
-                // Create a new array with an additional row
+                // Tambahkan data ke array
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
             }
         }
-
-        // Frame setup
-        setTitle("Tambah Obat");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-        setLocationRelativeTo(null);
-
-        // Header Panel (Title)
-        JPanel headerPanel = createHeaderPanel();
-
-        // Top Panel (Search and Add Buttons)
-        JPanel topPanel = createTopPanel();
-
-        // Data Panel (Displays selected obat details)
-        JPanel dataPanel = createDataPanel();
-
-        // Table Panel (Displays list of obats)
-        tableScrollPane = createTablePanel();
-
-        // Main Panel combining Data and Table Panels
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(dataPanel, BorderLayout.NORTH);
-        mainPanel.add(tableScrollPane, BorderLayout.CENTER);
-
-        // Add components to the frame
-        add(headerPanel, BorderLayout.NORTH);
-        add(topPanel, BorderLayout.NORTH);
-        add(mainPanel, BorderLayout.CENTER);
-        pack();
     }
 
     private JPanel createHeaderPanel() {
@@ -173,20 +175,33 @@ public class AddDrugs extends JFrame {
 
             // Check if entered stock exceeds available stock
             if (enteredStock > availableStock) {
-                System.out.println("Stock exceeds available stock");  // Debugging line
-                CustomDialog dialog = new CustomDialog(this,
-                        "Jumlah stok tidak cukup! Stok yang tersedia: " + availableStock,
-                        "Peringatan");
+                System.out.println("Stock exceeds available stock"); // Debugging line
 
-                int response = dialog.showDialog();
+                // Ganti CustomDialog dengan JDialog
+                JDialog dialog = new JDialog(this, "Peringatan", true); // Modal dialog
+                dialog.setLayout(new BorderLayout(10, 10));
 
-                if (response == JOptionPane.YES_OPTION) {
-                    // Proceed with adding the drug
-                    addDrugToTableAndClose(); // Proceed to add the drug
-                } else {
-                    // User clicked "TIDAK", so we return without adding the drug
-                    return; // Prevent addition
-                }
+                // Tambahkan pesan
+                JLabel messageLabel = new JLabel("Jumlah stok tidak cukup! Stok yang tersedia: " + availableStock);
+                messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+                dialog.add(messageLabel, BorderLayout.CENTER);
+
+                // Tambahkan tombol
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+                JButton yesButton = new JButton("OK");
+
+                yesButton.addActionListener(evt -> {
+                    dialog.dispose(); // Tutup dialog
+                    // Jangan tambahkan obat ke tabel jika stok tidak mencukupi
+                });
+
+                buttonPanel.add(yesButton);
+                dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                // Atur ukuran dan posisi dialog
+                dialog.pack();
+                dialog.setLocationRelativeTo(this); // Posisikan di tengah parent
+                dialog.setVisible(true); // Tampilkan dialog
             } else {
                 // Proceed with adding the drug if stock is sufficient
                 addDrugToTableAndClose();
@@ -237,11 +252,14 @@ public class AddDrugs extends JFrame {
             private void performSearch() {
                 String searchTerm = searchField.getText().toLowerCase();
                 Object[][] filteredData = Arrays.stream(data)
-                        .filter(row -> ((String) row[2]).toLowerCase().contains(searchTerm) // Check if 'NAMA OBAT' contains search term
-                                || ((String) row[1]).toLowerCase().contains(searchTerm)) // Check if 'BARCODE' contains search term
-                        .toArray(Object[][]::new);
+                    .filter(row -> {
+                        String namaObat = row[2] != null ? ((String) row[2]).toLowerCase() : ""; // Default ke string kosong jika null
+                        String barcode = row[1] != null ? ((String) row[1]).toLowerCase() : ""; // Default ke string kosong jika null
+                        return namaObat.contains(searchTerm) || barcode.contains(searchTerm);
+                    })
+                    .toArray(Object[][]::new);
 
-                // Update the table model with the filtered data
+                // Update the table model with the filtered data    
                 tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"});
             }
         });
@@ -307,12 +325,20 @@ public class AddDrugs extends JFrame {
     }
 
     private void addDrugToTableAndClose() {
-        // Add the drug details to the parent table (or handle the addition logic)
-        usageInstructions = usageField.getText(); // Get the usage instructions
+        System.out.println("Memulai proses penutupan frame AddDrugs...");
+
+        // Tambahkan obat ke tabel di parent form
+        usageInstructions = usageField.getText(); // Ambil instruksi penggunaan
         parentForm.addOrUpdateDrug(idObat, namaObat, jenisObat, Integer.parseInt(stockField.getText()), harga * Integer.parseInt(stockField.getText()), usageInstructions);
 
-        System.out.println("Drug added to the table, closing the window.");  // Debugging line
-        dispose();  // Close the AddDrugs window
+        System.out.println("Obat berhasil ditambahkan ke tabel."); // Debugging
+
+        // Sembunyikan frame
+        setVisible(false);
+
+        // Tutup frame ini
+        dispose();
+        System.out.println("Frame AddDrugs berhasil ditutup.");
     }
 
     private JLabel createDataLabel(String text) {
@@ -328,5 +354,10 @@ public class AddDrugs extends JFrame {
         table.getColumnModel().getColumn(3).setPreferredWidth(150); // JENIS OBAT
         table.getColumnModel().getColumn(4).setPreferredWidth(100); // HARGA
         table.getColumnModel().getColumn(5).setPreferredWidth(100); // STOCK
+    }
+
+    @Override
+    public JComponent getContentPane() {
+        return (JComponent) super.getContentPane(); // Mengembalikan konten utama JFrame
     }
 }
