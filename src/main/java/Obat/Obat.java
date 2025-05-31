@@ -142,39 +142,11 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
 
         // Search field with button (left side)
         CustomTextField searchField = new CustomTextField("Cari Obat", 20, 30, Optional.empty());
-        RoundedButton searchButton = new RoundedButton("Cari");
-        searchButton.setBackground(new Color(0, 153, 102));
-        searchButton.setForeground(Color.WHITE);
-        searchButton.setFont(new Font("Arial", Font.BOLD, 14));
-        searchButton.setPreferredSize(new Dimension(100, 40));
 
         // Panel to hold the search field and button together
         JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
         searchPanel.setBackground(Color.WHITE);
         searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchButton, BorderLayout.EAST);
-
-        searchButton.addActionListener(e -> {
-            String searchTerm = searchField.getText().toLowerCase();
-            Object[][] filteredData = Arrays.stream(fullData)
-                    .filter(row -> ((String) row[1]).toLowerCase().contains(searchTerm) // Check if 'BARCODE' contains search term
-                            || ((String) row[2]).toLowerCase().contains(searchTerm)) // Check if 'NAMA OBAT' contains search term
-                    .toArray(Object[][]::new);
-
-            // Add the "AKSI" column with action buttons back to the filtered data
-            Object[][] dataWithActions = new Object[filteredData.length][7]; // 7 columns including the "AKSI" column
-
-            for (int i = 0; i < filteredData.length; i++) {
-                dataWithActions[i] = Arrays.copyOf(filteredData[i], 7); // Copy data to the new array and ensure we have 7 columns
-                dataWithActions[i][6] = "Action"; // Placeholder for the "AKSI" column (we will update this with buttons)
-            }
-
-            // Update the table model with the filtered data
-            tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"});
-
-            // Reapply the button rendering and editing to the "AKSI" column
-            setTableColumnWidths(obatTable);
-        });
 
         searchField.getTextField().getDocument().addDocumentListener(new DocumentListener() {
             @Override

@@ -36,6 +36,7 @@ import Components.CustomTextField;
 import Components.Dropdown; 
 import Components.RoundedButton;
 import DataBase.QueryExecutor;
+import Global.UserSessionCache;
 
 public class EditObat extends JPanel {
 
@@ -158,10 +159,9 @@ public class EditObat extends JPanel {
             dialogGbc.gridy = 3;
             panel.add(new JLabel("Tanggal:"), dialogGbc);
             dialogGbc.gridx = 1;
-            CustomTextField txtDateInput = new CustomTextField("Pilih tanggal", 20, 15, Optional.empty());
+            CustomTextField txtDateInput = new CustomTextField("Tanggal Expired", 20, 15, Optional.empty());
             CustomDatePicker datePicker = new CustomDatePicker(txtDateInput.getTextField(), true);
-            CustomTextField customTxtTanggalExpiredBaru = new CustomTextField("Tanggal Expired Baru", 20, 15, Optional.empty());
-            customTxtTanggalExpiredBaru.getTextField().addMouseListener(new MouseAdapter() {
+            txtDateInput.getTextField().addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     datePicker.showDatePicker(); // Show the date picker dialog
@@ -188,13 +188,24 @@ public class EditObat extends JPanel {
 
                         if (stockValue > 0 && hargaBeliValue > 0 && hargaJualValue > 0) {
                             // Update the stock in the database
-                            String insertQuery = "INSERT INTO detail_obat (tanggal_expired, stock, harga_beli, harga_jual, status_batch, alasan) VALUES (?, ?, ?, ?, ?, 'aktif', NULL)";
-                            try {
-                                int idObatInt = Integer.parseInt(idObat); // Pastikan idObat adalah integer
-                                executor.executeInsertQuery(insertQuery, new Object[]{dateInput, stockValue, hargaBeliValue, hargaJualValue});
-                                JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
-                            } catch (NumberFormatException ex) {
-                                JOptionPane.showMessageDialog(this, "ID Obat harus berupa angka!", "Error", JOptionPane.ERROR_MESSAGE);
+                            String insertQuery = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock, harga_beli, harga_jual, status_batch, alasan) VALUES (?, ?, ?, ?, ?,'aktif',NULL)";
+                            executor.executeInsertQuery(insertQuery, new Object[]{Integer.parseInt(idObat), dateInput, stockValue, hargaBeliValue, hargaJualValue});
+
+                            // Insert into pengeluaran
+                            String tanggal = java.time.LocalDate.now().toString(); // Current date
+                            String keterangan = "Restock Obat";
+                            double totalPengeluaran = hargaBeliValue * stockValue;
+
+                            // Insert into pengeluaran table
+                            String pengeluaranQuery = "INSERT INTO pengeluaran (tanggal, keterangan, id_user) VALUES (?, ?, ?)";
+                            UserSessionCache cache = new UserSessionCache();
+                            String uuid = (String) cache.getUUID();
+                            int pengeluaranId = (int) QueryExecutor.executeInsertQueryWithReturnID(pengeluaranQuery, new Object[]{tanggal, keterangan, uuid});
+
+                            // Insert into pengeluaran_detail table
+                            if (pengeluaranId != 0) {
+                                String pengeluaranDetailQuery = "INSERT INTO pengeluaran_detail (id_pengeluaran, id_jenis_pengeluaran, keterangan, total) VALUES (?, ?, ?, ?)";
+                                QueryExecutor.executeInsertQuery(pengeluaranDetailQuery, new Object[]{pengeluaranId, 2, keterangan, totalPengeluaran});
                             }
 
                             // Update the stock label
@@ -204,12 +215,12 @@ public class EditObat extends JPanel {
                             // Refresh the table
                             refreshTableObatMasuk(idObat);
 
-                            // Panggil callback untuk menyegarkan data
+                            // Panggil callback untuk memperbarui tabel utama di Obat
                             if (refreshCallback != null) {
                                 refreshCallback.run();
                             }
 
-                            JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                            JOptionPane.showMessageDialog(this, "Stock berhasil ditambahkan dan pengeluaran dicatat!", "Success", JOptionPane.INFORMATION_MESSAGE);
                         } else {
                             JOptionPane.showMessageDialog(this, "Jumlah stock, harga beli, dan harga jual harus lebih dari 0!", "Error", JOptionPane.ERROR_MESSAGE);
                         }
@@ -217,7 +228,7 @@ public class EditObat extends JPanel {
                         JOptionPane.showMessageDialog(this, "Masukkan nilai yang valid untuk stock, harga beli, dan harga jual!", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Semua field harus diisi !", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });

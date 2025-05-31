@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 
 public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpdatedListener {
 
@@ -33,6 +34,9 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
 
     // List to keep track of id_pasien for each row
     private List<String> idPasienList = new ArrayList<>();
+
+    // Tambahkan sorter sebagai variabel kelas
+    private TableRowSorter<DefaultTableModel> sorter;
 
     public Pasien(int role) {
         this.role = role;
@@ -105,20 +109,25 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
                 return false;
             }
         };
-        CustomTable pasienTable = new CustomTable(model);
 
-        // MouseListener to handle click on table rows
+        // Inisialisasi sorter untuk model tabel
+        sorter = new TableRowSorter<>(model);
+        CustomTable pasienTable = new CustomTable(model);
+        pasienTable.setRowSorter(sorter);
+
+        // MouseListener untuk menangani klik pada baris tabel
         pasienTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = pasienTable.getSelectedRow();
                 if (row != -1) {
-                    lblnik.setText(String.valueOf(model.getValueAt(row, 1)));
-                    lblNamaPasien.setText(String.valueOf(model.getValueAt(row, 2)));
-                    lblUmur.setText(String.valueOf(model.getValueAt(row, 3)));
-                    lblJenisKelamin.setText(String.valueOf(model.getValueAt(row, 4)));
-                    lblAlamat.setText(String.valueOf(model.getValueAt(row, 5)));
-                    lblNoTelp.setText(String.valueOf(model.getValueAt(row, 6)));
+                    int modelRow = pasienTable.convertRowIndexToModel(row); // Konversi indeks tampilan ke model
+                    lblnik.setText(String.valueOf(model.getValueAt(modelRow, 1)));
+                    lblNamaPasien.setText(String.valueOf(model.getValueAt(modelRow, 2)));
+                    lblUmur.setText(String.valueOf(model.getValueAt(modelRow, 3)));
+                    lblJenisKelamin.setText(String.valueOf(model.getValueAt(modelRow, 4)));
+                    lblAlamat.setText(String.valueOf(model.getValueAt(modelRow, 5)));
+                    lblNoTelp.setText(String.valueOf(model.getValueAt(modelRow, 6)));
                 }
             }
         });
@@ -328,21 +337,16 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
 
     // Function to filter the table based on the search input
     private void filterTable(String searchText) {
-        for (int i = 0; i < model.getRowCount(); i++) {
-            String namaPasien = (String) model.getValueAt(i, 1); // Column "Nama pasien"
-            if (namaPasien.toLowerCase().contains(searchText)) {
-                model.fireTableRowsUpdated(i, i); // Refresh matching rows
-            } else {
-                model.removeRow(i); // Remove non-matching rows
-                i--; // Adjust index to avoid skipping rows
-            }
+        if (searchText.isEmpty()) {
+            sorter.setRowFilter(null); // Tampilkan semua baris
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText)); // Filter berdasarkan teks pencarian (case-insensitive)
         }
     }
 
     // Function to reset the table to show all rows again
     private void resetTable() {
-        model.setRowCount(0);
-        // Add back the data to the table here, if needed.
+        sorter.setRowFilter(null); // Reset filter untuk menampilkan semua baris
     }
 
     // Utility function to add components to GridBagLayout

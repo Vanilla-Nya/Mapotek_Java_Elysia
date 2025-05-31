@@ -154,6 +154,9 @@ public class FormPembayaran extends JFrame {
                     // Update the status to "Selesai"
                     updateStatusToSelesai(idAntrian);
 
+                    // Insert into pemasukan_harian
+                    insertToPemasukanHarian(idAntrian);
+
                     // Refresh the table in AntrianPasien
                     antrianPasien.refreshTableData();
 
@@ -335,7 +338,7 @@ public class FormPembayaran extends JFrame {
                     currentPage++;
                 }
 
-                // Print lines for the current page
+                // Print lines for the current page 
                 while ((line = reader.readLine()) != null) {
                     if (y + lineHeight > pageHeight) {
                         return PAGE_EXISTS; // Move to the next page
@@ -360,6 +363,33 @@ public class FormPembayaran extends JFrame {
             executor.executeUpdateQuery(query, parameters);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error updating status: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void insertToPemasukanHarian(String noAntrian) {
+        try {
+            QueryExecutor executor = new QueryExecutor();
+
+            // Query to get id_pemeriksaan based on no_antrian
+            String selectQuery = "SELECT id_pemeriksaan FROM pemeriksaan WHERE no_antrian = ?";
+            Object[] selectParams = new Object[]{noAntrian};
+            List<Map<String, Object>> results = executor.executeSelectQuery(selectQuery, selectParams);
+
+            if (!results.isEmpty()) {
+                // Get the id_pemeriksaan from the query result
+                int idPemeriksaan = (Integer) results.get(0).get("id_pemeriksaan");
+
+                // Insert into pemasukan_harian
+                String insertQuery = "INSERT INTO pemasukan_harian (id_pemeriksaan, tanggal) VALUES (?, NOW())";
+                Object[] insertParams = new Object[]{idPemeriksaan};
+                executor.executeUpdateQuery(insertQuery, insertParams);
+
+                JOptionPane.showMessageDialog(this, "Data successfully inserted into pemasukan_harian.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "No id_pemeriksaan found for the given no_antrian.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error inserting data into pemasukan_harian: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

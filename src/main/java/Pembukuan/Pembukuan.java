@@ -607,7 +607,7 @@ public class Pembukuan extends JPanel {
     }
 
     private String formatToRupiah(double amount) {
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("id", "ID"));
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("id-ID"));
         return formatter.format(amount).replace("Rp", "Rp."); // Replace default "Rp" with "Rp."
     }
 

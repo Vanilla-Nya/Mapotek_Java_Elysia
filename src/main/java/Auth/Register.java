@@ -173,7 +173,7 @@ public class Register extends JPanel {
             String noTelp = nomerteleponField.getText();
             String rfid = rfidField.getText(); // Get RFID value
 
-            if (name.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || noTelp.isEmpty() || rfid.isEmpty()) {
+            if (name.isEmpty() || username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || noTelp.isEmpty()) {
                 JOptionPane.showMessageDialog(Register.this, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -183,7 +183,7 @@ public class Register extends JPanel {
                 // Step 1: Insert the user into the 'user' table
                 QueryExecutor queryExecutor = new QueryExecutor();  // Create instance of QueryExecutor
                 String insertUserQuery = "INSERT INTO user (nama_lengkap, username, jenis_kelamin, alamat, no_telp, password, rfid) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                boolean userInserted = QueryExecutor.executeInsertQuery(insertUserQuery, new Object[]{name, name, "Tidak Bisa Dijelaskan", "", noTelp, password, rfid});
+                boolean userInserted = QueryExecutor.executeInsertQuery(insertUserQuery, new Object[]{name, username, "Tidak Bisa Dijelaskan", "", noTelp, password, rfid});
 
                 if (!userInserted) {
                     JOptionPane.showMessageDialog(Register.this, "Failed to add user.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -198,7 +198,7 @@ public class Register extends JPanel {
                 // Step 3: Insert into user_role table
                 String insertUserRoleQuery = "INSERT INTO user_role (id_user, id_role) SELECT ?, id_role FROM role WHERE nama_role = ?";
                 try {
-                    boolean userRoleInserted = QueryExecutor.executeInsertQuery(insertUserRoleQuery, new Object[]{userId, "User"});
+                    boolean userRoleInserted = QueryExecutor.executeInsertQuery(insertUserRoleQuery, new Object[]{userId, "Dokter"});
 
                     if (userRoleInserted) {
                         String query = "CALL login(?, ?)";

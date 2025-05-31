@@ -24,10 +24,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 
 import Components.CustomCard;
 import Components.CustomDialog;
@@ -44,6 +46,7 @@ public class User extends JFrame {
     private CustomTable userTable;
     private QueryExecutor executor;
     Object[][] data = {};
+    private TableRowSorter<DefaultTableModel> sorter; // Tambahkan ini
 
     public User() {
         executor = new QueryExecutor();
@@ -166,12 +169,8 @@ public class User extends JFrame {
 
         // Search functionality 
         searchButton.addActionListener(e -> {
-            String searchText = searchField.getText().trim().toLowerCase();
-            if (!searchText.isEmpty()) {
-                filterTable(searchText);
-            } else {
-                resetTable();
-            }
+            String searchText = searchField.getText().trim();
+            filterTable(searchText);
         });
 
         return searchPanel;
@@ -327,6 +326,8 @@ public class User extends JFrame {
         String[] columns = {"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"};
 
         userTable = new CustomTable(model);
+        sorter = new TableRowSorter<>(model); // Inisialisasi sorter
+        userTable.setRowSorter(sorter); // Set sorter ke tabel
 
         // Listener untuk update detail panel saat baris dipilih
         userTable.getSelectionModel().addListSelectionListener(e -> {
@@ -371,36 +372,15 @@ public class User extends JFrame {
     }
 
     private void filterTable(String searchText) {
-        // Implement filter functionality if needed
+        if (searchText.isEmpty()) {
+            sorter.setRowFilter(null); // Tampilkan semua baris
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText)); // Filter berdasarkan teks pencarian (case-insensitive)
+        }
     }
 
     private void resetTable() {
-        data = new Object[0][];
-        // Implement reset functionality if needed
-        String queryPengeluaran = "CALL all_user()";
-        java.util.List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{});
-
-        for (int i = 0; i < resultPengeluaran.size(); i++) {
-            Object[] dataFromDatabase = new Object[]{
-                i + 1, resultPengeluaran.get(i).get("id_user"), resultPengeluaran.get(i).get("highest_role"), resultPengeluaran.get(i).get("username"),
-                resultPengeluaran.get(i).get("jenis_kelamin"), resultPengeluaran.get(i).get("alamat"), resultPengeluaran.get(i).get("no_telp")
-            };
-            // Create a new array with an additional row
-            Object[][] newData = new Object[data.length + 1][];
-
-            // Copy the old data to the new array
-            System.arraycopy(data, 0, newData, 0, data.length);
-
-            // Add the new row to the new array
-            newData[data.length] = dataFromDatabase;
-
-            // Send back to original
-            data = newData;
-        }
-        // Update the table model with the refreshed data
-        model.setDataVector(data, new String[]{"No", "ID", "Roles", "Nama User", "Jenis Kelamin", "Alamat", "No.Telp"});
-        setTableColumnWidths(userTable);
-        resetDetailPanel(); // Tambahkan ini
+        sorter.setRowFilter(null); // Reset filter untuk menampilkan semua baris
     }
 
     public void onUserAdded(String id, String role, String name, String gender, String address, String phone) {

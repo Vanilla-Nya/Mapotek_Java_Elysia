@@ -42,11 +42,11 @@ public class Dashboard extends JFrame {
         // Set role name
         switch (role) {
             case 1 ->
-                NameRole = "User";
-            case 2 ->
                 NameRole = "Dokter";
-            case 3 ->
+            case 2 ->
                 NameRole = "Admin";
+            case 3 ->
+                NameRole = "Owner";
             default ->
                 NameRole = "Unknown";
         }

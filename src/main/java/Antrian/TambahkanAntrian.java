@@ -224,17 +224,7 @@ public class TambahkanAntrian extends JPanel {
     // Getter methods to access the text from the text fields
     public void searchDatabase(String keyword) {
         QueryExecutor executor = new QueryExecutor();
-        String Query = """
-        SELECT id_pasien, nik, nama AS nama_pasien,
-            CONCAT(
-                TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()), ' Tahun ',
-                TIMESTAMPDIFF(MONTH, pasien.tanggal_lahir, CURDATE()) % 12, ' Bulan ',
-                DATEDIFF(CURDATE(), DATE_ADD(pasien.tanggal_lahir, INTERVAL TIMESTAMPDIFF(YEAR, pasien.tanggal_lahir, CURDATE()) YEAR)) % 30, ' Hari'
-            ) AS umur,
-            jenis_kelamin, alamat, no_telepon AS no_telp
-        FROM pasien
-        WHERE is_deleted = 0 AND (nik = ? OR nama LIKE ? OR rfid = ?)
-    """;
+        String Query = "CALL all_patient_available(?, ?, ?)";
         java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, new Object[]{
             keyword, "%" + keyword + "%", keyword
         });
@@ -247,13 +237,16 @@ public class TambahkanAntrian extends JPanel {
             for (Map<String, Object> data : results) {
                 JPanel card = new JPanel();
                 card.setPreferredSize(new Dimension(200, 115)); // Ukuran kartu
-                card.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(Color.GRAY), // Border luar
+                    BorderFactory.createEmptyBorder(10, 10, 10, 10) // Padding dalam
+                ));
                 card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
                 card.add(new JLabel("ID: " + data.get("id_pasien")));
-                card.add(new JLabel("Nama: " + data.get("nama_pasien")));
+                card.add(new JLabel("Nama: " + data.get("nama")));
                 card.add(new JLabel("Umur: " + data.get("umur")));
                 card.add(new JLabel("Alamat: " + data.get("alamat")));
-                card.add(new JLabel("No. Telp: " + data.get("no_telp")));
+                card.add(new JLabel("No. Telp: " + data.get("no_telepon")));
 
                 card.addMouseListener(new java.awt.event.MouseAdapter() {
                     public void mouseClicked(java.awt.event.MouseEvent evt) {

@@ -22,6 +22,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import Components.CustomDatePicker;
 import Components.CustomTextField;
@@ -102,7 +103,7 @@ public class RegisterObat extends JPanel {
         // Harga Obat
         gbc.gridx = 0;
         gbc.gridy = 3;
-        formPanel.add(new JLabel("Harga:"), gbc);
+        formPanel.add(new JLabel("Harga Beli:"), gbc);
         gbc.gridx = 1;
         txtHarga = new CustomTextField("Masukkan Harga", 20, 15, Optional.empty());
         formPanel.add(txtHarga, gbc);
@@ -172,7 +173,7 @@ public class RegisterObat extends JPanel {
                     String barcode = txtBarcode.getText();
 
                     QueryExecutor executor = new QueryExecutor();
-                    String Query = "SELECT id_obat, nama_obat, id_jenis_obat, bentuk_obat, harga, harga_jual FROM obat WHERE nama_obat = ? ";
+                    String Query = "SELECT id_obat, nama_obat, id_jenis_obat, bentuk_obat, harga_jual FROM obat WHERE nama_obat = ? ";
                     Object[] parameter = new Object[]{namaObat};
                     java.util.List<Map<String, Object>> results = executor.executeSelectQuery(Query, parameter);
 
@@ -182,14 +183,14 @@ public class RegisterObat extends JPanel {
                         Integer getId = (Integer) results.get(0).get("id_obat");
                         Integer hargaInput = Integer.valueOf(harga);
                         Integer hargaJualInput = Integer.valueOf(hargaJual); // Parse Harga Jual
-                        String QueryUpdate = "UPDATE obat SET harga = ?, harga_jual = ?, barcode = ? WHERE id_obat = ?";
-                        Object[] parameterUpdate = new Object[]{hargaInput, hargaJualInput, barcode, getId};
+                        String QueryUpdate = "UPDATE obat SET harga_jual = ?, barcode = ? WHERE id_obat = ?";
+                        Object[] parameterUpdate = new Object[]{hargaJualInput, barcode, getId};
                         isUpdateObat = QueryExecutor.executeUpdateQuery(QueryUpdate, parameterUpdate);
                         if (isUpdateObat) {
                             idObat = getId;
                         }
-                        String queryDetail = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock) VALUES (?, ?, ?)";
-                        Object[] parameterDetail = new Object[]{getId, tanggalExpired, Integer.valueOf(stock)};
+                        String queryDetail = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock , harga_beli, harga_jual) VALUES (?, ?, ?, ?, ?)";
+                        Object[] parameterDetail = new Object[]{getId, tanggalExpired, Integer.valueOf(stock), hargaJual, harga};
                         isInsertDetailObat = QueryExecutor.executeInsertQuery(queryDetail, parameterDetail);
                     } else {
                         Integer idJenisObat;
@@ -206,8 +207,8 @@ public class RegisterObat extends JPanel {
                         }
                         Integer hargaInput = Integer.valueOf(harga);
                         Integer hargaJualInput = Integer.valueOf(hargaJual); // Parse Harga Jual
-                        String QueryUpdate = "INSERT INTO obat (nama_obat, id_jenis_obat, bentuk_obat, harga, harga_jual, barcode) VALUES (?, ?, ?, ?, ?, ?)";
-                        Object[] parameterUpdate = new Object[]{namaObat, idJenisObat, selectedBentukObat, hargaInput, hargaJualInput, barcode};
+                        String QueryUpdate = "INSERT INTO obat (nama_obat, id_jenis_obat, bentuk_obat, harga_jual, barcode) VALUES (?, ?, ?, ?, ?)";
+                        Object[] parameterUpdate = new Object[]{namaObat, idJenisObat, selectedBentukObat, hargaJualInput, barcode};
                         idObat = (int) QueryExecutor.executeInsertQueryWithReturnID(QueryUpdate, parameterUpdate);
                         isUpdateObat = idObat != 404;
                         if (isUpdateObat) {
@@ -215,8 +216,8 @@ public class RegisterObat extends JPanel {
                             Object[] paramGetObat = new Object[]{namaObat};
                             java.util.List<Map<String, Object>> resultsGet = executor.executeSelectQuery(getObat, paramGetObat);
                             Integer getNewId = (Integer) resultsGet.get(0).get("id_obat");
-                            String queryDetail = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock) VALUES (?, ?, ?)";
-                            Object[] parameterDetail = new Object[]{getNewId, tanggalExpired, Integer.valueOf(stock)};
+                            String queryDetail = "INSERT INTO detail_obat (id_obat, tanggal_expired, stock , harga_jual, harga_beli) VALUES (?, ?, ?, ?, ?)";
+                            Object[] parameterDetail = new Object[]{getNewId, tanggalExpired, Integer.valueOf(stock), hargaJual, harga};
                             isInsertDetailObat = QueryExecutor.executeInsertQuery(queryDetail, parameterDetail);
                         }
                     }
@@ -237,6 +238,9 @@ public class RegisterObat extends JPanel {
                         boolean isInsertFinal = QueryExecutor.executeInsertQuery(insertIntoDetailOut, insertIntoDetailParameter);
                         if (isInsertFinal) {
                             JOptionPane.showMessageDialog(null, "Data Obat dengan Nama: " + namaObat, "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                            // Close the form after submission
+                            SwingUtilities.getWindowAncestor(RegisterObat.this).dispose();
                         } else {
                             JOptionPane.showMessageDialog(null, "Data Obat Gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
@@ -248,6 +252,9 @@ public class RegisterObat extends JPanel {
                             message = "Data Obat dengan Nama: " + namaObat + " Berhasil Update Harga";
                         }
                         JOptionPane.showMessageDialog(null, message, "Sukses", JOptionPane.INFORMATION_MESSAGE);
+
+                        // Close the form after submission
+                        SwingUtilities.getWindowAncestor(RegisterObat.this).dispose();
                     } else {
                         JOptionPane.showMessageDialog(null, "Data Obat Gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                     }

@@ -61,10 +61,16 @@ public class Drawer extends JFrame {
     private Timer drawerTimer;
 
     // Tambahkan di bagian atas kelas Drawer
-    private boolean isDrawerAnimationRunning = false;
+    private boolean isAnimationRunning = false;
 
     // Tambahkan tombol Logout di deklarasi variabel
     private final JButton logoutButton;
+
+    // Variable to track the currently selected button
+    private JButton selectedButton;
+
+    // Tambahkan variabel untuk menyimpan section yang dipilih
+    private String selectedSection = null;
 
     public Drawer() {
         BatchStatusScheduler.startScheduler();
@@ -105,12 +111,12 @@ public class Drawer extends JFrame {
         // Toggle Button for Drawer Collapse/Expand
         toggleButton = createDrawerButton(" Menu");
         toggleButton.setIcon(new ImageIcon(new ImageIcon(
-            getClass().getClassLoader().getResource("assets/bars-solid.png")
-        ).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH))); // Ikon ukuran 20x20
+            getClass().getClassLoader().getResource("assets/Menu.png")
+        ).getImage().getScaledInstance(25, 25, Image.SCALE_SMOOTH))); // Ikon ukuran 20x20
 
         logoutButton = createDrawerButton(" Logout");
         logoutButton.setIcon(new ImageIcon(new ImageIcon(
-            getClass().getClassLoader().getResource("assets/house-solid.png")
+            getClass().getClassLoader().getResource("assets/Logout.png")
         ).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));
         logoutButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(
@@ -163,16 +169,16 @@ public class Drawer extends JFrame {
         drawerButtons.add(allAbsensiButton);
         drawerButtons.add(profileButton);
 
-        dashboardButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/house-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Dashboard
-        pasienButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/hospital-user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pasien
-        obatButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/pills-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Obat
+        dashboardButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Dashboard.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Dashboard
+        pasienButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Pasien.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pasien
+        obatButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Obat.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Obat
         queueButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/list-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Antrian
-        pemeriksaanButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/magnifying-glass-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pemriksaan
-        pembukuanButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/book-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pembukuan
-        userButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Management User
-        absensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Absensi
-        allAbsensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for All Absensi
-        profileButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/user-solid.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Profile
+        pemeriksaanButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Pemeriksaan.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pemriksaan
+        pembukuanButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Pembukuan.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pembukuan
+        userButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Management_User.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Management User
+        absensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Absensi.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Absensi
+        allAbsensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/All_Absensi.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for All Absensi
+        profileButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/User.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Profile
 
         // Add Action Listeners to Drawer Buttons
         dashboardButton.addActionListener(e -> showContent("Dashboard", this));
@@ -214,8 +220,8 @@ public class Drawer extends JFrame {
                 dashboardButton.setVisible(true);
                 pasienButton.setVisible(true);
                 obatButton.setVisible(false);
-                queueButton.setVisible(true);
-                pemeriksaanButton.setVisible(false);
+                queueButton.setVisible(false);
+                pemeriksaanButton.setVisible(true);
                 pembukuanButton.setVisible(false);
                 userButton.setVisible(false);
                 absensiButton.setVisible(true);
@@ -224,8 +230,8 @@ public class Drawer extends JFrame {
             case 2 -> {
                 toggleButton.setVisible(true);
                 dashboardButton.setVisible(true);
-                pasienButton.setVisible(false);
-                obatButton.setVisible(false);
+                pasienButton.setVisible(true);
+                obatButton.setVisible(true);
                 queueButton.setVisible(true);
                 pemeriksaanButton.setVisible(true);
                 pembukuanButton.setVisible(false);
@@ -288,69 +294,147 @@ public class Drawer extends JFrame {
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(70, 80, 95));
+                if (button != selectedButton) {
+                    button.setBackground(new Color(70, 80, 95));
+                }
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(58, 64, 74));
+                if (button != selectedButton) {
+                    button.setBackground(new Color(58, 64, 74));
+                }
             }
         });
+
+        // Add action listener to update the selected button
+        button.addActionListener(e -> {
+            if (selectedButton != null) {
+                selectedButton.setBackground(new Color(58, 64, 74)); // Reset previous button color
+            }
+            selectedButton = button;
+            selectedButton.setBackground(new Color(100, 120, 140)); // Highlight selected button
+        });
+
         return button;
     }
 
     // Method to update content based on selection
     private void showContent(String section, Drawer drawer) {
-        mainPanel.removeAll(); // Clear previous content
+        if (isAnimationRunning) {
+            return; // Jika animasi sedang berjalan, abaikan
+        }
 
+        selectedSection = section; // Simpan tombol yang ditekan
+
+        JPanel newContent = new JPanel(new BorderLayout());
+        newContent.setBackground(Color.WHITE);
+
+        // Load the new content based on the section
         if (section.equals("Dashboard")) {
-            mainPanel.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
+            newContent.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Profile")) {
             UserSessionCache sessionCache = new UserSessionCache();
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Void doInBackground() {
-                    // Operasi berat di sini (misalnya, memuat data dari database)
-                    return null;
-                }
-
-                @Override
-                protected void done() {
-                    // Tambahkan konten ke mainPanel setelah operasi selesai
-                    mainPanel.removeAll();
-                    mainPanel.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
-                    mainPanel.revalidate();
-                    mainPanel.repaint();
-                }
-            };
-            worker.execute();
+            newContent.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
         } else if (section.equals("Pasien")) {
-            mainPanel.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
+            newContent.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Obat")) {
             ManagementObatDanObatExpierd managementObat = new ManagementObatDanObatExpierd();
-            mainPanel.add(managementObat.getContentPane(), BorderLayout.CENTER);
+            newContent.add(managementObat.getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Antrian")) {
-            mainPanel.add(new AntrianPasien(), BorderLayout.CENTER);
+            newContent.add(new AntrianPasien(), BorderLayout.CENTER);
         } else if (section.equals("Pemeriksaan")) {
-            mainPanel.add(new TablePemeriksaan().getContentPane(), BorderLayout.CENTER);
+            newContent.add(new TablePemeriksaan().getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Pembukuan")) {
-            mainPanel.add(new Pembukuan(), BorderLayout.CENTER);
+            newContent.add(new Pembukuan(), BorderLayout.CENTER);
         } else if (section.equals("User")) {
-            mainPanel.add(new User().getContentPane(), BorderLayout.CENTER);
+            newContent.add(new User().getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Absensi")) {
             if (absensiInstance == null) {
                 absensiInstance = new Absensi();
             }
-            mainPanel.add(absensiInstance.getContentPane(), BorderLayout.CENTER);
+            newContent.add(absensiInstance.getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("AllAbsensi")) {
-            mainPanel.add(new AllAbsensi().getContentPane(), BorderLayout.CENTER);
+            newContent.add(new AllAbsensi().getContentPane(), BorderLayout.CENTER);
         } else {
             contentLabel.setText("Currently Viewing: " + section);
-            mainPanel.add(contentLabel, BorderLayout.CENTER);
+            newContent.add(contentLabel, BorderLayout.CENTER);
         }
 
+        // Add sliding animation
+        animateContentTransition(newContent);
+    }
+
+    // Method to animate the sliding transition with bounce effect
+    private void animateContentTransition(JPanel newContent) {
+        if (isAnimationRunning) {
+            return; // Jika animasi sedang berjalan, abaikan
+        }
+
+        isAnimationRunning = true; // Setel flag animasi ke true
+
+        int animationDuration = 500; // Durasi animasi dalam milidetik
+        int steps = 50; // Jumlah langkah animasi
+        int delay = animationDuration / steps; // Waktu tunda antar langkah
+
+        JPanel currentContent = new JPanel(new BorderLayout());
+        if (mainPanel.getComponentCount() > 0) {
+            currentContent.add(mainPanel.getComponent(0)); // Ambil konten saat ini
+        }
+
+        mainPanel.setLayout(null); // Nonaktifkan layout manager untuk animasi
+        mainPanel.removeAll(); // Kosongkan mainPanel
+        mainPanel.add(currentContent);
+        mainPanel.add(newContent);
         mainPanel.revalidate();
         mainPanel.repaint();
+
+        Timer timer = new Timer(delay, null);
+        final int[] step = {0};
+
+        timer.addActionListener(e -> {
+            step[0]++;
+            float progress = (float) step[0] / steps; // Hitung progress (0.0 hingga 1.0)
+
+            int offset = (int) (mainPanel.getWidth() * progress);
+
+            currentContent.setBounds(offset, 0, mainPanel.getWidth(), mainPanel.getHeight());
+            newContent.setBounds(offset - mainPanel.getWidth(), 0, mainPanel.getWidth(), mainPanel.getHeight());
+
+            if (step[0] >= steps) {
+                timer.stop();
+                mainPanel.setLayout(new BorderLayout()); // Kembalikan layout manager
+                mainPanel.removeAll();
+                mainPanel.add(newContent, BorderLayout.CENTER);
+                mainPanel.revalidate();
+                mainPanel.repaint();
+
+                // Setel highlight tombol setelah animasi selesai
+                updateButtonHighlight();
+
+                isAnimationRunning = false; // Setel flag animasi ke false setelah selesai
+            }
+        });
+
+        timer.start();
+    }
+
+    // Method to enable or disable all buttons
+    private void setButtonsEnabled(boolean enabled) {
+        for (JButton button : drawerButtons) {
+            button.setEnabled(enabled);
+        }
+        toggleButton.setEnabled(enabled);
+        logoutButton.setEnabled(enabled);
+    }
+
+    // Custom easing function for bounce effect
+    private float calculateBounce(float progress) {
+        if (progress < 0.5f) {
+            return (float) (Math.sin(2 * Math.PI * progress) * Math.pow(1 - progress, 2));
+        } else {
+            return (float) (1 - Math.pow(1 - progress, 2));
+        }
     }
 
     // Method to toggle the drawer's collapsed state
@@ -416,6 +500,17 @@ public class Drawer extends JFrame {
         });
 
         animationTimer.start(); // Mulai animasi
+    }
+
+    private void updateButtonHighlight() {
+        for (JButton button : drawerButtons) {
+            if (button.getText().trim().equalsIgnoreCase(selectedSection)) {
+                button.setBackground(new Color(100, 120, 140)); // Highlight tombol yang dipilih
+                selectedButton = button; // Simpan tombol yang dipilih
+            } else {
+                button.setBackground(new Color(58, 64, 74)); // Reset tombol lainnya
+            }
+        }
     }
 
     public static void main(String[] args) {
