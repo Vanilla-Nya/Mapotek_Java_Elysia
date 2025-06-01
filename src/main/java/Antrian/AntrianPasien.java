@@ -253,9 +253,18 @@ public class AntrianPasien extends JPanel {
                 bayarButton.setFocusPainted(false);
                 bayarButton.addActionListener(e -> {
                     if (row >= 0 && row < idList.size()) {
+                        // Ambil data pasien dan ID antrian
                         Object[] patientData = getPatientData(row);
                         String idAntrian = idList.get(row).toString();
-                        new FormPembayaran(patientData, idAntrian, status, AntrianPasien.this);
+
+                        // Buat instance FormPembayaran
+                        FormPembayaran formPembayaran = new FormPembayaran(patientData, idAntrian, status, AntrianPasien.this);
+
+                        // Tampilkan FormPembayaran menggunakan ShowModalCenter
+                        ShowModalCenter.showCenterModal(
+                            (JFrame) SwingUtilities.getWindowAncestor(AntrianPasien.this), // Parent frame
+                            formPembayaran // Panel yang akan ditampilkan
+                        );
                     }
                 });
                 add(bayarButton);
@@ -333,9 +342,18 @@ public class AntrianPasien extends JPanel {
                 bayarButton.setFocusPainted(false);
                 bayarButton.addActionListener(e -> {
                     if (row >= 0 && row < idList.size()) {
+                        // Ambil data pasien dan ID antrian
                         Object[] patientData = getPatientData(row);
                         String idAntrian = idList.get(row).toString();
-                        new FormPembayaran(patientData, idAntrian, status, AntrianPasien.this);
+
+                        // Buat instance FormPembayaran
+                        FormPembayaran formPembayaran = new FormPembayaran(patientData, idAntrian, status, AntrianPasien.this);
+
+                        // Tampilkan FormPembayaran menggunakan ShowModalCenter
+                        ShowModalCenter.showCenterModal(
+                            (JFrame) SwingUtilities.getWindowAncestor(AntrianPasien.this), // Parent frame
+                            formPembayaran // Panel yang akan ditampilkan
+                        );
                     }
                 });
                 panel.add(bayarButton);

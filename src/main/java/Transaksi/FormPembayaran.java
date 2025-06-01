@@ -1,6 +1,7 @@
 package Transaksi;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -40,12 +42,14 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
 import Antrian.AntrianPasien;
+import Components.CustomRadioButton;
 import Components.CustomTextField;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Utils.BillPrinter;
 
-public class FormPembayaran extends JFrame {
+public class FormPembayaran extends JPanel {
 
     private JLabel totalLabel;
     private JLabel changeLabel;
@@ -61,34 +65,32 @@ public class FormPembayaran extends JFrame {
     public FormPembayaran(Object[] patientData, String idAntrian, String status, AntrianPasien antrianPasien) {
         this.patientData = patientData;
 
-        // Retrieve the logged-in user's name from UserSessionCache
-        UserSessionCache userSessionCache = new UserSessionCache();
-        userLoginName = userSessionCache.getusername();
+        // Atur ukuran form
+        this.setPreferredSize(new Dimension(1000, 680)); 
 
-        setTitle("Form Pembayaran");
-        setSize(600, 400);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Patient Information and Total Amount Panel
-        JPanel infoTotalPanel = new JPanel(new GridLayout(2, 1, 2, 2)); // Reduced gaps
-        infoTotalPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Reduced borders
-        
-        JPanel patientInfoPanel = new JPanel(new GridLayout(1, 2, 2, 2)); // Reduced gaps
+        // Panel Informasi Pasien dan Total
+        JPanel infoTotalPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+        infoTotalPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        JPanel patientInfoPanel = new JPanel(new GridLayout(1, 2));
         patientInfoPanel.add(new JLabel("Name:"));
         patientInfoPanel.add(new JLabel((String) patientData[1]));
         infoTotalPanel.add(patientInfoPanel);
 
         total = calculateTotal(getDrugData(idAntrian));
         totalLabel = new JLabel("Total: Rp." + total);
-        JPanel totalPanel = new JPanel(new GridLayout(1, 2, 2, 2)); // Reduced gaps
+        JPanel totalPanel = new JPanel(new GridLayout(1, 2));
         totalPanel.add(new JLabel("Total:"));
         totalPanel.add(totalLabel);
         infoTotalPanel.add(totalPanel);
 
-        // Payment Input Panel
-        JPanel paymentPanel = new JPanel(new GridLayout(3, 2, 2, 2)); // Reduced gaps
-        paymentPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // Reduced borders
+        // Panel Input Pembayaran
+        JPanel paymentPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        paymentPanel.setBorder(BorderFactory.createTitledBorder("Payment Details"));
+
         paymentPanel.add(new JLabel("Payment:"));
         paymentField = new CustomTextField("Enter payment amount", 20, 10, Optional.of(false));
         paymentPanel.add(paymentField);
@@ -97,7 +99,19 @@ public class FormPembayaran extends JFrame {
         changeLabel = new JLabel("Rp. 0");
         paymentPanel.add(changeLabel);
 
-        // Add DocumentListener to paymentField to update changeLabel automatically
+        // Tambahkan CustomRadioButton untuk metode pembayaran
+        paymentPanel.add(new JLabel("Payment Method:"));
+        JPanel radioPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        CustomRadioButton cashRadio = new CustomRadioButton("Cash", true);
+        CustomRadioButton cardRadio = new CustomRadioButton("Credit Card");
+        ButtonGroup paymentGroup = new ButtonGroup();
+        paymentGroup.add(cashRadio);
+        paymentGroup.add(cardRadio);
+        radioPanel.add(cashRadio);
+        radioPanel.add(cardRadio);
+        paymentPanel.add(radioPanel);
+
+        // Tambahkan DocumentListener untuk menghitung kembalian
         paymentField.getTextField().getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -125,8 +139,8 @@ public class FormPembayaran extends JFrame {
             }
         });
 
-        // Drug Information Table
-        String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "HARGA", "SIGNA", "HARGA JASA", "TOTAL"};
+        // Tabel Informasi Obat
+        String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "SIGNA", "HARGA JASA", "TOTAL"};
         tableModel = new DefaultTableModel(columnNames, 0);
         drugTable = new JTable(tableModel);
         drugData = getDrugData(idAntrian);
@@ -175,9 +189,6 @@ public class FormPembayaran extends JFrame {
                             JOptionPane.showMessageDialog(this, "Error printing bill: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     }
-
-                    // Close the payment form
-                    dispose();
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this, "Invalid payment amount!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -203,13 +214,10 @@ public class FormPembayaran extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(payButton);
         add(buttonPanel, BorderLayout.SOUTH);
-
-        setLocationRelativeTo(null);
         setVisible(true);
     }
 
     private List<Object[]> getDrugData(String idAntrian) {
-        // Retrieve drug data for the patient from the database
         List<Object[]> drugData = new ArrayList<>();
         QueryExecutor executor = new QueryExecutor();
         String query = "Call invoice(?)";
@@ -217,14 +225,15 @@ public class FormPembayaran extends JFrame {
         List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
         for (Map<String, Object> result : results) {
+            BigDecimal total = result.get("total") != null ? new BigDecimal(result.get("total").toString()) : BigDecimal.ZERO;
+
             Object[] drug = new Object[]{
                 result.get("nama_obat"),
                 result.get("nama_jenis_obat"),
                 result.get("jumlah"),
-                result.get("total"),
                 result.get("signa"),
                 result.get("harga_jasa"),
-                result.get("total"),
+                total, // Konversi total ke BigDecimal
                 result.get("nama")
             };
             drugData.add(drug);
@@ -235,9 +244,10 @@ public class FormPembayaran extends JFrame {
     private BigDecimal calculateTotal(List<Object[]> drugData) {
         BigDecimal total = BigDecimal.ZERO;
         for (Object[] drug : drugData) {
-            BigDecimal harga = (BigDecimal) drug[3];
-            int jumlah = (int) drug[2];
-            total = total.add(harga.multiply(BigDecimal.valueOf(jumlah)));
+            BigDecimal totalPerItem = (BigDecimal) drug[5]; // Ambil nilai total dari indeks 5
+            if (totalPerItem != null) {
+                total = total.add(totalPerItem);
+            }
         }
         return total;
     }
