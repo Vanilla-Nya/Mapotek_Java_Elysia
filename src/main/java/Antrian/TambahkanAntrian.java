@@ -61,8 +61,12 @@ public class TambahkanAntrian extends JPanel {
     private JPanel cardsPanel = new JPanel();
     private Map<String, Object> selectedPasien = null;
 
+    // Tambahkan variabel instance untuk menyimpan referensi ke AntrianPasien
+    private AntrianPasien antrianPasien;
+
     public TambahkanAntrian(DefaultTableModel model, AntrianPasien antrianPasien) {
         this.model = model;
+        this.antrianPasien = antrianPasien; // Simpan referensi ke AntrianPasien
         QueryExecutor namapasien = new QueryExecutor();
         namaPasienDropdown = new CustomTextField("Masukkan NIK Atau Nama", 0, 0, Optional.empty());
 
@@ -167,11 +171,27 @@ public class TambahkanAntrian extends JPanel {
                 java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
                 if (!results.isEmpty()) {
-                    // Refresh the table in AntrianPasien
+                    // Panggil refreshTableData di AntrianPasien
                     antrianPasien.refreshTableData();
-                }
 
-                // Close the TambahkanAntrian window
+                    // Tampilkan pesan sukses
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Data berhasil ditambahkan ke antrian.",
+                            "Sukses",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+
+                    // Tutup modal TambahkanAntrian
+                    ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(TambahkanAntrian.this));
+                } else {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Gagal menambahkan data ke antrian.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
             }
         });
 

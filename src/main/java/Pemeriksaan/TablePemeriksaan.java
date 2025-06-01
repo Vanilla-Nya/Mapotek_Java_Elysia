@@ -44,6 +44,59 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
         return array;
     }
 
+    public void refreshTableData() {
+        // Clear the existing data
+        data = new Object[][]{};
+        fullData = new Object[][]{};
+
+        // Fetch the latest data from the database
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_pemeriksaan(?)";
+        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+
+        if (!results.isEmpty()) {
+            for (Map<String, Object> result : results) {
+                // Data untuk tabel
+                Object[] dataForTable = new Object[]{
+                    result.get("no_antrian"),
+                    result.get("id_pasien"),
+                    result.get("nama_pasien"),
+                    result.get("status_antrian"),
+                    ""
+                };
+
+                // Tambahkan data ke tabel
+                Object[][] newData = new Object[data.length + 1][];
+                System.arraycopy(data, 0, newData, 0, data.length);
+                newData[data.length] = dataForTable;
+                data = newData;
+
+                // Data lengkap untuk TransaksiDiagnosa
+                Object[] dataForTransaksiDiagnosa = new Object[]{
+                    result.get("id_antrian"),
+                    result.get("no_antrian"),
+                    result.get("id_pasien"),
+                    result.get("nama_pasien"),
+                    result.get("status_antrian"),
+                    result.get("umur"),
+                    result.get("jenis_kelamin_pasien"),
+                    result.get("tanggal_antrian"),
+                    result.get("jam_antrian")
+                };
+
+                // Tambahkan data lengkap ke fullData
+                Object[][] newDataFull = new Object[fullData.length + 1][];
+                System.arraycopy(fullData, 0, newDataFull, 0, fullData.length);
+                newDataFull[fullData.length] = dataForTransaksiDiagnosa;
+                fullData = newDataFull;
+            }
+        }
+
+        // Update the table model with the refreshed data
+        model.setDataVector(data, new String[]{"NO ANTRIAN", "ID PASIEN", "NAMA PASIEN", "STATUS", "AKSI"});
+    }
+
     private void refreshData() {
         // Clear the current data
         if (model != null) {

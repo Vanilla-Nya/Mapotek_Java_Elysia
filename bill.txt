@@ -1,14 +1,14 @@
 ====================
-Name: Rifiki
-User: Elysia
+Name: Alfon Soetanto
+User: null
 ====================
-CHLORAMFECORT CREAM 10 G
-Jumlah: 7
-Harga: Rp. 94000.00
+PROMAG
+Jumlah: 10
+Harga: Rp. 10000.00
   Signa: 3 x 1
 ------------------------------------------------------------
-Total:                                Rp. 658000.00
-Payment:                                Rp. 1000000
-Change:                               Rp. 342000.00
+Total:                                 Rp. 25000.00
+Payment:                               Rp. 25000.00
+Change:                                    Rp. 0.00
 ====================
 Thank you for your payment!

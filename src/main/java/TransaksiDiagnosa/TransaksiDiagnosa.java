@@ -49,6 +49,7 @@ import Components.ShowModalCenter;
 import Components.Stepper;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
+import Pemeriksaan.TablePemeriksaan;
 
 public class TransaksiDiagnosa extends JPanel {
 
@@ -512,6 +513,12 @@ public class TransaksiDiagnosa extends JPanel {
 
                                 if (isAntrianUpdated) {
                                     JOptionPane.showMessageDialog(this, "Proses selesai. Halaman akan ditutup.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+
+                                    // Refresh tabel di TablePemeriksaan
+                                    if (listener instanceof TablePemeriksaan) {
+                                        ((TablePemeriksaan) listener).refreshTableData();
+                                    }
+
                                     JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
                                     ShowModalCenter.closeCenterModal(parentFrame); // Menutup modal
                                 } else {

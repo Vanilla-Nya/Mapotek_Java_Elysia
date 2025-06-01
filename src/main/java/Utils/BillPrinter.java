@@ -26,7 +26,7 @@ public class BillPrinter {
             // Add drug information
             for (Object[] drug : drugData) {
                 String drugName = (String) drug[0];
-                BigDecimal harga = (BigDecimal) drug[3];
+                BigDecimal harga = drug[3] instanceof BigDecimal ? (BigDecimal) drug[3] : new BigDecimal(drug[3].toString());
                 int jumlah = (int) drug[2];
                 String signa = (String) drug[4];
 
