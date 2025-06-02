@@ -25,11 +25,14 @@ import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
+import org.apache.xmlbeans.impl.xb.xsdschema.Public;
+
 import Absensi.Absensi;
 import Absensi.AllAbsensi;
 import Antrian.AntrianPasien;
 import Auth.AuthFrame;
 import Components.CustomTitleBarFrame;
+import Dashboard.DashBoardOwner;
 import Dashboard.Dashboard;
 import DataBase.QueryExecutor;
 import DataBase.Scheduler.BatchStatusScheduler;
@@ -320,7 +323,7 @@ public class Drawer extends JFrame {
     }
 
     // Method to update content based on selection
-    private void showContent(String section, Drawer drawer) {
+    public void showContent(String section, Drawer drawer) {
         if (isAnimationRunning) {
             return; // Jika animasi sedang berjalan, abaikan
         }
@@ -331,8 +334,17 @@ public class Drawer extends JFrame {
         newContent.setBackground(Color.WHITE);
 
         // Load the new content based on the section
-        if (section.equals("Dashboard")) {
-            newContent.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
+        if (section.equals("Absensi")) {
+            if (absensiInstance == null) {
+                absensiInstance = new Absensi();
+            }
+            newContent.add(absensiInstance.getContentPane(), BorderLayout.CENTER);
+        } else if (section.equals("Dashboard")) {
+            if (role == 3) {
+                newContent.add(new DashBoardOwner(), BorderLayout.CENTER);
+            } else {
+                newContent.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
+            }
         } else if (section.equals("Profile")) {
             UserSessionCache sessionCache = new UserSessionCache();
             newContent.add(new ProfileForm(sessionCache), BorderLayout.CENTER);

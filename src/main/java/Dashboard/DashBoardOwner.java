@@ -2,22 +2,53 @@ package Dashboard;
 
 import Components.IncomeExpenseCard;
 import DataBase.QueryExecutor;
+import Global.UserSessionCache;
+import Main.Drawer;
 
 import javax.swing.*;
+
+import Auth.AuthFrame;
+
 import java.awt.*;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.Map;
 
-public class DashBoardOwner extends JFrame {
+public class DashBoardOwner extends JPanel {
+
+    private String username;
+    private String roleName;
 
     public DashBoardOwner() {
-        // Frame setup
-        setTitle("Dashboard Owner");
-        setSize(1200, 800);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // Ambil data pengguna dari sesi
+        UserSessionCache cache = new UserSessionCache();
+        String uuid = (String) cache.getUUID();
+        QueryExecutor executor = new QueryExecutor();
+
+        // Ambil username
+        username = cache.getusername();
+
+        // Ambil role pengguna dari database
+        String query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
+        Object[] params = new Object[]{uuid};
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, params);
+
+        int role = 0;
+        if (!results.isEmpty()) {
+            role = ((Number) results.get(0).get("id_role")).intValue();
+        }
+
+        // Tentukan nama role berdasarkan ID role
+        switch (role) {
+            case 1 -> roleName = "Dokter";
+            case 2 -> roleName = "Admin";
+            case 3 -> roleName = "Owner";
+            default -> roleName = "Unknown";
+        }
+
+        // Panel setup
         setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
 
         // ** Main Content Section **
         JPanel mainPanel = new JPanel();
@@ -26,7 +57,7 @@ public class DashBoardOwner extends JFrame {
         mainPanel.setBackground(Color.WHITE);
 
         // ** Welcome Card **
-        JPanel welcomeCard = createWelcomeCard("Nama User");
+        JPanel welcomeCard = createWelcomeCard(username);
         mainPanel.add(welcomeCard);
         mainPanel.add(Box.createVerticalStrut(20)); // Spasi antara Welcome Card dan Statistik Cards
 
@@ -36,10 +67,20 @@ public class DashBoardOwner extends JFrame {
 
         int pemasukan = getPemasukanDashboard();
         int pengeluaran = getPengeluaranDashboard();
+        int expiredCount = getExpiredObatCount();
+        int lowStockCount = getLowStockObatCount();
 
         statsPanel.add(new IncomeExpenseCard("Pemasukan Bulan Ini", pemasukan, pengeluaran));
-        statsPanel.add(createStatCard("304", "Obat Tersedia", new Color(33, 150, 243)));
-        statsPanel.add(createStatCard("35", "Obat Hampir Habis", new Color(244, 67, 54)));
+        ImageIcon expiredIcon = new ImageIcon(new ImageIcon(
+                getClass().getClassLoader().getResource("assets/Obat_Expierd.png"))
+                .getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)); // Ukuran ikon 30x30
+
+        ImageIcon lowStockIcon = new ImageIcon(new ImageIcon(
+                getClass().getClassLoader().getResource("assets/Stock_Menipis.png"))
+                .getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)); // Ukuran ikon 30x30
+
+        statsPanel.add(createStatCard(String.valueOf(expiredCount), "Obat Expired", new Color(244, 67, 54), expiredIcon)); // Kartu tengah
+        statsPanel.add(createStatCard(String.valueOf(lowStockCount), "Obat Hampir Habis", new Color(255, 152, 0), lowStockIcon)); // Kartu kanan
 
         mainPanel.add(statsPanel);
         mainPanel.add(Box.createVerticalStrut(20)); // Spasi antara Statistik Cards dan Panel Antrian
@@ -73,12 +114,18 @@ public class DashBoardOwner extends JFrame {
         currentQueuePanel.setLayout(new BoxLayout(currentQueuePanel, BoxLayout.Y_AXIS));
         currentQueuePanel.setBackground(Color.WHITE);
 
-        ImageIcon queueIconImage = new ImageIcon(new ImageIcon(
-                getClass().getClassLoader().getResource("assets/Antrian_SaatIni.png"))
-                .getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)); // Ukuran ikon 50x50
-        JLabel queueIcon = new JLabel(queueIconImage);
-        queueIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
-        currentQueuePanel.add(queueIcon);
+        // Safely get the icon
+        URL imageUrl = getClass().getResource("/assets/antrian_saatini.png");
+        if (imageUrl != null) {
+            ImageIcon queueIconImage = new ImageIcon(
+                new ImageIcon(imageUrl).getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)
+            );
+            JLabel queueIcon = new JLabel(queueIconImage);
+            queueIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+            currentQueuePanel.add(queueIcon);
+        } else {
+            System.out.println("Image not found: /assets/antrian_saatini.png");
+        }
 
         // Ambil nomor antrian dan nama dari database
         Map<String, String> queueData = getQueueDataFromDatabase();
@@ -135,6 +182,14 @@ public class DashBoardOwner extends JFrame {
         totalPatientPanel.setLayout(new BoxLayout(totalPatientPanel, BoxLayout.Y_AXIS));
         totalPatientPanel.setBackground(Color.WHITE);
 
+        // Tambahkan ikon untuk total pasien
+        ImageIcon patientIconImage = new ImageIcon(
+            new ImageIcon(getClass().getResource("/assets/pasien_saatini.png"))
+                .getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)
+        );
+        JLabel patientIcon = new JLabel(patientIconImage);
+        patientIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         // Ambil total pasien dari database
         int totalPatients = getTotalPatientsToday();
 
@@ -152,6 +207,8 @@ public class DashBoardOwner extends JFrame {
         patientText.setForeground(Color.BLACK);
         patientText.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        totalPatientPanel.add(Box.createVerticalStrut(10)); // Spasi
+        totalPatientPanel.add(patientIcon); // Tambahkan ikon di atas
         totalPatientPanel.add(Box.createVerticalStrut(10)); // Spasi
         totalPatientPanel.add(patientLabel);
         totalPatientPanel.add(Box.createVerticalStrut(5)); // Spasi
@@ -243,6 +300,89 @@ public class DashBoardOwner extends JFrame {
         return pengeluaran;
     }
 
+    private int getExpiredObatCount() {
+        int expiredCount = 0;
+        try {
+            QueryExecutor executor = new QueryExecutor();
+            String query = "CALL count_all_obat_expierd()"; // Prosedur untuk menghitung obat expired
+            java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+            if (!results.isEmpty()) {
+                Object countObj = results.get(0).get("jumlah_data"); // Sesuaikan dengan nama kolom di query
+                if (countObj != null) {
+                    expiredCount = ((Number) countObj).intValue();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return expiredCount;
+    }
+
+    private int getLowStockObatCount() {
+        int lowStockCount = 0;
+        try {
+            QueryExecutor executor = new QueryExecutor();
+            String query = "CALL count_obat_menipis()"; // Prosedur untuk menghitung obat hampir habis
+            java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+            if (!results.isEmpty()) {
+                Object countObj = results.get(0).get("jumlah_obat_menipis"); // Sesuaikan dengan nama kolom di query
+                if (countObj != null) {
+                    lowStockCount = ((Number) countObj).intValue();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lowStockCount;
+    }
+
+    private JPanel createStatCard(String value, String label, Color color, ImageIcon icon) {
+        JPanel card = new JPanel();
+        card.setLayout(new BorderLayout());
+        card.setBackground(color);
+        card.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Jika value adalah "0", tampilkan "Obat Aman"
+        String displayValue = value.equals("0") ? "Obat Aman" : value;
+
+        JLabel valueLabel = new JLabel(displayValue, SwingConstants.CENTER);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        valueLabel.setForeground(Color.WHITE);
+
+        JLabel textLabel = new JLabel(label, SwingConstants.CENTER);
+        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        textLabel.setForeground(Color.WHITE);
+
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        card.add(iconLabel, BorderLayout.NORTH); // Tambahkan ikon di atas
+        card.add(valueLabel, BorderLayout.CENTER);
+        card.add(textLabel, BorderLayout.SOUTH);
+
+        return card;
+    }
+
+    private String getDayOfWeekGreeting() {
+        // Get the current day of the week
+        Calendar calendar = Calendar.getInstance();
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        // Map day of the week to greeting message
+        return switch (dayOfWeek) {
+            case Calendar.MONDAY -> "Have a nice Monday!";
+            case Calendar.TUESDAY -> "Have a nice Tuesday!";
+            case Calendar.WEDNESDAY -> "Have a nice Wednesday!";
+            case Calendar.THURSDAY -> "Have a nice Thursday!";
+            case Calendar.FRIDAY -> "Have a nice Friday!";
+            case Calendar.SATURDAY -> "Have a nice Saturday!";
+            case Calendar.SUNDAY -> "Have a nice Sunday!";
+            default -> "Have a great day!";
+        };
+    }
+
     private JPanel createWelcomeCard(String username) {
         // Panel utama untuk Welcome Card
         JPanel welcomeCard = new JPanel(new BorderLayout());
@@ -256,7 +396,7 @@ public class DashBoardOwner extends JFrame {
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.setBackground(Color.WHITE);
 
-        JLabel welcomeLabel = new JLabel("Welcome Owner");
+        JLabel welcomeLabel = new JLabel("Welcome, " + roleName);
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         welcomeLabel.setForeground(Color.BLACK);
         welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -278,72 +418,55 @@ public class DashBoardOwner extends JFrame {
 
         welcomeCard.add(textPanel, BorderLayout.CENTER);
 
-        // ** Tombol Aksi (Logout dan Absensi) **
+        // ** Tombol Aksi (Logout dan Absen) **
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(Color.WHITE);
 
-        JButton absensiButton = new JButton("Absensi");
-        absensiButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        absensiButton.setBackground(new Color(76, 175, 80));
-        absensiButton.setForeground(Color.WHITE);
-
+        // Tombol Logout
         JButton logoutButton = new JButton("Logout");
         logoutButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        logoutButton.setBackground(new Color(244, 67, 54));
+        logoutButton.setBackground(new Color(244, 67, 54)); // Merah
         logoutButton.setForeground(Color.WHITE);
 
-        buttonPanel.add(absensiButton);
-        buttonPanel.add(logoutButton);
+        logoutButton.addActionListener(e -> {
+            // Bersihkan sesi pengguna
+            UserSessionCache sessionCache = new UserSessionCache();
+            sessionCache.clearCache();
 
+            // Tutup panel DashBoardOwner dan kembali ke halaman login
+            SwingUtilities.invokeLater(() -> {
+                AuthFrame authFrame = new AuthFrame();
+                authFrame.setVisible(true);
+                authFrame.resetToLogin(); // Pastikan kembali ke panel login
+            });
+
+            // Jika DashBoardOwner berada di dalam JFrame, tutup JFrame-nya
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window != null) {
+                window.dispose();
+            }
+        });
+
+        // Tombol Absen
+        JButton absenButton = new JButton("Absen");
+        absenButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        absenButton.setBackground(new Color(33, 150, 243)); // Biru
+        absenButton.setForeground(Color.WHITE);
+
+        absenButton.addActionListener(e -> {
+            // Dapatkan referensi ke Drawer
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof Drawer drawer) {
+                // Panggil metode showContent untuk menampilkan halaman Absensi
+                drawer.showContent("Absensi", drawer);
+            }
+        });
+
+        buttonPanel.add(absenButton);
+        buttonPanel.add(logoutButton);
         welcomeCard.add(buttonPanel, BorderLayout.EAST);
 
         return welcomeCard;
-    }
-
-    private JPanel createStatCard(String value, String label, Color color) {
-        JPanel card = new JPanel();
-        card.setLayout(new BorderLayout());
-        card.setBackground(color);
-        card.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        valueLabel.setForeground(Color.WHITE);
-
-        JLabel textLabel = new JLabel(label, SwingConstants.CENTER);
-        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        textLabel.setForeground(Color.WHITE);
-
-        card.add(valueLabel, BorderLayout.CENTER);
-        card.add(textLabel, BorderLayout.SOUTH);
-
-        return card;
-    }
-
-    private String getDayOfWeekGreeting() {
-        // Get the current day of the week
-        Calendar calendar = Calendar.getInstance();
-        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
-
-        // Map day of the week to greeting message
-        switch (dayOfWeek) {
-            case Calendar.MONDAY:
-                return "Have a nice Monday!";
-            case Calendar.TUESDAY:
-                return "Have a nice Tuesday!";
-            case Calendar.WEDNESDAY:
-                return "Have a nice Wednesday!";
-            case Calendar.THURSDAY:
-                return "Have a nice Thursday!";
-            case Calendar.FRIDAY:
-                return "Have a nice Friday!";
-            case Calendar.SATURDAY:
-                return "Have a nice Saturday!";
-            case Calendar.SUNDAY:
-                return "Have a nice Sunday!";
-            default:
-                return "Have a great day!";
-        }
     }
 
     public static void main(String[] args) {
