@@ -179,7 +179,7 @@ public class TambahkanAntrian extends JPanel {
                             null,
                             "Data berhasil ditambahkan ke antrian.",
                             "Sukses",
-                            JOptionPane.INFORMATION_MESSAGE
+                            JOptionPane.INFORMATION_MESSAGE 
                     );
 
                     // Tutup modal TambahkanAntrian
