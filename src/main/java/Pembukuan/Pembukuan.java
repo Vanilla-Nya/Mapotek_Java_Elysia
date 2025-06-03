@@ -210,17 +210,6 @@ public class Pembukuan extends JPanel {
 
         footerPanel.add(addButton);
         footerPanel.add(exportButton);
-
-        // Modifikasi tombol "Filter Data" di footer panel
-        RoundedButton filterModalButton = new RoundedButton("Filter Data");
-        filterModalButton.setBackground(new Color(33, 150, 243));
-        filterModalButton.setForeground(Color.WHITE);
-        filterModalButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        filterModalButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // Tambahkan tombol ke footer panel
-        footerPanel.add(filterModalButton);
-
         add(footerPanel, BorderLayout.SOUTH);
 
         // Inisialisasi array dengan ukuran default (misalnya 0)

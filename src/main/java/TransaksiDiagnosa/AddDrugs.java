@@ -93,11 +93,11 @@ public class AddDrugs extends JDialog {
                 id.add(result.get("id_obat"));
                 Object[] dataFromDatabase = new Object[]{
                     data.length + 1,
-                    result.get("barcode") != null ? result.get("barcode") : "", // Ganti null dengan string kosong
-                    result.get("nama_obat") != null ? result.get("nama_obat") : "", // Ganti null dengan string kosong
-                    result.get("nama_jenis_obat") != null ? result.get("nama_jenis_obat") : "", // Ganti null dengan string kosong
-                    result.get("harga_jual") != null ? result.get("harga_jual") : 0, // Ganti null dengan 0
-                    result.get("stock") != null ? result.get("stock") : 0, // Ganti null dengan 0
+                    result.get("barcode") != null ? result.get("barcode") : "",
+                    result.get("nama_obat") != null ? result.get("nama_obat") : "",
+                    result.get("nama_jenis_obat") != null ? result.get("nama_jenis_obat") : "",
+                    result.get("harga_jual") != null ? result.get("harga_jual") : 0,
+                    result.get("stock") != null ? result.get("stock") : 0,
                     ""
                 };
 
@@ -108,6 +108,9 @@ public class AddDrugs extends JDialog {
                 data = newData;
             }
         }
+
+        // Perbarui tableModel dengan data yang diambil
+        tableModel.setDataVector(data, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"});
     }
 
     private JPanel createHeaderPanel() {
@@ -298,7 +301,7 @@ public class AddDrugs extends JDialog {
         String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA JUAL", "STOCK"};
 
         // Table model
-        tableModel = new DefaultTableModel(data, columns);
+        tableModel = new DefaultTableModel(data, columns); // Pastikan data langsung diatur di sini
 
         obatTable = new CustomTable(tableModel);
         setTableColumnWidths(obatTable);

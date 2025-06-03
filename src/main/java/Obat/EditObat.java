@@ -35,6 +35,7 @@ import Components.CustomTable.CustomTable;
 import Components.CustomTextField;
 import Components.Dropdown; 
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 
@@ -243,6 +244,75 @@ public class EditObat extends JPanel {
         submitButton.setForeground(Color.WHITE);
         formPanel.add(submitButton, gbc);
 
+        // Tambahkan ActionListener ke tombol "Simpan"
+        submitButton.addActionListener(e -> {
+            // Ambil data baru dari input field
+            String newNamaObat = txtNamaObat.getText().trim();
+            String newJenisObat = (String) txtJenisObat.getSelectedItem(); // Nama jenis obat
+            String newJenisBentukObat = (String) txtJenisBentukObat.getSelectedItem();
+            String newBarcode = txtBarcode.getText().trim();
+
+            // Ambil data lama dari parameter atau tabel
+            String oldNamaObat = namaObat;
+            String oldJenisObat = jenisObat;
+            String oldJenisBentukObat = getJenisBentukObat(idObat);
+            String oldBarcode = barcode;
+
+            // Periksa apakah ada perubahan
+            boolean isChanged = false;
+            if (!newNamaObat.equals(oldNamaObat)) isChanged = true;
+            if (!newJenisObat.equals(oldJenisObat)) isChanged = true;
+            if (!newJenisBentukObat.equals(oldJenisBentukObat)) isChanged = true;
+            if (!newBarcode.equals(oldBarcode)) isChanged = true;
+
+            if (isChanged) {
+                try {
+                    // Ambil id_jenis_obat berdasarkan nama jenis obat
+                    String getIdJenisObatQuery = "SELECT id_jenis_obat FROM jenis_obat WHERE nama_jenis_obat = ?";
+                    List<Map<String, Object>> jenisObatResults = executor.executeSelectQuery(getIdJenisObatQuery, new Object[]{newJenisObat});
+
+                    if (jenisObatResults.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Jenis obat tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // Ambil id_jenis_obat dari hasil query
+                    String idJenisObat = String.valueOf(jenisObatResults.get(0).get("id_jenis_obat"));
+
+                    // Simpan perubahan ke database
+                    String updateQuery = "UPDATE obat SET nama_obat = ?, id_jenis_obat = ?, bentuk_obat = ?, barcode = ? WHERE id_obat = ?";
+                    executor.executeUpdateQuery(updateQuery, new Object[]{
+                        newNamaObat,
+                        idJenisObat, // Gunakan id_jenis_obat
+                        newJenisBentukObat,
+                        newBarcode,
+                        Integer.parseInt(idObat)
+                    });
+
+                    // Tampilkan pesan sukses
+                    JOptionPane.showMessageDialog(this, "Perubahan berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+
+                    // Panggil callback untuk memperbarui tabel utama
+                    if (refreshCallback != null) {
+                        refreshCallback.run();
+                    }
+
+                    // Tutup modal setelah berhasil menyimpan
+                    ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
+
+                } catch (Exception ex) {
+                    // Tampilkan pesan error jika gagal
+                    JOptionPane.showMessageDialog(this, "Gagal menyimpan perubahan: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                // Tampilkan pesan jika tidak ada perubahan
+                JOptionPane.showMessageDialog(this, "Tidak ada perubahan yang disimpan.", "Info", JOptionPane.INFORMATION_MESSAGE);
+
+                // Tutup modal jika tidak ada perubahan
+                ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
+            }
+        });
+
         // Set the preferred size of the form panel to match the table's width
         // if (table != null) {
         //     formPanel.setPreferredSize(table.getPreferredSize());
@@ -279,6 +349,13 @@ public class EditObat extends JPanel {
                 int column = tableObatMasuk.getColumnModel().getColumnIndex("AKSI");
                 int row = tableObatMasuk.getSelectedRow();
                 if (row >= 0 && column == tableObatMasuk.getSelectedColumn()) {
+                    // Ambil nilai "status_batch" dari baris yang dipilih
+                    String statusBatch = tableObatMasuk.getValueAt(row, 6).toString(); // Kolom ke-6 adalah "status_batch"
+                    
+                    // Cetak nilai "status_batch"
+                    System.out.println("Status Batch: " + statusBatch);
+
+                    // Lakukan tindakan lainnya jika diperlukan
                     int idDetailObat = (Integer) updatedResults.get(row).get("id_detail_obat");
                     showPengeluaranObatPerBatch(idDetailObat);
                 }
@@ -325,54 +402,59 @@ public class EditObat extends JPanel {
         // Panel untuk tombol di bawah tabel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
-        // Tombol Restock
-        JButton btnRestock = new RoundedButton("Restock");
-        btnRestock.setBackground(new Color(0, 123, 255));
-        btnRestock.setForeground(Color.WHITE);
+        // Ambil status_batch dari database
+        String statusBatchQuery = "SELECT status_batch FROM detail_obat WHERE id_detail_obat = ?";
+        List<Map<String, Object>> statusResults = executor.executeSelectQuery(statusBatchQuery, new Object[]{idDetailObat});
 
-        // Tambahkan tombol ke panel
-        buttonPanel.add(btnRestock);
+        if (!statusResults.isEmpty()) {
+            String statusBatch = (String) statusResults.get(0).get("status_batch");
+
+            // Tambahkan tombol Restock hanya jika status_batch adalah "aktif"
+            if ("aktif".equalsIgnoreCase(statusBatch) || "expired".equalsIgnoreCase(statusBatch)) {
+                JButton btnRestock = new RoundedButton("Restock");
+                btnRestock.setBackground(new Color(0, 123, 255));
+                btnRestock.setForeground(Color.WHITE);
+
+                // Tambahkan tombol ke panel
+                buttonPanel.add(btnRestock);
+
+                // Action listener untuk tombol Restock
+                btnRestock.addActionListener(e -> {
+                    String queryDetail = "CALL detail_obat_bacth(?)";
+                    List<Map<String, Object>> detailResults = executor.executeSelectQuery(queryDetail, new Object[]{idDetailObat});
+
+                    if (!detailResults.isEmpty()) {
+                        Map<String, Object> detail = detailResults.get(0);
+
+                        String idObat = String.valueOf(detail.get("id_obat"));
+                        if (idObat == null || idObat.trim().isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "ID Obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        String namaObat = String.valueOf(detail.get("nama_obat"));
+                        String jenisObat = String.valueOf(detail.get("nama_jenis_obat"));
+                        String stokLama = String.valueOf(detail.get("stock"));
+                        String tanggalExpiredLama = String.valueOf(detail.get("tanggal_expired"));
+                        String hargaBeliLama = String.valueOf(detail.get("harga_beli"));
+                        String hargaJualLama = String.valueOf(detail.get("harga_jual"));
+
+                        boolean isRestockSuccessful = Restock.showRestockDialog(idObat, String.valueOf(idDetailObat), namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
+
+                        if (isRestockSuccessful) {
+                            refreshTableObatMasuk(idObat);
+                        } else {
+                            System.out.println("Restock dibatalkan oleh pengguna.");
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Data batch tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            }
+        }
 
         // Tambahkan panel tombol ke bawah tabel
         detailPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        // Action listener untuk tombol Restock
-        btnRestock.addActionListener(e -> {
-            // Ambil data batch obat yang dipilih
-            String queryDetail = "CALL detail_obat_bacth(?)";
-            List<Map<String, Object>> detailResults = executor.executeSelectQuery(queryDetail, new Object[]{idDetailObat});
-
-            if (!detailResults.isEmpty()) {
-                Map<String, Object> detail = detailResults.get(0);
-
-                // Ambil data yang diperlukan untuk Restock
-                String idObat = String.valueOf(detail.get("id_obat"));
-                if (idObat == null || idObat.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "ID Obat tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                String namaObat = String.valueOf(detail.get("nama_obat"));
-                String jenisObat = String.valueOf(detail.get("nama_jenis_obat"));
-                String stokLama = String.valueOf(detail.get("stock"));
-                String tanggalExpiredLama = String.valueOf(detail.get("tanggal_expired"));
-                String hargaBeliLama = String.valueOf(detail.get("harga_beli"));
-                String hargaJualLama = String.valueOf(detail.get("harga_jual"));
-
-                // Panggil dialog Restock
-                boolean isRestockSuccessful = Restock.showRestockDialog(idObat, String.valueOf(idDetailObat), namaObat, jenisObat, stokLama, tanggalExpiredLama, hargaBeliLama, hargaJualLama);
-
-                // Jika Restock berhasil, refresh tabel
-                if (isRestockSuccessful) {
-                    refreshTableObatMasuk(idObat);
-                } else {
-                    // Jika dialog dibatalkan, tidak ada tindakan lebih lanjut
-                    System.out.println("Restock dibatalkan oleh pengguna.");
-                }
-            } else {
-                JOptionPane.showMessageDialog(null, "Data batch tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
 
         // Tampilkan dialog
         JOptionPane.showMessageDialog(null, detailPanel, "Detail Pengeluaran Obat Per Batch", JOptionPane.INFORMATION_MESSAGE);

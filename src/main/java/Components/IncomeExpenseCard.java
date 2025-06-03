@@ -90,7 +90,7 @@ public class IncomeExpenseCard extends JPanel {
         });
 
         // Inisialisasi Timer untuk perubahan otomatis
-        autoSwitchTimer = new Timer(10000, e -> toggleContentWithFade()); // 10 detik
+        autoSwitchTimer = new Timer(5000, e -> toggleContentWithFade()); // 10 detik
         autoSwitchTimer.start();
     }
 

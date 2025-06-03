@@ -165,24 +165,35 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
             }
 
             private void performSearch() {
-                String searchTerm = searchField.getText().toLowerCase();
-                Object[][] filteredData = Arrays.stream(data)
-                        .filter(row -> ((String) row[1]).toLowerCase().contains(searchTerm) // Check if 'BARCODE' contains search term
-                                || ((String) row[2]).toLowerCase().contains(searchTerm)) // Check if 'NAMA OBAT' contains search term
-                        .toArray(Object[][]::new);
+                String searchTerm = searchField.getText().trim().toLowerCase();
+                QueryExecutor executor = new QueryExecutor();
 
-                // Add the "AKSI" column with action buttons back to the filtered data
-                Object[][] dataWithActions = new Object[filteredData.length][7]; // 7 columns including the "AKSI" column
+                // Panggil prosedur tersimpan dengan parameter pencarian
+                String searchQuery = "CALL all_obat_search(?)";
+                Object[] params = new Object[]{searchTerm};
 
-                for (int i = 0; i < filteredData.length; i++) {
-                    dataWithActions[i] = Arrays.copyOf(filteredData[i], 7); // Copy data to the new array and ensure we have 7 columns
-                    dataWithActions[i][6] = "Action"; // Placeholder for the "AKSI" column (we will update this with buttons)
+                // Eksekusi query dan ambil hasilnya
+                java.util.List<Map<String, Object>> results = executor.executeSelectQuery(searchQuery, params);
+
+                // Konversi hasil query ke dalam format tabel
+                Object[][] filteredData = new Object[results.size()][];
+                int index = 0;
+                for (Map<String, Object> result : results) {
+                    filteredData[index++] = new Object[]{
+                        index,                              // NO
+                        result.get("barcode"),              // BARCODE
+                        result.get("nama_obat"),            // NAMA OBAT
+                        result.get("nama_jenis_obat"),      // JENIS OBAT
+                        result.get("stock"),                // STOCK
+                        result.get("harga_jual")            // HARGA JUAL
+                    };
                 }
 
-                // Update the table model with the filtered data
-                tableModel.setDataVector(filteredData, new String[]{"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "HARGA", "STOCK"});
+                // Update tabel dengan data yang difilter
+                String[] columns = {"NO", "BARCODE", "NAMA OBAT", "JENIS OBAT", "STOCK", "HARGA JUAL"};
+                tableModel.setDataVector(filteredData, columns);
 
-                // Reapply the button rendering and editing to the "AKSI" column
+                // Terapkan ulang lebar kolom
                 setTableColumnWidths(obatTable);
             }
         });

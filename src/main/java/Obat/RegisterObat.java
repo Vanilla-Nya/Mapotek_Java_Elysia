@@ -28,6 +28,7 @@ import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Helpers.OnObatAddedListener;
@@ -254,7 +255,7 @@ public class RegisterObat extends JPanel {
                         JOptionPane.showMessageDialog(null, message, "Sukses", JOptionPane.INFORMATION_MESSAGE);
 
                         // Close the form after submission
-                        SwingUtilities.getWindowAncestor(RegisterObat.this).dispose();
+                        ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterObat.this));
                     } else {
                         JOptionPane.showMessageDialog(null, "Data Obat Gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
