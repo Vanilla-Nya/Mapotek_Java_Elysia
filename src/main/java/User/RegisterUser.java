@@ -46,7 +46,7 @@ public class RegisterUser extends JPanel {
         formPanel.add(new JLabel("Role:"), gbc);
         gbc.gridx = 1;
         txtRole = new Dropdown(false, true, null);
-        txtRole.setItems(List.of("User", "Dokter", "Admin"), false, true, null);
+        txtRole.setItems(List.of("Dokter", "Admin"), false, true, null); // Hanya "Dokter" dan "Admin"
         formPanel.add(txtRole, gbc);
 
         // Name field
@@ -113,25 +113,36 @@ public class RegisterUser extends JPanel {
                 UserSessionCache cache = new UserSessionCache();
                 String uuid = cache.getUUID();
 
-                // Get data from text fields and notify listener
+                // Get data from text fields
                 String id = String.valueOf(model.getRowCount() + 1);
                 String role = (String) txtRole.getSelectedItem();
                 String name = txtName.getText();
                 String gender = (String) txtGender.getSelectedItem();
                 String address = txtAddress.getText();
                 String phone = txtPhone.getText();
-                String password = txtPassword.getText(); // Changed to getText() for password field
-                String rfid = txtRFID.getText();
+                String password = txtPassword.getText();
+                String rfid = txtRFID.getText().trim();
+
+                // Jika RFID kosong, atur ke null
+                if (rfid.isEmpty()) {
+                    rfid = null;
+                }
 
                 if (uuid != null) {
-                    // Validate fields (if necessary)
-                    if (name.isEmpty() || phone.isEmpty() || address.isEmpty() || rfid.isEmpty()) {
-                        JOptionPane.showMessageDialog(RegisterUser.this, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                    // Validasi input lainnya
+                    if (name.isEmpty() || phone.isEmpty() || address.isEmpty()) {
+                        JOptionPane.showMessageDialog(RegisterUser.this, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // Validasi role
+                    if (role == null || (!role.equals("Dokter") && !role.equals("Admin"))) {
+                        JOptionPane.showMessageDialog(RegisterUser.this, "Role harus Dokter atau Admin.", "Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     }
 
                     // Step 1: Insert the user into the 'user' table
-                    QueryExecutor queryExecutor = new QueryExecutor();  // Create instance of QueryExecutor
+                    QueryExecutor queryExecutor = new QueryExecutor();
                     String insertUserQuery = "INSERT INTO user (nama_lengkap, username, jenis_kelamin, alamat, no_telp, password, rfid) VALUES (?, ?, ?, ?, ?, ?, ?)";
                     boolean userInserted = queryExecutor.executeInsertQuery(insertUserQuery, new Object[]{name, name, gender, address, phone, password, rfid});
 
@@ -140,7 +151,7 @@ public class RegisterUser extends JPanel {
                         return;
                     }
 
-                    // Step 2: Get the generated user ID (assuming the user ID is auto-incremented)
+                    // Step 2: Get the generated user ID
                     String getLastInsertIdQuery = "SELECT id_user as userId from user where username = ?";
                     List<Map<String, Object>> result = queryExecutor.executeSelectQuery(getLastInsertIdQuery, new Object[]{name});
                     String userId = (String) result.get(0).get("userId");
@@ -157,20 +168,18 @@ public class RegisterUser extends JPanel {
 
                     // Step 4: Insert into user_role table
                     String insertUserRoleQuery = "INSERT INTO user_role (id_user, id_role) SELECT ?, id_role FROM role WHERE nama_role = ?";
-                    try {
-                        boolean userRoleInserted = queryExecutor.executeInsertQuery(insertUserRoleQuery, new Object[]{userId, role});
+                    boolean userRoleInserted = queryExecutor.executeInsertQuery(insertUserRoleQuery, new Object[]{userId, role});
 
-                        if (userRoleInserted) {
-                            JOptionPane.showMessageDialog(RegisterUser.this, "User added successfully!");
-                            if (listener != null) {
-                                listener.onUserAdded(userId, role, name, gender, address, phone);
-                            }
-                            Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterUser.this));
-                        } else {
-                            JOptionPane.showMessageDialog(RegisterUser.this, "Failed to assign role to user.", "Error", JOptionPane.ERROR_MESSAGE);
+                    if (userRoleInserted) {
+                        JOptionPane.showMessageDialog(RegisterUser.this, "User added successfully!");
+                        if (listener != null) {
+                            listener.onUserAdded(userId, role, name, gender, address, phone);
                         }
-                    } catch (HeadlessException error) {
-                        System.out.println(error);
+
+                        // Tutup modal setelah proses selesai
+                        Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterUser.this));
+                    } else {
+                        JOptionPane.showMessageDialog(RegisterUser.this, "Failed to assign role to user.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     JOptionPane.showMessageDialog(RegisterUser.this, "Failed to Create User, User is Not Login", "Error", JOptionPane.ERROR_MESSAGE);

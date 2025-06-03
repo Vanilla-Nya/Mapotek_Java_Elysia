@@ -194,21 +194,20 @@ public class Login extends JPanel {
         btnLogin.setPreferredSize(new Dimension(200, 50));
 
         btnLogin.addActionListener(e -> {
-            // Catch Field
+            System.out.println("Login button clicked.");
             String usernameOrRFID = txtUsernameOrRFID.getText();
-            String password = new String(txtPassword.getPassword()); // Use `new String()` to get password from JPasswordField
+            String password = new String(txtPassword.getPassword());
 
-            // Executor
             QueryExecutor executor = new QueryExecutor();
             String query;
             Object[] parameter;
 
-            if (usernameOrRFID.matches("\\d{10}")) { // Check if input is a 10-digit numeric (RFID)
-                // Login using RFID
+            if (usernameOrRFID.matches("\\d{10}")) {
+                System.out.println("RFID detected.");
                 query = "CALL login_with_rfid(?)";
                 parameter = new Object[]{usernameOrRFID};
             } else {
-                // Login using username and password
+                System.out.println("Username and password login.");
                 query = "CALL login(?, ?)";
                 parameter = new Object[]{usernameOrRFID, password};
             }
@@ -218,6 +217,7 @@ public class Login extends JPanel {
                 Map<String, Object> getData = results.get(0);
                 Long code = (Long) getData.get("code");
                 if (code.equals(200L)) {
+                    System.out.println("Login successful.");
                     String uuid = (String) getData.get("user_id");
                     String username = (String) getData.get("username");
                     UserSessionCache cache = new UserSessionCache();
@@ -225,19 +225,21 @@ public class Login extends JPanel {
 
                     String welcomeMessage = "Selamat Datang " + getData.get("nama_lengkap");
 
-                    // Buat frame baru untuk animasi
                     JFrame animationFrame = new JFrame();
-                    animationFrame.setUndecorated(true); // Hilangkan border frame
-                    animationFrame.setSize(parentFrame.getSize());
-                    animationFrame.setLocationRelativeTo(parentFrame);
+                    animationFrame.setUndecorated(true);
+                    animationFrame.setSize(parentFrame.getWidth(), parentFrame.getHeight());
+                    animationFrame.setLocationRelativeTo(null);
                     animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage));
                     animationFrame.setVisible(true);
 
-                    // Sembunyikan frame login
-                    parentFrame.setVisible(false);
+                    System.out.println("Animation frame displayed.");
+                    SwingUtilities.invokeLater(() -> parentFrame.dispose());
                 } else {
+                    System.out.println("Login failed: " + getData.get("message"));
                     JOptionPane.showMessageDialog(Login.this, "Login gagal", (String) getData.get("message"), JOptionPane.ERROR_MESSAGE);
                 }
+            } else {
+                System.out.println("No results from query.");
             }
         });
 
@@ -287,8 +289,18 @@ public class Login extends JPanel {
                             String username = (String) getData.get("username"); // Retrieve the username from the result
                             UserSessionCache cache = new UserSessionCache();
                             cache.login(username, uuid);
-                            JOptionPane.showMessageDialog(Login.this, "Selamat Datang " + getData.get("nama_lengkap"), (String) getData.get("message"), JOptionPane.INFORMATION_MESSAGE);
-                            new Drawer().setVisible(true);
+
+                            String welcomeMessage = "Selamat Datang " + getData.get("nama_lengkap");
+
+                            JFrame animationFrame = new JFrame();
+                            animationFrame.setUndecorated(true);
+                            animationFrame.setSize(parentFrame.getWidth(), parentFrame.getHeight());
+                            animationFrame.setLocationRelativeTo(null);
+                            animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage));
+                            animationFrame.setVisible(true);
+
+                            
+                            SwingUtilities.invokeLater(() -> parentFrame.dispose());
                         } else {
                             JOptionPane.showMessageDialog(Login.this, "Login gagal", (String) getData.get("message"), JOptionPane.ERROR_MESSAGE);
                         }

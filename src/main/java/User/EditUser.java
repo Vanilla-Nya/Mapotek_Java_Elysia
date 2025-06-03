@@ -74,7 +74,7 @@ public class EditUser extends JPanel {
         formPanel.add(new JLabel("Role"), gbc);
         gbc.gridx = 1;
         txtRole = new Dropdown(false, false, role);
-        txtRole.setItems(List.of("User", "Dokter", "Admin"), false, false, role);
+        txtRole.setItems(List.of("Dokter", "Admin"), false, false, role); // Hanya "Dokter" dan "Admin"
         formPanel.add(txtRole, gbc);
 
         // Gender
@@ -127,36 +127,38 @@ public class EditUser extends JPanel {
                 String updatedGender = (String) cbGender.getSelectedItem();
                 String updatedAddress = txtAddress.getText();
                 String updatedPhone = txtphoneNum.getText();
-                String updatedRFID = txtRFID.getText();
-                
+                String updatedRFID = txtRFID.getText().trim();
+
+                if (updatedRFID.isEmpty()) {
+                    updatedRFID = null; // Atur RFID ke null jika kosong
+                }
+
                 UserSessionCache cache = new UserSessionCache();
                 String uuid = cache.getUUID();
-                
+
                 if (uuid != null) {
-                    // Step 1: Handle empty role case
-                    if (updateRole == null || updateRole.isEmpty()) {
-                        JOptionPane.showMessageDialog(EditUser.this, "Please select a role.", "Error", JOptionPane.ERROR_MESSAGE);
-                        return; // Exit the method if no role is selected
+                    // Validasi role
+                    if (updateRole == null || (!updateRole.equals("Dokter") && !updateRole.equals("Admin"))) {
+                        JOptionPane.showMessageDialog(EditUser.this, "Role harus Dokter atau Admin.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
 
-                    // Step 2: Check if the role exists in the role table, and insert it if necessary
+                    // Step 2: Check if the role exists in the role table
                     String checkRoleQuery = "SELECT id_role FROM role WHERE nama_role = ?";
                     List<Map<String, Object>> roleCheckResult = executor.executeSelectQuery(checkRoleQuery, new Object[]{updateRole});
-                    
-                    int roleId;
-                    // Get the role ID
-                    roleId = (int) roleCheckResult.get(0).get("id_role");
 
-                    // Step 3: Update the user_role table with the correct role
+                    int roleId = (int) roleCheckResult.get(0).get("id_role");
+
+                    // Step 3: Update the user_role table
                     String updateUserRoleQuery = "UPDATE user_role SET id_role = ? WHERE id_user = ?";
                     boolean roleUpdated = executor.executeUpdateQuery(updateUserRoleQuery, new Object[]{roleId, userId});
-                    
+
                     if (!roleUpdated) {
                         JOptionPane.showMessageDialog(EditUser.this, "Failed to update user role.", "Error", JOptionPane.ERROR_MESSAGE);
-                        return; // Exit the method if the role update fails
+                        return;
                     }
 
-                    // Step 4: Update the user table with the other information
+                    // Step 4: Update the user table
                     String updateQuery = "UPDATE user SET username = ?, jenis_kelamin = ?, no_telp = ?, alamat = ?, rfid = ? WHERE id_user = ?";
                     boolean success = executor.executeUpdateQuery(updateQuery, new Object[]{
                         updatedName, updatedGender, updatedPhone, updatedAddress, updatedRFID, userId
@@ -167,6 +169,8 @@ public class EditUser extends JPanel {
                         if (listener != null) {
                             listener.onUserUpdated(updatedName, updateRole, updatedGender, updatedPhone, updatedAddress, updatedRFID);
                         }
+
+                        // Tutup modal setelah proses selesai
                         Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(EditUser.this));
                     } else {
                         JOptionPane.showMessageDialog(EditUser.this, "Failed to update user data.", "Error", JOptionPane.ERROR_MESSAGE);

@@ -362,26 +362,22 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
         SwingUtilities.invokeLater(() -> new Pasien(0).setVisible(true));
     }
 
-    public void onPasienAdded(String id, String nik, String name, String age, String gender, String phone, String address) {
-        // Handle the new pasien details when added
-        model.addRow(new Object[]{id, nik, name, age, gender, address, phone, "Edit"});
+    @Override
+    public void onPasienAdded(String id, String nik, String name, String age, String gender, String phone, String address, String rfid) {
+        // Tambahkan data pasien ke tabel dengan RFID
+        model.addRow(new Object[]{model.getRowCount() + 1, nik, name, age, gender, address, phone, rfid});
+        
+        // Tambahkan ID pasien baru ke idPasienList
+        idPasienList.add(id);
+
+        // Segarkan tabel
+        refreshTable();
     }
 
     @Override
     public void onPasienUpdated(String nik, String name, String age, String gender, String phone, String address, String rfid) {
-        // Handle updating the patient in your model or UI
-        int selectedRow = getSelectedRowInTable(); // Get the selected row in the table
-
-        if (selectedRow != -1) {
-            // Update the selected row with the new data from EditPasien
-            model.setValueAt(nik, selectedRow, 1);
-            model.setValueAt(name, selectedRow, 2); // Update name
-            model.setValueAt(age, selectedRow, 3); // Update age
-            model.setValueAt(gender, selectedRow, 4); // Update gender
-            model.setValueAt(address, selectedRow, 5); // Update address
-            model.setValueAt(phone, selectedRow, 6); // Update phone number
-            model.setValueAt(rfid, selectedRow, 7); // Update RFID
-        }
+        // Segarkan tabel setelah pengeditan
+        refreshTable();
     }
 
     private void deletePasien(int row, String pasienId) {
@@ -404,5 +400,35 @@ public class Pasien extends JFrame implements OnPasienAddedListener, OnPasienUpd
 
     private boolean isTableEmpty() {
         return model.getRowCount() == 0;
+    }
+
+    private void refreshTable() {
+        // Kosongkan tabel dan idPasienList
+        model.setRowCount(0);
+        idPasienList.clear();
+
+        // Ambil data terbaru dari database
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_pasien()";
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+        int no = 1;
+        if (!results.isEmpty()) {
+            for (Map<String, Object> result : results) {
+                var alamat = "".equals(result.get("alamat").toString()) ? "-" : result.get("alamat");
+                var no_telp = "".equals(result.get("no_telp").toString()) ? "-" : result.get("no_telp");
+                var rfid = result.get("rfid") != null ? result.get("rfid").toString() : "-";
+
+                // Simpan id_pasien asli
+                idPasienList.add(String.valueOf(result.get("id_pasien")));
+
+                // Tambahkan data ke tabel
+                model.addRow(new Object[]{
+                    no++, // nomor urut
+                    result.get("nik"), result.get("nama_pasien"), result.get("umur"),
+                    result.get("jenis_kelamin"), alamat, no_telp, rfid
+                });
+            }
+        }
     }
 }

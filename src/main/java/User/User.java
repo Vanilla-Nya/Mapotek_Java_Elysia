@@ -12,6 +12,7 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,8 +39,9 @@ import Components.CustomTextField;
 import Components.RoundedButton;
 import Components.RoundedPanel;
 import DataBase.QueryExecutor;
+import Helpers.OnUserAddedListener;
 
-public class User extends JFrame {
+public class User extends JFrame implements OnUserAddedListener, EditUser.OnUserUpdatedListener {
 
     private JLabel lblID, lblNamaUser, lblJenisKelamin, lblAlamat, lblNoTelp;
     private DefaultTableModel model;
@@ -142,9 +144,7 @@ public class User extends JFrame {
         addButton.addActionListener(e -> SwingUtilities.invokeLater(() -> {
             RegisterUser.showModalCenter(
                 (JFrame) SwingUtilities.getWindowAncestor(addButton),
-                (id, role, name, gender, address, phone) -> {
-                    model.addRow(new Object[]{model.getRowCount() + 1, id, role, name, gender, address, phone});
-                },
+                this, // 'this' mengacu pada OnUserAddedListener
                 model
             );
         }));
@@ -249,13 +249,7 @@ public class User extends JFrame {
                     EditUser.showModalCenter(
                         (JFrame) SwingUtilities.getWindowAncestor(userTable),
                         id,
-                        (updatedName, updatedRole, updatedGender, updatedPhone, updatedAddress, updatedRFID) -> {
-                            model.setValueAt(updatedName, row, 3);
-                            model.setValueAt(updatedRole, row, 2);
-                            model.setValueAt(updatedGender, row, 4);
-                            model.setValueAt(updatedAddress, row, 5);
-                            model.setValueAt(updatedPhone, row, 6);
-                        }
+                        this // 'this' mengacu pada OnUserUpdatedListener
                     );
                 });
             } else {
@@ -354,11 +348,11 @@ public class User extends JFrame {
 
     // Fungsi untuk mengupdate Panel Detail Data User
     private void updateDetailPanel(String id, String role, String name, String gender, String address, String phone) {
-        lblID.setText("ID: " + id);
-        lblNamaUser.setText("Nama: " + name);
-        lblJenisKelamin.setText("Jenis Kelamin: " + gender);
-        lblAlamat.setText("Alamat: " + address);
-        lblNoTelp.setText("No Telp: " + phone);
+        lblID.setText(id);
+        lblNamaUser.setText(name);
+        lblJenisKelamin.setText(gender);
+        lblAlamat.setText(address);
+        lblNoTelp.setText(phone);
     }
 
     private void setTableColumnWidths(JTable table) {
@@ -383,11 +377,39 @@ public class User extends JFrame {
         sorter.setRowFilter(null); // Reset filter untuk menampilkan semua baris
     }
 
-    public void onUserAdded(String id, String role, String name, String gender, String address, String phone) {
-        int newRowNumber = model.getRowCount() + 1;
-        model.addRow(new Object[]{newRowNumber, id, role, name, gender, address, phone});
+    private void refreshTable() {
+        // Kosongkan tabel
+        model.setRowCount(0);
+
+        // Ambil data terbaru dari database
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_user";
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{});
+
+        // Tambahkan data ke tabel
+        int no = 1;
+        for (Map<String, Object> result : results) {
+            model.addRow(new Object[]{
+                no++,
+                result.get("id_user"),
+                result.get("highest_role"),
+                result.get("username"),
+                result.get("jenis_kelamin"),
+                result.get("alamat"),
+                result.get("no_telp")
+            });
+        }
     }
 
+    @Override
+    public void onUserAdded(String id, String role, String name, String gender, String address, String phone) {
+        refreshTable(); // Refresh tabel setelah user ditambahkan
+    }
+
+    @Override
+    public void onUserUpdated(String name, String role, String gender, String phone, String address, String rfid) {
+        refreshTable(); // Refresh tabel setelah user diperbarui
+    }
 
     private void resetDetailPanel() {
         lblID.setText("ID: -");

@@ -18,12 +18,14 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.text.AbstractDocument;
 
 import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Helpers.TypeNumberHelper;
 
@@ -157,6 +159,9 @@ public class EditPasien extends JPanel { // Ubah dari JFrame ke JPanel
                     listener.onPasienUpdated(UpdateNIK, updatedName, BirthDate, updatedGender, updatedPhone, updatedAddress, updatedRFID);
                     JOptionPane.showMessageDialog(this, "Update Success", "Success", JOptionPane.INFORMATION_MESSAGE);
                     System.out.println("Update successful!");
+
+                    // Tutup modal setelah proses selesai
+                    ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
                 } else {
                     JOptionPane.showMessageDialog(null, "Update failed.", "Error", JOptionPane.ERROR_MESSAGE);
                     System.out.println("Update failed.");

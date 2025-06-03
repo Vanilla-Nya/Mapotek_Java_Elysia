@@ -21,7 +21,7 @@ public class AuthFrame extends JFrame {
         cardPanel = new JPanel(null); // null layout untuk animasi manual
         cardPanel.setBackground(Color.WHITE);
 
-        Login loginPanel = new Login(this);
+        Login loginPanel = new Login(this); // Pastikan 'this' adalah instance AuthFrame
         Register registerPanel = new Register(this);
 
         loginPanel.setBounds(0, 0, 1280, 720);

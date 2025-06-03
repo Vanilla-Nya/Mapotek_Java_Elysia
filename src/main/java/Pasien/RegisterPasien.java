@@ -19,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
@@ -26,6 +27,7 @@ import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
 import Helpers.TypeNumberHelper;
@@ -127,7 +129,7 @@ public class RegisterPasien extends JPanel {
         submitButton.addActionListener(e -> {
             String id = String.valueOf(model.getRowCount() + 1);
             String nik = txtnik.getText();
-            String rfid = txtRFID.getText(); // Get RFID KTP value
+            String rfid = txtRFID.getText().trim(); // Ambil nilai RFID
             String name = txtName.getText();
             String age = txtAge.getText();
             String gender = (String) txtGender.getSelectedItem();
@@ -135,9 +137,14 @@ public class RegisterPasien extends JPanel {
             String phone = txtPhone.getText();
 
             // Validasi input sebelum menambahkan
-            if (id.isEmpty() || nik.isEmpty() || rfid.isEmpty() || name.isEmpty() || age == null || gender.isEmpty() || address.isEmpty() || phone.isEmpty()) {
-                JOptionPane.showMessageDialog(RegisterPasien.this, "Semua field harus diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            if (id.isEmpty() || nik.isEmpty() || name.isEmpty() || age == null || gender.isEmpty() || address.isEmpty() || phone.isEmpty()) {
+                JOptionPane.showMessageDialog(RegisterPasien.this, "Semua field harus diisi kecuali RFID!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                 return;
+            }
+
+            // Jika RFID kosong, atur ke null
+            if (rfid.isEmpty()) {
+                rfid = null;
             }
 
             // Use DateTimeFormatter to parse the string into LocalDate
@@ -167,9 +174,12 @@ public class RegisterPasien extends JPanel {
                         if (isInserted != 404) {
                             Period period = Period.between(selectedBirthDate, currentDate);
                             String BirthDate = period.getYears() + " Tahun " + period.getMonths() + " Bulan " + period.getDays() + " Hari";
-                            listener.onPasienAdded(isInserted.toString(), nik, name, BirthDate, gender, phone, address);
+                            listener.onPasienAdded(isInserted.toString(), nik, name, BirthDate, gender, phone, address, rfid);
                             JOptionPane.showMessageDialog(this, "Insert Success with Name: " + name, "Success", JOptionPane.INFORMATION_MESSAGE);
                             System.out.println("Insert successful!");
+
+                            // Tutup modal setelah proses selesai
+                            ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
                         } else {
                             JOptionPane.showMessageDialog(null, "Insert failed.", "Error", JOptionPane.ERROR_MESSAGE);
                             System.out.println("Insert failed.");

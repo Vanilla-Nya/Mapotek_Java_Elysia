@@ -1,6 +1,9 @@
 package Auth.Auth_Animations;
 
 import javax.swing.*;
+
+import Auth.AuthFrame;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -49,7 +52,7 @@ public class LoginSuccessAnimation extends JPanel {
         animationPanel.add(mapotekLabel);
 
         // Mulai animasi
-        startAnimation();
+        startAnimation(); // Ensure this is called
     }
 
     private void startAnimation() {
@@ -60,20 +63,19 @@ public class LoginSuccessAnimation extends JPanel {
         final int totalWidth = animationPanel.getWidth(); // Lebar total panel
         final int[] currentWidth = {0}; // Lebar saat ini untuk efek fade
 
-        // Timer untuk animasi fade tulisan "MAPOTEK"
         fadeTimer.addActionListener(e -> {
             if (currentWidth[0] < totalWidth) {
                 // Perbarui lebar tulisan "MAPOTEK" untuk efek fade
                 currentWidth[0] += fadeStep;
                 mapotekLabel.setBounds((animationPanel.getWidth() - currentWidth[0]) / 2, animationPanel.getHeight() / 2 + 100, currentWidth[0], 50);
             } else {
-                // Hentikan animasi setelah selesai
                 fadeTimer.stop();
 
-                // Lanjutkan ke Drawer
-                animationPanel.setVisible(false);
-                parentFrame.dispose(); // Tutup frame animasi
-                new Main.Drawer().setVisible(true); // Buka Drawer
+                // Tutup frame animasi
+                SwingUtilities.invokeLater(() -> {
+                    parentFrame.dispose(); // Tutup frame animasi
+                    new Main.Drawer().setVisible(true); // Buka Drawer
+                });
             }
 
             // Paksa panel untuk diperbarui

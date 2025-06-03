@@ -68,7 +68,8 @@ public class FormPembayaran extends JPanel {
     private BigDecimal total;
     private Object[] patientData;
     private List<Object[]> drugData;
-    private String userLoginName;
+    private  UserSessionCache cache = new UserSessionCache();;
+    private String Username = (String) cache.getusername();
 
     public FormPembayaran(Object[] patientData, String idAntrian, String status, AntrianPasien antrianPasien) {
         this.patientData = patientData;
@@ -218,7 +219,7 @@ public class FormPembayaran extends JPanel {
         });
 
         // Tabel Informasi Obat
-        String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "SIGNA", "HARGA JASA", "TOTAL"};
+        String[] columnNames = {"NAMA OBAT", "JENIS OBAT", "JUMLAH", "SIGNA", "HARGA OBAT", "HARGA JASA", "TOTAL"};
         tableModel = new DefaultTableModel(columnNames, 0);
         drugTable = new CustomTable(tableModel); // Gunakan CustomTable
         for (Object[] drug : drugData) {
@@ -311,22 +312,25 @@ public class FormPembayaran extends JPanel {
     private List<Object[]> getDrugData(String idAntrian) {
         List<Object[]> drugData = new ArrayList<>();
         QueryExecutor executor = new QueryExecutor();
-        String query = "Call invoice(?)";
+        String query = "Call invoice(?)"; // Pastikan query ini mengambil data yang diperlukan
         Object[] parameter = new Object[]{idAntrian};
         List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
 
         for (Map<String, Object> result : results) {
-            BigDecimal harga = result.get("harga_jasa") != null ? new BigDecimal(result.get("harga_jasa").toString()) : BigDecimal.ZERO;
-            int jumlah = result.get("jumlah") != null ? Integer.parseInt(result.get("jumlah").toString()) : 0;
+            BigDecimal hargaJasa = result.get("harga_jasa") != null ? new BigDecimal(result.get("harga_jasa").toString()) : BigDecimal.ZERO;
+            BigDecimal total = result.get("total") != null ? new BigDecimal(result.get("total").toString()) : BigDecimal.ZERO;
+            BigDecimal hargaObat = total.subtract(hargaJasa); // Hitung harga obat sebagai total - harga jasa
             String signa = result.get("signa") != null ? result.get("signa").toString() : "";
+            int jumlah = result.get("jumlah") != null ? Integer.parseInt(result.get("jumlah").toString()) : 0;
 
             Object[] drug = new Object[]{
                 result.get("nama_obat"),
                 result.get("nama_jenis_obat"),
                 jumlah,
-                harga, // Pastikan harga adalah BigDecimal
                 signa,
-                result.get("total") != null ? new BigDecimal(result.get("total").toString()) : BigDecimal.ZERO
+                hargaObat, // Harga obat
+                hargaJasa, // Harga jasa
+                total       // Total
             };
             drugData.add(drug);
         }
@@ -336,9 +340,9 @@ public class FormPembayaran extends JPanel {
     private BigDecimal calculateTotal(List<Object[]> drugData) {
         BigDecimal total = BigDecimal.ZERO;
         for (Object[] drug : drugData) {
-            BigDecimal totalPerItem = (BigDecimal) drug[5]; // Ambil nilai total dari indeks 5
+            BigDecimal totalPerItem = (BigDecimal) drug[6]; // Ambil nilai total dari indeks 6
             if (totalPerItem != null) {
-                total = total.add(totalPerItem);
+                total = total.add(totalPerItem); // Tambahkan ke total keseluruhan
             }
         }
         return total;
@@ -353,7 +357,7 @@ public class FormPembayaran extends JPanel {
         BillPrinter.printBill(
             filePath,
             (String) patientData[1], // Patient's name
-            userLoginName,           // Logged-in user's name
+            Username,           // Logged-in user's name
             drugData,                // Drug data
             total,                   // Total amount
             payment,                 // Payment amount

@@ -236,7 +236,7 @@ public class Drawer extends JFrame {
                 pasienButton.setVisible(true);
                 obatButton.setVisible(true);
                 queueButton.setVisible(true);
-                pemeriksaanButton.setVisible(true);
+                pemeriksaanButton.setVisible(false);
                 pembukuanButton.setVisible(false);
                 userButton.setVisible(false);
                 absensiButton.setVisible(true);

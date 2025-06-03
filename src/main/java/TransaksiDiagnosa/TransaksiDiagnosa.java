@@ -797,11 +797,25 @@ public class TransaksiDiagnosa extends JPanel {
     }
 
     private void updateTotalPrice() {
+        double totalHargaObat = 0.0;
+
+        // Iterasi melalui tabel untuk menghitung total harga obat
         for (int i = 0; i < model.getRowCount(); i++) {
-            double price = (Double) model.getValueAt(i, 3);  // Get the price from the 4th column (as Double)
-            total += price;  // Total = price * quantity
+            double hargaObat = (Double) model.getValueAt(i, 3); // Ambil harga obat satuan dari kolom ke-4
+            int jumlah = (Integer) model.getValueAt(i, 2); // Ambil jumlah dari kolom ke-3
+            totalHargaObat += hargaObat; // Hitung total harga obat
         }
-        totalLabel.setText("Total: Rp." + total);
+
+        // Tambahkan harga jasa ke total
+        double hargaJasaValue = 0.0;
+        try {
+            hargaJasaValue = Double.parseDouble(hargaJasa.getText());
+        } catch (NumberFormatException ex) {
+            // Jika harga jasa tidak valid, biarkan tetap 0
+        }
+
+        total = totalHargaObat + hargaJasaValue; // Total = total harga obat + harga jasa
+        totalLabel.setText("Total: Rp." + total); // Perbarui label total
     }
 
     private int getTotalStock(String idObat) {
