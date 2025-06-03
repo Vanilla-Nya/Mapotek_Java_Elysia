@@ -63,7 +63,7 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
                     result.get("id_pasien"),
                     result.get("nama_pasien"),
                     result.get("status_antrian"),
-                    ""
+                    "" // Kolom aksi
                 };
 
                 // Tambahkan data ke tabel
@@ -95,6 +95,11 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         // Update the table model with the refreshed data
         model.setDataVector(data, new String[]{"NO ANTRIAN", "ID PASIEN", "NAMA PASIEN", "STATUS", "AKSI"});
+
+        // Reapply the renderer and editor for the "AKSI" column
+        CustomTable table = (CustomTable) tableScrollPane.getViewport().getView();
+        table.getColumn("AKSI").setCellRenderer(new ActionCellRenderer());
+        table.getColumn("AKSI").setCellEditor(new ActionCellEditor());
     }
 
     private void refreshData() {

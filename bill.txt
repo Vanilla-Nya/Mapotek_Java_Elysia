@@ -1,15 +1,15 @@
 ============================================================
-Nama Pasien  : Moch.Irvan
+Nama Pasien  : Alfon Soetanto
 Nama Pelayan : Elysia
 ============================================================
 PROMAG
-Jumlah: 20
-Harga Obat: Rp30.000
-  Signa: 3 x 1
+Jumlah: 200
+Harga Obat: Rp300.000
+  Signa: 20 p 3 x 1 Sebelum Kiamat
 ------------------------------------------------------------
-Harga Jasa:                                Rp20.000
-Total:                                     Rp50.000
-Payment:                                   Rp50.000
+Harga Jasa:                               Rp200.000
+Total:                                    Rp500.000
+Payment:                                  Rp500.000
 Change:                                         Rp0
 ============================================================
-Semoga Kesehatan Anda Segera Pulih, Tetap Semangat!
+Kami Peduli Kesehatan Anda, Semoga Kesehatan Anda Segera Pulih, Tetap Semangat!

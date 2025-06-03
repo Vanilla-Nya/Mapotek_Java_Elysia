@@ -12,6 +12,7 @@ public class IncomeExpenseCard extends JPanel {
     private JPanel defaultContent; // Konten default (teks pemasukan & pengeluaran)
     private JPanel pieChartContent; // Konten pie chart
     private float alpha = 1.0f; // Transparansi untuk animasi
+    private Timer autoSwitchTimer; // Timer untuk perubahan otomatis
 
     public IncomeExpenseCard(String title, double pemasukan, double pengeluaran) {
         setLayout(new BorderLayout());
@@ -87,9 +88,16 @@ public class IncomeExpenseCard extends JPanel {
                 toggleContentWithFade();
             }
         });
+
+        // Inisialisasi Timer untuk perubahan otomatis
+        autoSwitchTimer = new Timer(10000, e -> toggleContentWithFade()); // 10 detik
+        autoSwitchTimer.start();
     }
 
-    private void toggleContentWithFade() {
+    public void toggleContentWithFade() {
+        // Hentikan timer sementara saat perubahan manual dilakukan
+        autoSwitchTimer.stop();
+
         Timer fadeOutTimer = new Timer(20, null);
         fadeOutTimer.addActionListener(new ActionListener() {
             @Override
@@ -105,6 +113,9 @@ public class IncomeExpenseCard extends JPanel {
             }
         });
         fadeOutTimer.start();
+
+        // Restart timer setelah perubahan selesai
+        autoSwitchTimer.restart();
     }
 
     private void fadeIn() {

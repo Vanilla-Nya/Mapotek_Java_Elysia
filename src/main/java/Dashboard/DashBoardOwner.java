@@ -250,7 +250,7 @@ public class DashBoardOwner extends JPanel {
             System.out.println("Results: " + results); // Debug log
 
             if (!results.isEmpty()) {
-                Object totalAntrianObj = results.get(0).get("total_pasien_hari_ini"); // Ganti nama kolom   
+                Object totalAntrianObj = results.get(0).get("total_antrian_hari_ini"); // Ganti nama kolom   
                 System.out.println("Total Antrian Object: " + totalAntrianObj); // Debug log
                 if (totalAntrianObj != null) {
                     totalPatients = ((Number) totalAntrianObj).intValue();
