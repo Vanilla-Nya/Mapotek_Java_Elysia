@@ -33,6 +33,7 @@ import DataBase.QueryExecutor;
 import Global.UserSessionCache;
 import Helpers.OnObatAddedListener;
 import Helpers.OnObatUpdateListener;
+import User.RegisterUser;
 
 public class RegisterObat extends JPanel {
 
@@ -241,7 +242,7 @@ public class RegisterObat extends JPanel {
                             JOptionPane.showMessageDialog(null, "Data Obat dengan Nama: " + namaObat, "Success", JOptionPane.INFORMATION_MESSAGE);
 
                             // Close the form after submission
-                            SwingUtilities.getWindowAncestor(RegisterObat.this).dispose();
+                            Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterObat.this));
                         } else {
                             JOptionPane.showMessageDialog(null, "Data Obat Gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
@@ -255,7 +256,8 @@ public class RegisterObat extends JPanel {
                         JOptionPane.showMessageDialog(null, message, "Sukses", JOptionPane.INFORMATION_MESSAGE);
 
                         // Close the form after submission
-                        ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterObat.this));
+                        
+                    Components.ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(RegisterObat.this));
                     } else {
                         JOptionPane.showMessageDialog(null, "Data Obat Gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -266,11 +268,8 @@ public class RegisterObat extends JPanel {
                             listener.onObatAddedListener(namaObat, jenisObat, harga, stock);
                         }
                     }
-                    // Close the form after submission
-                    // dispose();
                 } else {
                     JOptionPane.showMessageDialog(null, "Data Obat Gagal Simpan, User Belum Login", "Error", JOptionPane.ERROR_MESSAGE);
-                    // dispose();
                 }
             }
         });

@@ -39,12 +39,12 @@ public class EditUser extends JPanel {
         // Extract user data from the result
         Map<String, Object> userData = result.get(0);
         String id = (String) userData.get("id_user");
-        String name = (String) userData.get("nama_lengkap");
-        String role = (String) userData.get("role");
-        String gender = (String) userData.get("jenis_kelamin");
-        String address = (String) userData.get("alamat");
-        String phone = (String) userData.get("no_telp");
-        String rfid = (String) userData.get("rfid");
+        String name = userData.get("nama_lengkap") != null ? (String) userData.get("nama_lengkap") : "";
+        String role = userData.get("role") != null ? (String) userData.get("role") : "";
+        String gender = userData.get("jenis_kelamin") != null ? (String) userData.get("jenis_kelamin") : "";
+        String address = userData.get("alamat") != null ? (String) userData.get("alamat") : "";
+        String phone = userData.get("no_telp") != null ? (String) userData.get("no_telp") : "";
+        String rfid = userData.get("rfid") != null ? (String) userData.get("rfid") : "";
         
         this.listener = listener;
 

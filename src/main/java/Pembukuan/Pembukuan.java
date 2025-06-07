@@ -36,6 +36,7 @@ import Components.Dropdown;
 import Components.ExpandableCard;
 import Components.PieChart;
 import Components.RoundedButton;
+import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Pengeluaran.Pengeluaran;
 // Tambahkan import untuk ShowmodalBottomSheet
@@ -124,18 +125,20 @@ public class Pembukuan extends JPanel {
         table.setEnabled(false);
 
         // Apply the custom TableCellRenderer
-        // Define a simple CustomTableCellRenderer class if it doesn't exist
-                table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-                    @Override
-                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                        Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                        if (column == 3) { // Customize the "Aksi" column
-                            cell.setForeground(Color.BLUE);
-                            cell.setFont(cell.getFont().deriveFont(Font.BOLD));
-                        }
-                        return cell;
-                    }
-                });
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                // Set text alignment to center
+                setHorizontalAlignment(SwingConstants.CENTER);
+                
+                // Set text color to black
+                setForeground(Color.BLACK);
+                
+                return cell;
+            }
+        });
 
         // Add mouse listener for table actions
         table.addMouseListener(new MouseAdapter() {
@@ -169,8 +172,8 @@ public class Pembukuan extends JPanel {
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Pengeluaran pengeluaranForm = new Pengeluaran(Pembukuan.this);
-                pengeluaranForm.setVisible(true);
+                JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(Pembukuan.this);
+                Pengeluaran.showModalCenter(parentFrame, Pembukuan.this);
             }
         });
 
@@ -601,41 +604,8 @@ public class Pembukuan extends JPanel {
     }
 
     private void showDetailDialog(String tanggal) {
-        JDialog detailDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Detail Transaksi - " + tanggal, Dialog.ModalityType.APPLICATION_MODAL);
-        detailDialog.setSize(600, 400);
-        detailDialog.setLayout(new BorderLayout());
-
-        DefaultTableModel detailModel = new DefaultTableModel(new String[]{"Deskripsi", "Banyak", "Jenis"}, 0);
-        JTable detailTable = new JTable(detailModel);
-
-        QueryExecutor executor = new QueryExecutor();
-
-        // Load Pemasukan
-        String queryPemasukan = "CALL all_pemasukan_harian_detail(?)";
-        List<Map<String, Object>> resultPemasukan = executor.executeSelectQuery(queryPemasukan, new Object[]{tanggal});
-        for (Map<String, Object> result : resultPemasukan) {
-            detailModel.addRow(new Object[]{
-                result.get("deskripsi"), result.get("total"), "Pemasukan"
-            });
-        }
-
-        // Load Pengeluaran
-        String queryPengeluaran = "CALL all_pengeluaran_detail(?)";
-        List<Map<String, Object>> resultPengeluaran = executor.executeSelectQuery(queryPengeluaran, new Object[]{tanggal});
-        for (Map<String, Object> result : resultPengeluaran) {
-            detailModel.addRow(new Object[]{
-                result.get("keterangan"), result.get("total_pengeluaran"), "Pengeluaran"
-            });
-        }
-
-        detailDialog.add(new JScrollPane(detailTable), BorderLayout.CENTER);
-
-        JButton closeButton = new JButton("Tutup");
-        closeButton.addActionListener(e -> detailDialog.dispose());
-        detailDialog.add(closeButton, BorderLayout.SOUTH);
-
-        detailDialog.setLocationRelativeTo(this);
-        detailDialog.setVisible(true);
+        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        DetailTransaksiPanel.showModalCenter(parentFrame, tanggal);
     }
 
     @Override

@@ -30,7 +30,8 @@ public class CustomTable extends JTable {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-                if ("status".equals(table.getColumnModel().getColumn(3).getHeaderValue().toString().toLowerCase())) {
+                if (table.getColumnCount() > 3 && 
+                    "status".equals(table.getColumnModel().getColumn(3).getHeaderValue().toString().toLowerCase())) {
                     // Get Status
                     String status = (String) table.getValueAt(row, 3);
 
