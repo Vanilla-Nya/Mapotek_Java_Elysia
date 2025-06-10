@@ -42,7 +42,6 @@ import Pasien.Pasien;
 import Pembukuan.Pembukuan;
 import Pemeriksaan.TablePemeriksaan;
 import User.User;
-import Profile.ProfileForm;
 
 public class Drawer extends JFrame {
 
@@ -53,7 +52,7 @@ public class Drawer extends JFrame {
     private final JLabel contentLabel;
     private boolean isDrawerCollapsed = false;
     private final JButton toggleButton;
-    private final JButton dashboardButton, pasienButton, obatButton, queueButton, pembukuanButton, pemeriksaanButton, userButton, absensiButton, allAbsensiButton, profileButton;
+    private final JButton dashboardButton, pasienButton, obatButton, queueButton, pembukuanButton, pemeriksaanButton, userButton, absensiButton, allAbsensiButton;
     private final java.util.List<JButton> drawerButtons = new java.util.ArrayList<>();
 
     // Single instance of Absensi class
@@ -158,7 +157,6 @@ public class Drawer extends JFrame {
         userButton = createDrawerButton(" Management User");
         absensiButton = createDrawerButton(" Absensi");
         allAbsensiButton = createDrawerButton(" All Absensi");
-        profileButton = createDrawerButton(" Profile");
 
         // Add buttons to drawerButtons list for easy management
         drawerButtons.add(dashboardButton);
@@ -170,7 +168,6 @@ public class Drawer extends JFrame {
         drawerButtons.add(userButton);
         drawerButtons.add(absensiButton);
         drawerButtons.add(allAbsensiButton);
-        drawerButtons.add(profileButton);
 
         dashboardButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Dashboard.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Dashboard
         pasienButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Pasien.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Pasien
@@ -181,7 +178,6 @@ public class Drawer extends JFrame {
         userButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Management_User.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Management User
         absensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/Absensi.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Absensi
         allAbsensiButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/All_Absensi.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for All Absensi
-        profileButton.setIcon(new ImageIcon(new ImageIcon(getClass().getClassLoader().getResource("assets/User.png")).getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH)));  // Set icon for Profile
 
         // Add Action Listeners to Drawer Buttons
         dashboardButton.addActionListener(e -> showContent("Dashboard", this));
@@ -193,7 +189,6 @@ public class Drawer extends JFrame {
         userButton.addActionListener(e -> showContent("User", this));
         absensiButton.addActionListener(e -> showContent("Absensi", this));
         allAbsensiButton.addActionListener(e -> showContent("AllAbsensi", this));
-        profileButton.addActionListener(e -> showContent("Profile", this));
 
         // Add Components to Drawer
         drawerPanel.add(toggleButton);
@@ -206,7 +201,6 @@ public class Drawer extends JFrame {
         drawerPanel.add(userButton);
         drawerPanel.add(absensiButton);
         drawerPanel.add(allAbsensiButton);
-        drawerPanel.add(profileButton);
 
         // Tambahkan glue untuk mendorong tombol Logout ke bawah
         drawerPanel.add(Box.createVerticalGlue());
@@ -345,9 +339,6 @@ public class Drawer extends JFrame {
             } else {
                 newContent.add(new Dashboard(this).getContentPane(), BorderLayout.CENTER);
             }
-        } else if (section.equals("Profile")) {
-            UserSessionCache sessionCache = new UserSessionCache();
-            newContent.add(new ProfileForm(sessionCache), BorderLayout.CENTER);
         } else if (section.equals("Pasien")) {
             newContent.add(new Pasien(role).getContentPane(), BorderLayout.CENTER);
         } else if (section.equals("Obat")) {
@@ -431,24 +422,6 @@ public class Drawer extends JFrame {
         timer.start();
     }
 
-    // Method to enable or disable all buttons
-    private void setButtonsEnabled(boolean enabled) {
-        for (JButton button : drawerButtons) {
-            button.setEnabled(enabled);
-        }
-        toggleButton.setEnabled(enabled);
-        logoutButton.setEnabled(enabled);
-    }
-
-    // Custom easing function for bounce effect
-    private float calculateBounce(float progress) {
-        if (progress < 0.5f) {
-            return (float) (Math.sin(2 * Math.PI * progress) * Math.pow(1 - progress, 2));
-        } else {
-            return (float) (1 - Math.pow(1 - progress, 2));
-        }
-    }
-
     // Method to toggle the drawer's collapsed state
     private void toggleDrawer() {
         int targetWidth = isDrawerCollapsed ? 250 : 50; // Ukuran akhir drawer
@@ -493,7 +466,6 @@ public class Drawer extends JFrame {
                         else if (button == userButton) button.setText(" Management User");
                         else if (button == absensiButton) button.setText(" Absensi");
                         else if (button == allAbsensiButton) button.setText(" All Absensi");
-                        else if (button == profileButton) button.setText(" Profile");
                     }
                     // Perbarui tombol Logout
                     logoutButton.setText(" Logout");
