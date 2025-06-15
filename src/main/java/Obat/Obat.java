@@ -84,12 +84,6 @@ public class Obat extends JPanel implements OnObatAddedListener, OnObatUpdateLis
                 fullData = newDataFull;
             }
         }
-        System.out.println(fullData[1][1]);
-        System.out.println(fullData[1][2]);
-        System.out.println(fullData[1][3]);
-        System.out.println(fullData[1][4]);
-        System.out.println(fullData[1][5]);
-        System.out.println(fullData[1][6]);
 
         setLayout(new BorderLayout());
 

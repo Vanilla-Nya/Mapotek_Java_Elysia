@@ -215,7 +215,7 @@ public class Drawer extends JFrame {
             case 1 -> {
                 toggleButton.setVisible(true);
                 dashboardButton.setVisible(true);
-                pasienButton.setVisible(true);
+                pasienButton.setVisible(false);
                 obatButton.setVisible(false);
                 queueButton.setVisible(false);
                 pemeriksaanButton.setVisible(true);
@@ -239,7 +239,7 @@ public class Drawer extends JFrame {
             case 3 -> {
                 toggleButton.setVisible(true);
                 dashboardButton.setVisible(true);
-                pasienButton.setVisible(false);
+                pasienButton.setVisible(true);
                 obatButton.setVisible(true);
                 queueButton.setVisible(true);
                 pemeriksaanButton.setVisible(true);
