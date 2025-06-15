@@ -3,6 +3,8 @@ C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Absensi\AllAbsensi.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Antrian\AntrianPasien.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Antrian\EditAntrian.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Antrian\TambahkanAntrian.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Auth\Auth_Animations\LoginSuccessAnimation.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Auth\AuthFrame.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Auth\Login.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Auth\LupaPasword.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Auth\OTPPage.java
@@ -14,6 +16,7 @@ C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomChart.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomDatePicker.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomDialog.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomPanel.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomRadioButton.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomTabbedPane.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomTable\ActionCellEditor.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomTable\ActionCellRenderer.java
@@ -23,6 +26,7 @@ C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomTextFormField
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\CustomTitleBarFrame.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\Dropdown.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\ExpandableCard.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\IncomeExpenseCard.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\PaginatedTablePanel.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\PieChart.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\RoundedBorder.java
@@ -30,9 +34,11 @@ C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\RoundedButton.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\RoundedPanel.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\ShowmodalBottomSheet.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\ShowModalCenter.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\Stepper.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\TextButton.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Components\UnderlineLabel.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Dashboard\Dashboard.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Dashboard\DashBoardOwner.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\DataBase\DatabaseUtil.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\DataBase\QueryExecutor.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\DataBase\Scheduler\BatchStatusScheduler.java
@@ -58,10 +64,10 @@ C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Obat\StockObatMenipis.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pasien\EditPasien.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pasien\Pasien.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pasien\RegisterPasien.java
+C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pembukuan\DetailTransaksiPanel.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pembukuan\Pembukuan.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pemeriksaan\TablePemeriksaan.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Pengeluaran\Pengeluaran.java
-C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Profile\ProfileForm.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Template.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\Transaksi\FormPembayaran.java
 C:\Mapotek_Java\Mapotek_Java_Elysia\src\main\java\TransaksiDiagnosa\AddDrugs.java

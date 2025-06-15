@@ -32,31 +32,34 @@ public class AntrianPasien extends JPanel {
     UserSessionCache cache = new UserSessionCache();
     String uuid = cache.getUUID();
 
-    public void getData(){
+    public void getData() {
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_antrian(?)";
-        Object[] parameter = new Object[]{uuid};
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+        String query = "CALL all_antrian()"; // Query tanpa parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+
         String Query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
         Object[] userrole = new Object[]{uuid};
         java.util.List<Map<String, Object>> resultsPasien = executor.executeSelectQuery(Query, userrole);
+
         if (!resultsPasien.isEmpty()) {
             role = (int) resultsPasien.get(0).get("id_role");
         }
+
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
-                Object[] dataFromDatabase = new Object[]{result.get("tanggal_antrian"), result.get("no_antrian"), result.get("nama_pasien"), result.get("status_antrian"), ""};
+                Object[] dataFromDatabase = new Object[]{
+                    result.get("tanggal_antrian"),
+                    result.get("no_antrian"),
+                    result.get("nama_pasien"),
+                    result.get("status_antrian"),
+                    ""
+                };
                 idList.add(result.get("id_antrian"));
-                // Create a new array with an additional row
+
+                // Tambahkan data baru ke array
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
             }
         }
@@ -64,43 +67,47 @@ public class AntrianPasien extends JPanel {
 
     public AntrianPasien() {
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_antrian(?)";
-        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+        String query = "CALL all_antrian()"; // Query tanpa parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+
         String Query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
         Object[] userrole = new Object[]{uuid};
         java.util.List<Map<String, Object>> resultsPasien = executor.executeSelectQuery(Query, userrole);
+
         if (!resultsPasien.isEmpty()) {
             role = (int) resultsPasien.get(0).get("id_role");
         }
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
-                Object[] dataFromDatabase = new Object[]{result.get("tanggal_antrian"), result.get("no_antrian"), result.get("nama_pasien"), result.get("status_antrian"), ""};
+                Object[] dataFromDatabase = new Object[]{
+                    result.get("tanggal_antrian"),
+                    result.get("no_antrian"),
+                    result.get("nama_pasien"),
+                    result.get("status_antrian"),
+                    ""
+                };
                 idList.add(result.get("id_antrian"));
-                // Create a new array with an additional row
+
+                // Tambahkan data baru ke array
                 Object[][] newData = new Object[data.length + 1][];
-
-                // Copy the old data to the new array
                 System.arraycopy(data, 0, newData, 0, data.length);
-
-                // Add the new row to the new array
                 newData[data.length] = dataFromDatabase;
-
-                // Send back to original
                 data = newData;
             }
         }
+
         String[] columnNames;
         if (role == 1) {
             columnNames = new String[]{"TANGGAL ANTRIAN", "NO ANTRIAN", "NAMA PASIEN", "STATUS"};
         } else {
             columnNames = new String[]{"TANGGAL ANTRIAN", "NO ANTRIAN", "NAMA PASIEN", "STATUS", "AKSI"};
         }
+
         // Table and Model Data
         model = new DefaultTableModel(data, columnNames) {
             public boolean isCellEditable(int row, int column) {
-                return column == 4;  // Only "AKSI" column is editable
+                return column == 4; // Only "AKSI" column is editable
             }
         };
 
@@ -117,7 +124,7 @@ public class AntrianPasien extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(table);
 
-        setLayout(new BorderLayout());  // Set layout for JPanel
+        setLayout(new BorderLayout()); // Set layout for JPanel
         setBackground(Color.white);
 
         // Header Panel
@@ -151,7 +158,7 @@ public class AntrianPasien extends JPanel {
         });
 
         // Filter the table based on the selected status
-        filterTable(model, "All", data);  // Initially show all rows
+        filterTable(model, "All", data); // Initially show all rows
 
         if (role != 1) {
             headerPanel.add(tambahButton);

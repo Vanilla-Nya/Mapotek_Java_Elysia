@@ -51,9 +51,8 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         // Fetch the latest data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan(?)";
-        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
@@ -110,15 +109,14 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         // Reload the data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan(?)";
-        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
                 // Data untuk tabel
                 Object[] dataForTable = new Object[]{
-                    result.get("no_antrian"),  // Kolom yang ditampilkan di tabel
+                    result.get("no_antrian"),
                     result.get("id_pasien"),
                     result.get("nama_pasien"),
                     result.get("status_antrian"),
@@ -133,7 +131,7 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
                 // Data lengkap untuk TransaksiDiagnosa
                 Object[] dataForTransaksiDiagnosa = new Object[]{
-                    result.get("id_antrian"),  // ID antrian untuk TransaksiDiagnosa
+                    result.get("id_antrian"),
                     result.get("no_antrian"),
                     result.get("id_pasien"),
                     result.get("nama_pasien"),
@@ -156,9 +154,8 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
     public TablePemeriksaan() {
         // Define the original data for the table
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan(?)";
-        Object[] parameter = new Object[]{"79f82701-9e35-11ef-944a-fc34974a9138"};
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, parameter);
+        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
 
         refreshData();
 
@@ -166,7 +163,7 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
         String[] columnNames = {"NO ANTRIAN", "ID PASIEN", "NAMA PASIEN", "STATUS", "AKSI"};
         model = new DefaultTableModel(data, columnNames) {
             public boolean isCellEditable(int row, int column) {
-                return column == 4;  // Only "AKSI" column is editable
+                return column == 4; // Only "AKSI" column is editable
             }
         };
 
@@ -176,7 +173,7 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         tableScrollPane = new JScrollPane(table);
 
-        setLayout(new BorderLayout());  // Set layout for JPanel
+        setLayout(new BorderLayout()); // Set layout for JPanel
         setBackground(Color.white);
 
         // Header Panel
