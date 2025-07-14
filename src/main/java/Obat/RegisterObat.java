@@ -235,8 +235,8 @@ public class RegisterObat extends JPanel {
                             Object[] parameterInsertOut = new Object[]{"Beli Obat", uuid};
                             getIDOut = (int) QueryExecutor.executeInsertQueryWithReturnID(insertIntoOut, parameterInsertOut);
                         }
-                        String insertIntoDetailOut = "INSERT INTO pengeluaran_detail (id_pengeluaran, id_obat, id_supplier, id_jenis_pengeluaran, keterangan, total) VALUES (?, ?, ?, ?, ?, ?)";
-                        Object[] insertIntoDetailParameter = new Object[]{getIDOut, idObat, 1, 2, "Restock Obat", Integer.valueOf(stock) * Integer.valueOf(harga)};
+                        String insertIntoDetailOut = "INSERT INTO pengeluaran_detail (id_pengeluaran, id_obat, id_jenis_pengeluaran, keterangan, total) VALUES (?, ?, ?, ?, ?)";
+                        Object[] insertIntoDetailParameter = new Object[]{getIDOut, idObat, 1, "Restock Obat", Integer.valueOf(stock) * Integer.valueOf(harga)};
                         boolean isInsertFinal = QueryExecutor.executeInsertQuery(insertIntoDetailOut, insertIntoDetailParameter);
                         if (isInsertFinal) {
                             JOptionPane.showMessageDialog(null, "Data Obat dengan Nama: " + namaObat, "Success", JOptionPane.INFORMATION_MESSAGE);

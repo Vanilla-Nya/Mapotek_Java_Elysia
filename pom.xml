@@ -89,6 +89,11 @@
             <artifactId>itext-pdfa</artifactId>
             <version>5.5.13.4</version>
             <type>jar</type>
+        </dependency
+        ><dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
         </dependency>
         <dependency>
             <groupId>io.github.bhaskarkh</groupId>

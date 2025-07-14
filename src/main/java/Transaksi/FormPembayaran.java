@@ -494,8 +494,6 @@ public class FormPembayaran extends JPanel {
                 String insertQuery = "INSERT INTO pemasukan_harian (id_pemeriksaan, tanggal) VALUES (?, NOW())";
                 Object[] insertParams = new Object[]{idPemeriksaan};
                 executor.executeUpdateQuery(insertQuery, insertParams);
-
-                JOptionPane.showMessageDialog(this, "Data successfully inserted into pemasukan_harian.", "Success", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this, "No id_pemeriksaan found for the given no_antrian.", "Error", JOptionPane.ERROR_MESSAGE);
             }

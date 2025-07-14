@@ -92,6 +92,8 @@ public class EditObat extends JPanel {
         txtJenisObat = new Dropdown(true, true, null);
         txtJenisObat.setItems(jenisObatList, true, true, null);
         txtJenisObat.setSelectedItem(jenisObat);
+        // Samakan ukuran dengan CustomTextField
+        txtJenisObat.setPreferredSize(txtNamaObat.getPreferredSize());
         formPanel.add(txtJenisObat, gbc);
 
         gbc.gridx = 4;
@@ -100,6 +102,8 @@ public class EditObat extends JPanel {
         txtJenisBentukObat = new Dropdown(true, true, null);
         txtJenisBentukObat.setItems(jenisObatList, true, true, null);
         txtJenisBentukObat.setSelectedItem(getJenisBentukObat(idObat));
+        // Samakan ukuran dengan CustomTextField
+        txtJenisBentukObat.setPreferredSize(txtNamaObat.getPreferredSize());
         formPanel.add(txtJenisBentukObat, gbc);
 
         // Row 2: Barcode, Stock, and Restock Button
