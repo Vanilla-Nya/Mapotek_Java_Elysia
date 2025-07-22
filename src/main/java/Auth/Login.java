@@ -236,8 +236,7 @@ public class Login extends JPanel {
                         Object expiredObj = getData.get("is_expired");
                         boolean isExpired = false;
                         if (expiredObj == null) {
-                            // Jika data langganan tidak ada, anggap expired
-                            isExpired = true;
+                            isExpired = true; // Jika null, anggap expired
                         } else if (expiredObj instanceof Boolean) {
                             isExpired = (Boolean) expiredObj;
                         } else if (expiredObj instanceof Number) {
@@ -245,6 +244,7 @@ public class Login extends JPanel {
                         } else if (expiredObj instanceof String) {
                             isExpired = "1".equals(expiredObj) || "true".equalsIgnoreCase((String) expiredObj);
                         }
+
                         System.out.println("is_expired: " + expiredObj);
                         if (isExpired) {
                             JOptionPane.showMessageDialog(null, "Langganan telah berakhir. Silakan perpanjang langganan Anda.", "Langganan Berakhir", JOptionPane.WARNING_MESSAGE);

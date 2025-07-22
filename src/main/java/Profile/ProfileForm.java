@@ -123,25 +123,42 @@ public class ProfileForm extends JPanel {
         btnPerpanjang.addActionListener(e -> {
             // Ambil tanggal_berakhir terakhir dari database
             List<Map<String, Object>> res = executor.executeSelectQuery(sql, new Object[]{idLangganan});
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate mulaiBaru, berakhirBaru;
+
             if (!res.isEmpty()) {
                 java.sql.Date berakhir = (java.sql.Date) res.get(0).get("tanggal_berakhir");
                 java.time.LocalDate lastExpired = berakhir.toLocalDate();
-                java.time.LocalDate today = java.time.LocalDate.now();
-                // Jika sudah expired, mulai dari hari ini. Jika belum, tambah dari tanggal_berakhir terakhir.
-                java.time.LocalDate newBerakhir = today.isAfter(lastExpired) ? today.plusDays(30) : lastExpired.plusDays(30);
-
-                String updateSql = "UPDATE langganan SET tanggal_berakhir = ? WHERE id_langganan = ?";
-                executor.executeUpdateQuery(updateSql, new Object[]{java.sql.Date.valueOf(newBerakhir), idLangganan});
-                JOptionPane.showMessageDialog(this, "Langganan berhasil diperpanjang!");
-
-                // Refresh panel agar status langganan ter-update
-                SwingUtilities.invokeLater(() -> {
-                    removeAll();
-                    add(new ProfileForm(sessionCache), BorderLayout.CENTER);
-                    revalidate();
-                    repaint();
-                });
+                if (today.isAfter(lastExpired)) {
+                    // Sudah expired, mulai dari hari ini
+                    mulaiBaru = today;
+                    berakhirBaru = today.plusDays(30);
+                } else {
+                    // Masih aktif, tambah dari tanggal_berakhir terakhir
+                    mulaiBaru = lastExpired;
+                    berakhirBaru = lastExpired.plusDays(30);
+                }
+            } else {
+                // Belum pernah langganan, mulai dari hari ini
+                mulaiBaru = today;
+                berakhirBaru = today.plusDays(30);
             }
+
+            String insertSql = "INSERT INTO langganan (id_langganan, tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, ?, 'aktif')";
+            executor.executeUpdateQuery(insertSql, new Object[]{
+                idLangganan,
+                java.sql.Date.valueOf(mulaiBaru),
+                java.sql.Date.valueOf(berakhirBaru)
+            });
+            JOptionPane.showMessageDialog(this, "Langganan berhasil diperpanjang!");
+
+            // Refresh panel agar status langganan ter-update
+            SwingUtilities.invokeLater(() -> {
+                removeAll();
+                add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+                revalidate();
+                repaint();
+            });
         });
 
         // Tambahkan ke panel langganan
