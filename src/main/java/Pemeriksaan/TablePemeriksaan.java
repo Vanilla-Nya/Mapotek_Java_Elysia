@@ -28,6 +28,7 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
     private DefaultTableModel model;
     private JScrollPane tableScrollPane;
     private JButton PeriksaButton;
+    private String uuid = "";
     Object[][] data = {};
     Object[][] fullData = {};
 
@@ -51,8 +52,8 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         // Fetch the latest data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+        String query = "CALL all_pemeriksaan(?)"; // Query dengan parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{uuid}); // Hapus parameter
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
@@ -109,8 +110,8 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
         // Reload the data from the database
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+        String query = "CALL all_pemeriksaan(?)"; // Query dengan parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{uuid}); // Hapus parameter
 
         if (!results.isEmpty()) {
             for (Map<String, Object> result : results) {
@@ -154,8 +155,8 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
     public TablePemeriksaan() {
         // Define the original data for the table
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_pemeriksaan()"; // Query tanpa parameter
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+        String query = "CALL all_pemeriksaan(?)"; // Query dengan parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{uuid}); // Hapus parameter
 
         refreshData();
 

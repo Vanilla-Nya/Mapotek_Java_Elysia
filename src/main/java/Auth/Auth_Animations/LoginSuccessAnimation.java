@@ -14,9 +14,11 @@ public class LoginSuccessAnimation extends JPanel {
     private JLabel logoLabel;
     private JLabel welcomeLabel;
     private JFrame parentFrame;
+    private Runnable onAnimationFinished;
 
-    public LoginSuccessAnimation(JFrame parentFrame, String welcomeMessage) {
+    public LoginSuccessAnimation(JFrame parentFrame, String welcomeMessage, Runnable onAnimationFinished) {
         this.parentFrame = parentFrame;
+        this.onAnimationFinished = onAnimationFinished;
         setLayout(null);
 
         // Panel animasi
@@ -74,7 +76,7 @@ public class LoginSuccessAnimation extends JPanel {
                 // Tutup frame animasi
                 SwingUtilities.invokeLater(() -> {
                     parentFrame.dispose(); // Tutup frame animasi
-                    new Main.Drawer().setVisible(true); // Buka Drawer
+                    if (onAnimationFinished != null) onAnimationFinished.run();
                 });
             }
 

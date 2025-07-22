@@ -30,45 +30,12 @@ public class AntrianPasien extends JPanel {
     Object[][] data = {};
     java.util.List idList = new ArrayList<>();
     UserSessionCache cache = new UserSessionCache();
-    String uuid = cache.getUUID();
-
-    public void getData() {
-        QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_antrian()"; // Query tanpa parameter
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
-
-        String Query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
-        Object[] userrole = new Object[]{uuid};
-        java.util.List<Map<String, Object>> resultsPasien = executor.executeSelectQuery(Query, userrole);
-
-        if (!resultsPasien.isEmpty()) {
-            role = (int) resultsPasien.get(0).get("id_role");
-        }
-
-        if (!results.isEmpty()) {
-            for (Map<String, Object> result : results) {
-                Object[] dataFromDatabase = new Object[]{
-                    result.get("tanggal_antrian"),
-                    result.get("no_antrian"),
-                    result.get("nama_pasien"),
-                    result.get("status_antrian"),
-                    ""
-                };
-                idList.add(result.get("id_antrian"));
-
-                // Tambahkan data baru ke array
-                Object[][] newData = new Object[data.length + 1][];
-                System.arraycopy(data, 0, newData, 0, data.length);
-                newData[data.length] = dataFromDatabase;
-                data = newData;
-            }
-        }
-    }    
+    String uuid = cache.getUUID();  
 
     public AntrianPasien() {
         QueryExecutor executor = new QueryExecutor();
-        String query = "CALL all_antrian()"; // Query tanpa parameter
-        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, null); // Hapus parameter
+        String query = "CALL all_antrian(?)"; // Query dengan parameter
+        java.util.List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{uuid}); // Hapus parameter
 
         String Query = "SELECT id_role FROM user_role WHERE id_user = ? ORDER BY id_role DESC LIMIT 1";
         Object[] userrole = new Object[]{uuid};
@@ -186,9 +153,6 @@ public class AntrianPasien extends JPanel {
         // Clear the existing data
         data = new Object[][]{};
         idList.clear();
-
-        // Fetch the latest data from the database
-        getData();
 
         // Define the column names based on the role
         String[] columnNames;

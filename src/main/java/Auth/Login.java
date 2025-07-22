@@ -216,6 +216,7 @@ public class Login extends JPanel {
             if (!results.isEmpty()) {
                 Map<String, Object> getData = results.get(0);
                 Long code = (Long) getData.get("code");
+                System.out.println("getData: " + getData);
                 if (code.equals(200L)) {
                     System.out.println("Login successful.");
                     String uuid = (String) getData.get("user_id");
@@ -229,7 +230,34 @@ public class Login extends JPanel {
                     animationFrame.setUndecorated(true);
                     animationFrame.setSize(parentFrame.getWidth(), parentFrame.getHeight());
                     animationFrame.setLocationRelativeTo(null);
-                    animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage));
+
+                    Runnable afterAnimation = () -> {
+                        parentFrame.dispose();
+                        Object expiredObj = getData.get("is_expired");
+                        boolean isExpired = false;
+                        if (expiredObj == null) {
+                            // Jika data langganan tidak ada, anggap expired
+                            isExpired = true;
+                        } else if (expiredObj instanceof Boolean) {
+                            isExpired = (Boolean) expiredObj;
+                        } else if (expiredObj instanceof Number) {
+                            isExpired = ((Number) expiredObj).intValue() == 1;
+                        } else if (expiredObj instanceof String) {
+                            isExpired = "1".equals(expiredObj) || "true".equalsIgnoreCase((String) expiredObj);
+                        }
+                        System.out.println("is_expired: " + expiredObj);
+                        if (isExpired) {
+                            JOptionPane.showMessageDialog(null, "Langganan telah berakhir. Silakan perpanjang langganan Anda.", "Langganan Berakhir", JOptionPane.WARNING_MESSAGE);
+                            Main.Drawer drawer = new Main.Drawer("Profile");
+                            drawer.lockExceptProfile();
+                            drawer.setVisible(true);
+                        } else {
+                            Main.Drawer drawer = new Main.Drawer("Dashboard");
+                            drawer.setVisible(true);
+                        }
+                    };
+
+                    animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage, afterAnimation));
                     animationFrame.setVisible(true);
 
                     System.out.println("Animation frame displayed.");
@@ -284,6 +312,7 @@ public class Login extends JPanel {
                     if (!results.isEmpty()) {
                         Map<String, Object> getData = results.get(0);
                         Long code = (Long) getData.get("code");
+                        System.out.println("getData: " + getData);
                         if (code.equals(200L)) {
                             String uuid = (String) getData.get("user_id");
                             String username = (String) getData.get("username"); // Retrieve the username from the result
@@ -296,7 +325,23 @@ public class Login extends JPanel {
                             animationFrame.setUndecorated(true);
                             animationFrame.setSize(parentFrame.getWidth(), parentFrame.getHeight());
                             animationFrame.setLocationRelativeTo(null);
-                            animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage));
+
+                            Runnable afterAnimation = () -> {
+                                parentFrame.dispose();
+                                boolean isExpired = (boolean) getData.get("is_expired"); // Ambil status expired dari hasil query
+                                System.out.println("is_expired: " + isExpired);
+                                if (isExpired) {
+                                    JOptionPane.showMessageDialog(null, "Langganan telah berakhir. Silakan perpanjang langganan Anda.", "Langganan Berakhir", JOptionPane.WARNING_MESSAGE);
+                                    Main.Drawer drawer = new Main.Drawer("Profile");
+                                    drawer.lockExceptProfile();
+                                    drawer.setVisible(true);
+                                } else {
+                                    Main.Drawer drawer = new Main.Drawer("Dashboard");
+                                    drawer.setVisible(true);
+                                }
+                            };
+
+                            animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage, afterAnimation));
                             animationFrame.setVisible(true);
 
                             

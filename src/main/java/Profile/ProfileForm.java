@@ -78,61 +78,91 @@ public class ProfileForm extends JPanel {
         gbc.gridx = 1;
         profilePanel.add(new JTextField(noTelp, 15) {{ setEditable(false); }}, gbc);
 
-        // Panel kanan: Donate Me (hanya card rekening)
-        JPanel donatePanel = new JPanel();
-        donatePanel.setBackground(new Color(245, 245, 245));
-        donatePanel.setLayout(new BoxLayout(donatePanel, BoxLayout.Y_AXIS));
+        // Panel kanan: Langganan
+        JPanel langgananPanel = new JPanel();
+        langgananPanel.setBackground(new Color(245, 245, 245));
+        langgananPanel.setLayout(new BoxLayout(langgananPanel, BoxLayout.Y_AXIS));
 
-        // Panel daftar rekening bank (akan dimasukkan ke dalam CustomCard)
-        JPanel rekeningListPanel = new JPanel();
-        rekeningListPanel.setOpaque(false);
-        rekeningListPanel.setLayout(new BoxLayout(rekeningListPanel, BoxLayout.Y_AXIS));
+        // Ambil data langganan dari database
+        String tanggalMulai = "-";
+        String tanggalBerakhir = "-";
+        long sisaHari = 0;
+        int idLangganan = 1; // atau sesuai kebutuhan
 
-        String[] norekList = {
-            "1200873200 - Alfon Soetanto (BCA)",
-            "90110351606 - Alfon Soetanto (Jenius)",
-            "0312559285 - Alvin (Bank Jatim)",
-            "1430033218254 - Alvin (Mandiri)"
-        };
-
-        for (String norek : norekList) {
-            JPanel norekPanel = new JPanel();
-            norekPanel.setOpaque(false);
-            norekPanel.setLayout(new BoxLayout(norekPanel, BoxLayout.X_AXIS));
-            JLabel norekLabel = new JLabel(norek);
-            norekPanel.add(norekLabel);
-
-            JButton copyButton = new JButton("Copy");
-            copyButton.setFocusable(false);
-            copyButton.setMargin(new Insets(1, 4, 1, 4));
-            copyButton.setFont(copyButton.getFont().deriveFont(11f));
-            copyButton.addActionListener(e -> {
-                StringSelection selection = new StringSelection(norek);
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-                showToast(donatePanel, "Nomor rekening berhasil disalin!");
-            });
-            norekPanel.add(Box.createHorizontalStrut(6));
-            norekPanel.add(copyButton);
-
-            norekPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            norekPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // padding 0
-            rekeningListPanel.add(norekPanel);
+        QueryExecutor executor = new QueryExecutor();
+        String sql = "SELECT tanggal_mulai, tanggal_berakhir FROM langganan WHERE id_langganan = ?";
+        List<Map<String, Object>> results = executor.executeSelectQuery(sql, new Object[]{idLangganan});
+        if (!results.isEmpty()) {
+            Map<String, Object> row = results.get(0);
+            java.sql.Date mulai = (java.sql.Date) row.get("tanggal_mulai");
+            java.sql.Date berakhir = (java.sql.Date) row.get("tanggal_berakhir");
+            tanggalMulai = mulai.toString();
+            tanggalBerakhir = berakhir.toString();
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate expired = berakhir.toLocalDate();
+            sisaHari = java.time.temporal.ChronoUnit.DAYS.between(today, expired);
+            if (sisaHari < 0) sisaHari = 0;
         }
 
-        // Bungkus daftar rekening dengan CustomCard
-        CustomCard rekeningCard = new CustomCard("Rekening Bank", rekeningListPanel);
+        // Label info langganan
+        JLabel lblJudul = new JLabel("Status Langganan");
+        lblJudul.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblJudul.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblMulai = new JLabel("Tanggal Mulai: " + tanggalMulai);
+        JLabel lblBerakhir = new JLabel("Tanggal Berakhir: " + tanggalBerakhir);
+        JLabel lblSisa = new JLabel("Sisa Hari: " + sisaHari);
+
+        lblMulai.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblBerakhir.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblSisa.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Tombol perpanjang
+        JButton btnPerpanjang = new JButton("Perpanjang 30 Hari");
+        btnPerpanjang.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnPerpanjang.addActionListener(e -> {
+            // Ambil tanggal_berakhir terakhir dari database
+            List<Map<String, Object>> res = executor.executeSelectQuery(sql, new Object[]{idLangganan});
+            if (!res.isEmpty()) {
+                java.sql.Date berakhir = (java.sql.Date) res.get(0).get("tanggal_berakhir");
+                java.time.LocalDate lastExpired = berakhir.toLocalDate();
+                java.time.LocalDate today = java.time.LocalDate.now();
+                // Jika sudah expired, mulai dari hari ini. Jika belum, tambah dari tanggal_berakhir terakhir.
+                java.time.LocalDate newBerakhir = today.isAfter(lastExpired) ? today.plusDays(30) : lastExpired.plusDays(30);
+
+                String updateSql = "UPDATE langganan SET tanggal_berakhir = ? WHERE id_langganan = ?";
+                executor.executeUpdateQuery(updateSql, new Object[]{java.sql.Date.valueOf(newBerakhir), idLangganan});
+                JOptionPane.showMessageDialog(this, "Langganan berhasil diperpanjang!");
+
+                // Refresh panel agar status langganan ter-update
+                SwingUtilities.invokeLater(() -> {
+                    removeAll();
+                    add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+                    revalidate();
+                    repaint();
+                });
+            }
+        });
+
+        // Tambahkan ke panel langganan
+        langgananPanel.add(Box.createVerticalGlue());
+        langgananPanel.add(lblJudul);
+        langgananPanel.add(Box.createVerticalStrut(10));
+        langgananPanel.add(lblMulai);
+        langgananPanel.add(lblBerakhir);
+        langgananPanel.add(lblSisa);
+        langgananPanel.add(Box.createVerticalStrut(15));
+        langgananPanel.add(btnPerpanjang);
+        langgananPanel.add(Box.createVerticalGlue());
 
         // Panel pembungkus agar card di tengah
         JPanel centerPanel = new JPanel();
         centerPanel.setOpaque(false);
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.add(Box.createVerticalGlue());
-        rekeningCard.setAlignmentX(Component.CENTER_ALIGNMENT);
-        centerPanel.add(rekeningCard);
+        langgananPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        centerPanel.add(langgananPanel);
         centerPanel.add(Box.createVerticalGlue());
-
-        // Tambahkan hanya card rekening ke donatePanel
-        donatePanel.add(centerPanel);
 
         // Panel utama untuk membagi dua bagian
         JPanel mainPanel = new JPanel(new GridBagLayout());
@@ -154,10 +184,10 @@ public class ProfileForm extends JPanel {
         divider.setBackground(new Color(120, 120, 120));
         mainPanel.add(divider, c);
 
-        // Panel kanan
+        // Panel kanan ganti ke centerPanel (langganan)
         c.gridx = 2;
         c.weightx = 0.5;
-        mainPanel.add(donatePanel, c);
+        mainPanel.add(centerPanel, c);
 
         add(mainPanel, BorderLayout.CENTER);
     }

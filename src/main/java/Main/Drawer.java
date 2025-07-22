@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.geom.RoundRectangle2D;
+import java.time.LocalDate;
 import java.util.Map;
 
 import javax.sound.sampled.SourceDataLine;
@@ -76,6 +77,10 @@ public class Drawer extends JFrame {
     private String selectedSection = null;
 
     public Drawer() {
+        this("Dashboard");
+    }
+
+    public Drawer(String initialSection) {
         BatchStatusScheduler.startScheduler();
         UserSessionCache cache = new UserSessionCache();
         String uuid = (String) cache.getUUID();
@@ -274,7 +279,8 @@ public class Drawer extends JFrame {
         setResizable(false);
 
         // Set the default content to "Dashboard" when the application starts
-        showContent("Dashboard", this);
+        showContent(initialSection, this);
+        updateButtonHighlight();
     }
 
     // Method to minimize the window
@@ -523,6 +529,17 @@ public class Drawer extends JFrame {
                 button.setBackground(new Color(58, 64, 74)); // Reset tombol lainnya
             }
         }
+    }
+
+    // Method to lock all buttons except the profile button
+    public void lockExceptProfile() {
+        for (JButton button : drawerButtons) {
+            if (button != profileButton) {
+                button.setEnabled(false);
+            }
+        }
+        logoutButton.setEnabled(true); // Logout tetap bisa
+        toggleButton.setEnabled(false); // Optional: drawer tidak bisa di-collapse
     }
 
     public static void main(String[] args) {
