@@ -118,9 +118,17 @@ public class RegisterPasien extends JPanel {
         ((AbstractDocument) txtPhone.getTextField().getDocument()).setDocumentFilter(new TypeNumberHelper(13));
         formPanel.add(txtPhone, gbc);
 
-        // Submit button with RoundedButton
+        // Setelah field No.Telp
         gbc.gridx = 0;
         gbc.gridy = 8;
+        formPanel.add(new JLabel("Nomor BPJS (Opsional):"), gbc);
+        gbc.gridx = 1;
+        CustomTextField txtBPJS = new CustomTextField("Masukan Nomor BPJS", 20, 15, Optional.empty());
+        formPanel.add(txtBPJS, gbc);
+
+        // Submit button with RoundedButton
+        gbc.gridx = 0;
+        gbc.gridy = 9;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         RoundedButton submitButton = new RoundedButton("Tambahkan");
@@ -135,6 +143,7 @@ public class RegisterPasien extends JPanel {
             String gender = (String) txtGender.getSelectedItem();
             String address = txtAddress.getText();
             String phone = txtPhone.getText();
+            String bpjs = txtBPJS.getText().trim();
 
             // Validasi input sebelum menambahkan
             if (id.isEmpty() || nik.isEmpty() || name.isEmpty() || age == null || gender.isEmpty() || address.isEmpty() || phone.isEmpty()) {
@@ -146,6 +155,8 @@ public class RegisterPasien extends JPanel {
             if (rfid.isEmpty()) {
                 rfid = null;
             }
+
+            if (bpjs.isEmpty()) bpjs = null; // Jika kosong, simpan null
 
             // Use DateTimeFormatter to parse the string into LocalDate
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -168,8 +179,8 @@ public class RegisterPasien extends JPanel {
                     Object[] parameterCheck = new Object[]{nik};
                     java.util.List<Map<String, Object>> resultCheck = new QueryExecutor().executeSelectQuery(checknik, parameterCheck);
                     if (resultCheck.isEmpty()) {
-                        String Query = "INSERT INTO pasien (nik, rfid, nama, jenis_kelamin, tanggal_lahir, no_telepon, alamat) VALUES (?,?,?,?,?,?,?)";
-                        Object[] parameter = new Object[]{nik, rfid, name, gender, selectedBirthDate, phone, address};
+                        String Query = "INSERT INTO pasien (nik, rfid, nama, jenis_kelamin, tanggal_lahir, no_telepon, alamat, nomor_bpjs) VALUES (?,?,?,?,?,?,?,?)";
+                        Object[] parameter = new Object[]{nik, rfid, name, gender, selectedBirthDate, phone, address, bpjs};
                         Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
                         if (isInserted != 404) {
                             Period period = Period.between(selectedBirthDate, currentDate);
