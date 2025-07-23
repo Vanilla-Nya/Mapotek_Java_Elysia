@@ -20,8 +20,13 @@ public class ProfileForm extends JPanel {
         JPanel profilePanel = new JPanel(new GridBagLayout());
         profilePanel.setBackground(Color.WHITE);
 
+        // Ambil UUID user dari session
         String uuid = sessionCache.getUUID();
-        String username = sessionCache.getusername();
+
+        // Query langganan terbaru milik user
+        String sql = "SELECT MIN(tanggal_mulai) AS tanggal_mulai, MAX(tanggal_berakhir) AS tanggal_berakhir FROM langganan WHERE status = 'aktif' AND is_expired = 0";
+        QueryExecutor executor = new QueryExecutor();
+        List<Map<String, Object>> results = executor.executeSelectQuery(sql, new Object[]{});
 
         // Ambil data profile dari prosedur
         String namaLengkap = "";
@@ -30,12 +35,12 @@ public class ProfileForm extends JPanel {
         String noTelp = "";
 
         if (uuid != null) {
-            QueryExecutor executor = new QueryExecutor();
-            String sql = "CALL all_profile_user(?)";
+            QueryExecutor queryExecutor = new QueryExecutor();
+            String sqlProfile = "CALL all_profile_user(?)";
             Object[] params = new Object[]{uuid};
-            List<Map<String, Object>> results = executor.executeSelectQuery(sql, params);
-            if (!results.isEmpty()) {
-                Map<String, Object> row = results.get(0);
+            List<Map<String, Object>> resultsProfile = queryExecutor.executeSelectQuery(sqlProfile, params);
+            if (!resultsProfile.isEmpty()) {
+                Map<String, Object> row = resultsProfile.get(0);
                 namaLengkap = row.getOrDefault("nama_lengkap", "").toString();
                 jenisKelamin = row.getOrDefault("jenis_kelamin", "").toString();
                 alamat = row.getOrDefault("alamat", "").toString();
@@ -87,21 +92,19 @@ public class ProfileForm extends JPanel {
         String tanggalMulai = "-";
         String tanggalBerakhir = "-";
         long sisaHari = 0;
-        int idLangganan = 1; // atau sesuai kebutuhan
 
-        QueryExecutor executor = new QueryExecutor();
-        String sql = "SELECT tanggal_mulai, tanggal_berakhir FROM langganan WHERE id_langganan = ?";
-        List<Map<String, Object>> results = executor.executeSelectQuery(sql, new Object[]{idLangganan});
         if (!results.isEmpty()) {
             Map<String, Object> row = results.get(0);
             java.sql.Date mulai = (java.sql.Date) row.get("tanggal_mulai");
             java.sql.Date berakhir = (java.sql.Date) row.get("tanggal_berakhir");
-            tanggalMulai = mulai.toString();
-            tanggalBerakhir = berakhir.toString();
-            java.time.LocalDate today = java.time.LocalDate.now();
-            java.time.LocalDate expired = berakhir.toLocalDate();
-            sisaHari = java.time.temporal.ChronoUnit.DAYS.between(today, expired);
-            if (sisaHari < 0) sisaHari = 0;
+            if (mulai != null && berakhir != null) {
+                tanggalMulai = mulai.toString();
+                tanggalBerakhir = berakhir.toString();
+                java.time.LocalDate today = java.time.LocalDate.now();
+                java.time.LocalDate expired = berakhir.toLocalDate();
+                sisaHari = java.time.temporal.ChronoUnit.DAYS.between(today, expired);
+                if (sisaHari < 0) sisaHari = 0;
+            }
         }
 
         // Label info langganan
@@ -122,11 +125,12 @@ public class ProfileForm extends JPanel {
         btnPerpanjang.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnPerpanjang.addActionListener(e -> {
             // Ambil tanggal_berakhir terakhir dari database
-            List<Map<String, Object>> res = executor.executeSelectQuery(sql, new Object[]{idLangganan});
+            String sqlLast = "SELECT MAX(tanggal_berakhir) AS tanggal_berakhir FROM langganan WHERE status = 'aktif' AND is_expired = 0";
+            List<Map<String, Object>> res = executor.executeSelectQuery(sqlLast, new Object[]{});
             java.time.LocalDate today = java.time.LocalDate.now();
             java.time.LocalDate mulaiBaru, berakhirBaru;
 
-            if (!res.isEmpty()) {
+            if (!res.isEmpty() && res.get(0).get("tanggal_berakhir") != null) {
                 java.sql.Date berakhir = (java.sql.Date) res.get(0).get("tanggal_berakhir");
                 java.time.LocalDate lastExpired = berakhir.toLocalDate();
                 if (today.isAfter(lastExpired)) {
@@ -144,9 +148,9 @@ public class ProfileForm extends JPanel {
                 berakhirBaru = today.plusDays(30);
             }
 
-            String insertSql = "INSERT INTO langganan (id_langganan, tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, ?, 'aktif')";
+            // Insert langganan baru
+            String insertSql = "INSERT INTO langganan (tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, 'aktif')";
             executor.executeUpdateQuery(insertSql, new Object[]{
-                idLangganan,
                 java.sql.Date.valueOf(mulaiBaru),
                 java.sql.Date.valueOf(berakhirBaru)
             });
