@@ -52,6 +52,19 @@ public class UserSessionCache {
         }
     }
 
+    // Token
+    public void setToken(String token) {
+        cache.put("token", token);
+    }
+
+    public String getToken() {
+        if (cache.containsKey("token")) {
+            return cache.get("token");
+        } else {
+            return null;
+        }
+    }
+
     // Clear All Cache
     public void clearCache() {
         cache.clear();
