@@ -21,10 +21,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
+import API.ApiClient;
 import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
@@ -33,12 +35,19 @@ import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
 import Helpers.TypeNumberHelper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class RegisterPasien extends JPanel {
     private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID, txtBPJS[];
     private Dropdown txtGender;
     private OnPasienAddedListener listener;
     private CustomDatePicker customDatePicker;
+
+    // Tambahkan di class RegisterPasien
+    private String hasilNIK, hasilNama, hasilTanggalLahir, hasilGender, hasilAlamat, hasilIdSatuSehat;
 
     public RegisterPasien(OnPasienAddedListener listener, DefaultTableModel model) {
         this.listener = listener;
@@ -101,6 +110,15 @@ public class RegisterPasien extends JPanel {
             gbc.gridwidth = 2;
             formPanel.add(searchInputPanel, gbc);
 
+            // Tambahkan komponen untuk menampilkan hasil
+            JTextArea hasilArea = new JTextArea(6, 30);
+            hasilArea.setEditable(false);
+            hasilArea.setBackground(new Color(245, 245, 245));
+            hasilArea.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+            hasilArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+            hasilArea.setLineWrap(true);
+            hasilArea.setWrapStyleWord(true);
+
             // Listener dropdown untuk ganti input
             searchMethodDropdown.addActionListener(e -> {
                 String selectedMethod = (String) searchMethodDropdown.getSelectedItem();
@@ -123,7 +141,8 @@ public class RegisterPasien extends JPanel {
                     searchGbc.gridx = 1;
                     searchInputPanel.add(txtGenderSearch, searchGbc);
                 }
-                // Jika selectedMethod kosong, biarkan panel kosong
+                // Kosongkan hasilArea setiap kali dropdown diganti
+                hasilArea.setText("");
                 searchInputPanel.revalidate();
                 searchInputPanel.repaint();
             });
@@ -137,13 +156,117 @@ public class RegisterPasien extends JPanel {
             btnCariBPJS.setForeground(Color.WHITE);
             formPanel.add(btnCariBPJS, gbc);
 
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            formPanel.add(hasilArea, gbc);
+
+            // Setelah formPanel.add(hasilArea, gbc);
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            RoundedButton btnSimpanDB = new RoundedButton("Simpan ke Database");
+            btnSimpanDB.setBackground(new Color(76, 175, 80));
+            btnSimpanDB.setForeground(Color.WHITE);
+            formPanel.add(btnSimpanDB, gbc);
+
             btnCariBPJS.addActionListener(e -> {
                 String method = (String) searchMethodDropdown.getSelectedItem();
                 if (method == null || method.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Silakan pilih metode pencarian BPJS terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                // Lanjutkan proses pencarian sesuai metode...
+
+                if ("NIK".equals(method)) {
+                    String nik = txtNIK.getText().trim();
+                    if (nik.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Masukkan NIK terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    // Panggil API SATUSEHAT by NIK
+                    new Thread(() -> {
+                        ApiClient api = new ApiClient();
+                        try {
+                            String identifier = "https://fhir.kemkes.go.id/id/nik|" + nik;
+                            String response = api.get(api.encodeUrl("/Patient?identifier=", identifier));
+                            tampilkanDataPasien(response, hasilArea); // <-- gunakan method yang sama
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            SwingUtilities.invokeLater(() -> 
+                                JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
+                            );
+                        } finally {
+                            try { api.close(); } catch (Exception ignore) {}
+                        }
+                    }).start();
+                } else if ("Nama, Tanggal Lahir, Gender".equals(method)) {
+                    String nama = txtNama.getText().trim();
+                    String tglLahir = txtTanggalLahir.getText().trim();
+                    String gender = (String) txtGenderSearch.getSelectedItem();
+
+                    if (nama.isEmpty() || tglLahir.isEmpty() || gender == null || gender.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+
+                    // Contoh query FHIR by nama, tanggal lahir, gender
+                    new Thread(() -> {
+                        ApiClient api = new ApiClient();
+                        try {
+                            // Sesuaikan parameter query dengan spesifikasi API SATUSEHAT
+                            String url = "/Patient?name=" + 
+                                java.net.URLEncoder.encode(nama, "UTF-8") +
+                                "&birthdate=" + java.net.URLEncoder.encode(tglLahir, "UTF-8") +
+                                "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
+                            String response = api.get(url);
+                            tampilkanDataPasien(response, hasilArea);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            SwingUtilities.invokeLater(() -> 
+                                JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
+                            );
+                        } finally {
+                            try { api.close(); } catch (Exception ignore) {}
+                        }
+                    }).start();
+                }
+            });
+
+            // Listener tombol simpan
+            btnSimpanDB.addActionListener(e -> {
+                // Validasi data hasil pencarian
+                if (hasilNIK == null || hasilNama == null || hasilGender == null || hasilAlamat == null) {
+                    JOptionPane.showMessageDialog(this, "Tidak ada data pasien yang bisa disimpan!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                String tanggalLahir = (hasilTanggalLahir == null || hasilTanggalLahir.isEmpty()) ? "1970-01-01" : hasilTanggalLahir;
+
+                String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon) VALUES (?,?,?,?,?,?,0,0)";
+                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat};
+                Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
+                if (isInserted != 404) {
+                    JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+
+                    // Panggil listener agar tabel refresh
+                    if (listener != null) {
+                        listener.onPasienAdded(
+                            isInserted.toString(),
+                            hasilNIK,
+                            hasilNama,
+                            tanggalLahir,
+                            hasilGender,
+                            "0", // no_telepon (default)
+                            hasilAlamat,
+                            null // rfid (default)
+                        );
+                    }
+
+                    // Tutup modal
+                    ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
+                } else {
+                    JOptionPane.showMessageDialog(this, "Gagal menyimpan data pasien!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             });
 
             return formPanel;
@@ -302,5 +425,61 @@ public class RegisterPasien extends JPanel {
     public static void showModalCenter(JFrame parent, OnPasienAddedListener listener, DefaultTableModel model) {
         RegisterPasien panel = new RegisterPasien(listener, model);
         Components.ShowModalCenter.showCenterModal(parent, panel);
+    }
+
+    public void tampilkanDataPasien(String responseString, JTextArea hasilArea) {
+        JSONObject response = new JSONObject(responseString);
+
+        JSONArray entries = response.optJSONArray("entry");
+        if (entries != null && entries.length() > 0) {
+            JSONObject resource = entries.getJSONObject(0).getJSONObject("resource");
+
+            // Ambil id SATUSEHAT
+            hasilIdSatuSehat = resource.optString("id", null);
+
+            hasilNama = resource.getJSONArray("name").getJSONObject(0).optString("text");
+            hasilTanggalLahir = resource.optString("birthDate");
+            String genderApi = resource.optString("gender");
+            // Mapping gender
+            if ("male".equalsIgnoreCase(genderApi)) {
+                hasilGender = "Laki - Laki";
+            } else if ("female".equalsIgnoreCase(genderApi)) {
+                hasilGender = "Perempuan";
+            } else {
+                hasilGender = "Tidak Bisa Dijelaskan";
+            }
+
+            hasilAlamat = "";
+            if (resource.has("address")) {
+                JSONObject address = resource.getJSONArray("address").getJSONObject(0);
+                hasilAlamat = address.getJSONArray("line").getString(0);
+            }
+
+            hasilNIK = "";
+            JSONArray identifiers = resource.getJSONArray("identifier");
+            for (int i = 0; i < identifiers.length(); i++) {
+                JSONObject id = identifiers.getJSONObject(i);
+                if (id.getString("system").equals("https://fhir.kemkes.go.id/id/nik")) {
+                    hasilNIK = id.getString("value");
+                    break;
+                }
+            }
+
+            String hasil = "=== Data Pasien ===\n"
+                    + "Nama         : " + hasilNama + "\n"
+                    + "Tanggal Lahir: " + hasilTanggalLahir + "\n"
+                    + "Jenis Kelamin: " + hasilGender + "\n"
+                    + "NIK          : " + hasilNIK + "\n"
+                    + "Alamat       : " + hasilAlamat;
+            System.out.println(hasil);
+
+            SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
+        } else {
+            hasilIdSatuSehat = null;
+            hasilNIK = hasilNama = hasilTanggalLahir = hasilGender = hasilAlamat = null;
+            String hasil = "⚠️ Tidak ada data pasien ditemukan.";
+            System.out.println(hasil);
+            SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
+        }
     }
 }
