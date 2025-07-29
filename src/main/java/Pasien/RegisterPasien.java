@@ -242,8 +242,8 @@ public class RegisterPasien extends JPanel {
 
                 String tanggalLahir = (hasilTanggalLahir == null || hasilTanggalLahir.isEmpty()) ? "1970-01-01" : hasilTanggalLahir;
 
-                String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon) VALUES (?,?,?,?,?,?,0,0)";
-                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat};
+                String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,0,0,?)";
+                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat, "BPJS"};
                 Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
                 if (isInserted != 404) {
                     JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
@@ -392,8 +392,8 @@ public class RegisterPasien extends JPanel {
                     Object[] parameterCheck = new Object[]{nik};
                     java.util.List<Map<String, Object>> resultCheck = new QueryExecutor().executeSelectQuery(checknik, parameterCheck);
                     if (resultCheck.isEmpty()) {
-                        String Query = "INSERT INTO pasien (nik, rfid, nama, jenis_kelamin, tanggal_lahir, no_telepon, alamat, nomor_bpjs) VALUES (?,?,?,?,?,?,?,?)";
-                        Object[] parameter = new Object[]{nik, rfid, name, gender, selectedBirthDate, phone, address, bpjs};
+                        String Query = "INSERT INTO pasien (nik, rfid, nama, jenis_kelamin, tanggal_lahir, no_telepon, alamat, nomor_bpjs, status) VALUES (?,?,?,?,?,?,?,?,?)";
+                        Object[] parameter = new Object[]{nik, rfid, name, gender, selectedBirthDate, phone, address, 0, "Umum"};
                         Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
                         if (isInserted != 404) {
                             Period period = Period.between(selectedBirthDate, currentDate);
