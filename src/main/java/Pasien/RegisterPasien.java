@@ -1,5 +1,6 @@
 package Pasien;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -32,34 +34,124 @@ import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
 import Helpers.TypeNumberHelper;
 
-/**
- *
- * @author asuna
- */
 public class RegisterPasien extends JPanel {
-
-    private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID;
+    private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID, txtBPJS[];
     private Dropdown txtGender;
     private OnPasienAddedListener listener;
     private CustomDatePicker customDatePicker;
 
     public RegisterPasien(OnPasienAddedListener listener, DefaultTableModel model) {
         this.listener = listener;
+        setLayout(new BorderLayout());
 
-        setLayout(new GridBagLayout());
-        setBackground(Color.WHITE);
-        setPreferredSize(new Dimension(450, 400)); // Tambahkan ini
+        // Panel Pasien Umum
+        JPanel umumPanel = createFormPanel(model, false);
 
+        // Panel Pasien BPJS
+        JPanel bpjsPanel = createFormPanel(model, true);
+
+        // TabbedPane
+        String[] titles = { "Pasien Umum", "Pasien BPJS" };
+        JComponent[] contents = { umumPanel, bpjsPanel };
+        Components.CustomTabbedPane tabbedPane = new Components.CustomTabbedPane(titles, contents);
+
+        add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    // Method untuk membuat panel form, isBPJS=true jika panel BPJS
+    private JPanel createFormPanel(DefaultTableModel model, boolean isBPJS) {
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         formPanel.setBackground(Color.WHITE);
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
+        if (isBPJS) {
+            int row = 0;
+            // Dropdown metode pencarian
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            formPanel.add(new JLabel("Metode Pencarian BPJS:"), gbc);
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            Dropdown searchMethodDropdown = new Dropdown(false, true, null);
+            searchMethodDropdown.setItems(List.of( "","NIK", "Nama, Tanggal Lahir, Gender"), false, true, null);
+            formPanel.add(searchMethodDropdown, gbc);
+
+            // Panel untuk input pencarian
+            JPanel searchInputPanel = new JPanel(new GridBagLayout());
+            GridBagConstraints searchGbc = new GridBagConstraints();
+            searchGbc.insets = new Insets(2, 2, 2, 2);
+
+            // Field untuk masing-masing metode
+            CustomTextField txtNIK = new CustomTextField("Masukan NIK", 20, 15, Optional.empty());
+            CustomTextField txtNama = new CustomTextField("Masukan Nama", 20, 15, Optional.empty());
+            CustomTextField txtTanggalLahir = new CustomTextField("Tanggal Lahir", 20, 15, Optional.empty());
+            Dropdown txtGenderSearch = new Dropdown(false, true, null);
+            txtGenderSearch.setItems(List.of("Laki - Laki", "Perempuan"), false, true, null);
+
+            // --- Default kosong ---
+            searchInputPanel.removeAll();
+            searchInputPanel.revalidate();
+            searchInputPanel.repaint();
+            // --- END ---
+
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            formPanel.add(searchInputPanel, gbc);
+
+            // Listener dropdown untuk ganti input
+            searchMethodDropdown.addActionListener(e -> {
+                String selectedMethod = (String) searchMethodDropdown.getSelectedItem();
+                searchInputPanel.removeAll();
+                searchGbc.gridx = 0; searchGbc.gridy = 0;
+                if ("NIK".equals(selectedMethod)) {
+                    searchInputPanel.add(new JLabel("NIK:"), searchGbc);
+                    searchGbc.gridx = 1;
+                    searchInputPanel.add(txtNIK, searchGbc);
+                } else if ("Nama, Tanggal Lahir, Gender".equals(selectedMethod)) {
+                    searchInputPanel.add(new JLabel("Nama:"), searchGbc);
+                    searchGbc.gridx = 1;
+                    searchInputPanel.add(txtNama, searchGbc);
+                    searchGbc.gridx = 0; searchGbc.gridy = 1;
+                    searchInputPanel.add(new JLabel("Tanggal Lahir:"), searchGbc);
+                    searchGbc.gridx = 1;
+                    searchInputPanel.add(txtTanggalLahir, searchGbc);
+                    searchGbc.gridx = 0; searchGbc.gridy = 2;
+                    searchInputPanel.add(new JLabel("Gender:"), searchGbc);
+                    searchGbc.gridx = 1;
+                    searchInputPanel.add(txtGenderSearch, searchGbc);
+                }
+                // Jika selectedMethod kosong, biarkan panel kosong
+                searchInputPanel.revalidate();
+                searchInputPanel.repaint();
+            });
+
+            // Tombol cari ke API SATUSEHAT
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            RoundedButton btnCariBPJS = new RoundedButton("Cari Data BPJS");
+            btnCariBPJS.setBackground(new Color(33, 150, 243));
+            btnCariBPJS.setForeground(Color.WHITE);
+            formPanel.add(btnCariBPJS, gbc);
+
+            btnCariBPJS.addActionListener(e -> {
+                String method = (String) searchMethodDropdown.getSelectedItem();
+                if (method == null || method.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Silakan pilih metode pencarian BPJS terlebih dahulu!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                // Lanjutkan proses pencarian sesuai metode...
+            });
+
+            return formPanel;
+        }
+
+        int row = 1;
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("NIK: "), gbc);
         gbc.gridx = 1;
         txtnik = new CustomTextField("Masukan NIK", 20, 15, Optional.empty());
@@ -68,21 +160,21 @@ public class RegisterPasien extends JPanel {
 
         // Add RFID KTP field below NIK
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("RFID KTP: "), gbc);
         gbc.gridx = 1;
         txtRFID = new CustomTextField("Masukan RFID KTP", 20, 15, Optional.empty());
         formPanel.add(txtRFID, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("Nama Pasien:"), gbc);
         gbc.gridx = 1;
         txtName = new CustomTextField("Masukan Nama", 20, 15, Optional.empty());
         formPanel.add(txtName, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("Tanggal Lahir:"), gbc);
         gbc.gridx = 1;
         txtAge = new CustomTextField("Tanggal Lahir ", 20, 15, Optional.empty());
@@ -96,7 +188,7 @@ public class RegisterPasien extends JPanel {
         formPanel.add(txtAge, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("Jenis Kelamin:"), gbc);
         gbc.gridx = 1;
         txtGender = new Dropdown(false, true, null);
@@ -104,31 +196,23 @@ public class RegisterPasien extends JPanel {
         formPanel.add(txtGender, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("Alamat"), gbc);
         gbc.gridx = 1;
         txtAddress = new CustomTextField("Masukan Alamat", 20, 15, Optional.empty());
         formPanel.add(txtAddress, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = row++;
         formPanel.add(new JLabel("No.Telp"), gbc);
         gbc.gridx = 1;
         txtPhone = new CustomTextField("Masukan No.telp", 20, 15, Optional.empty());
         ((AbstractDocument) txtPhone.getTextField().getDocument()).setDocumentFilter(new TypeNumberHelper(13));
         formPanel.add(txtPhone, gbc);
 
-        // Setelah field No.Telp
+        // Submit button
         gbc.gridx = 0;
-        gbc.gridy = 8;
-        formPanel.add(new JLabel("Nomor BPJS (Opsional):"), gbc);
-        gbc.gridx = 1;
-        CustomTextField txtBPJS = new CustomTextField("Masukan Nomor BPJS", 20, 15, Optional.empty());
-        formPanel.add(txtBPJS, gbc);
-
-        // Submit button with RoundedButton
-        gbc.gridx = 0;
-        gbc.gridy = 9;
+        gbc.gridy = row;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         RoundedButton submitButton = new RoundedButton("Tambahkan");
@@ -143,7 +227,13 @@ public class RegisterPasien extends JPanel {
             String gender = (String) txtGender.getSelectedItem();
             String address = txtAddress.getText();
             String phone = txtPhone.getText();
-            String bpjs = txtBPJS.getText().trim();
+            String bpjs = isBPJS ? txtBPJS[0].getText().trim() : null;
+
+            // Validasi input
+            if (isBPJS && (bpjs == null || bpjs.isEmpty())) {
+                JOptionPane.showMessageDialog(this, "Nomor BPJS wajib diisi untuk pasien BPJS!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             // Validasi input sebelum menambahkan
             if (id.isEmpty() || nik.isEmpty() || name.isEmpty() || age == null || gender.isEmpty() || address.isEmpty() || phone.isEmpty()) {
@@ -156,7 +246,7 @@ public class RegisterPasien extends JPanel {
                 rfid = null;
             }
 
-            if (bpjs.isEmpty()) bpjs = null; // Jika kosong, simpan null
+            if (bpjs != null && bpjs.isEmpty()) bpjs = null; // Jika kosong, simpan null
 
             // Use DateTimeFormatter to parse the string into LocalDate
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -205,7 +295,7 @@ public class RegisterPasien extends JPanel {
         });
         formPanel.add(submitButton, gbc);
 
-        add(formPanel);
+        return formPanel;
     }
 
     // Tambahkan static method untuk showModalCenter
