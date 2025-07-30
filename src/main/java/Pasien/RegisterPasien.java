@@ -35,8 +35,6 @@ import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
 import Helpers.TypeNumberHelper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
