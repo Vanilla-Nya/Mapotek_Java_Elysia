@@ -126,6 +126,10 @@ public class ApiClient {
         httpClient.close();
     }
 
+    public static String getOrgId() {
+        return "7b4db35e-ea4e-4b46-b389-095472942d34";
+    }
+
     public static void main(String[] args) {
         ApiClient api = new ApiClient();
         try {
