@@ -221,8 +221,9 @@ public class Login extends JPanel {
                     System.out.println("Login successful.");
                     String uuid = (String) getData.get("user_id");
                     String username = (String) getData.get("username");
+                    String idSatusehat = (String) getData.get("id_satusehat");
                     UserSessionCache cache = new UserSessionCache();
-                    cache.login(username, uuid);
+                    cache.login(username, uuid, idSatusehat);
 
                     String welcomeMessage = "Selamat Datang " + getData.get("nama_lengkap");
 
@@ -316,8 +317,9 @@ public class Login extends JPanel {
                         if (code.equals(200L)) {
                             String uuid = (String) getData.get("user_id");
                             String username = (String) getData.get("username"); // Retrieve the username from the result
+                            String idSatusehat = (String) getData.get("id_satusehat");
                             UserSessionCache cache = new UserSessionCache();
-                            cache.login(username, uuid);
+                            cache.login(username, uuid, idSatusehat);
 
                             String welcomeMessage = "Selamat Datang " + getData.get("nama_lengkap");
 

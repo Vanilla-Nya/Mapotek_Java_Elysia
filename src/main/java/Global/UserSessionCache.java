@@ -17,13 +17,14 @@ public class UserSessionCache {
     private static final HashMap<String, String> cache = new HashMap<>();
 
     // Method to simulate user login and cache their session data
-    public void login(String username, String uuid) {
+    public void login(String username, String uuid, String idSatusehat) {
 
         // Save some session data (for example, username) in the cache
         cache.put("uuid", uuid);
         cache.put("username", username);
+        cache.put("id_satusehat", idSatusehat); // simpan id_satusehat
         cache.put("loginAt", LocalDateTime.now().toString());
-        System.out.println("Added login data for UUID: " + uuid + " with username: " + username);
+        System.out.println("Added login data for UUID: " + uuid + " with username: " + username + " and id_satusehat: " + idSatusehat);
     }
 
     // Method to retrieve session data from the cache
@@ -63,6 +64,10 @@ public class UserSessionCache {
         } else {
             return null;
         }
+    }
+
+    public String getIdSatusehat() {
+        return cache.getOrDefault("id_satusehat", null);
     }
 
     // Clear All Cache

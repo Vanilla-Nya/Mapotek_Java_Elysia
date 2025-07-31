@@ -33,7 +33,7 @@ public class AuthFrame extends JFrame {
         SwingUtilities.invokeLater(() -> {
             loginPanel.setVisible(true);  // Tampilkan login panel
             registerPanel.setVisible(false); // Sembunyikan register panel
-            registerPanel.setLocation(cardPanel.getWidth(), 0); // Pastikan register di luar layar
+            registerPanel.setLocation(cardPanel.getWidth(), 0); // Pastikan register di luar layar  
             cardPanel.repaint();
             cardPanel.revalidate();
         });

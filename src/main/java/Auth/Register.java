@@ -210,8 +210,9 @@ public class Register extends JPanel {
                             Long code = (Long) getData.get("code");
                             if (code.equals(200L)) {
                                 String uuid = (String) getData.get("user_id");
+                                String idSatusehat = (String) getData.get("id_satusehat");
                                 UserSessionCache cache = new UserSessionCache();
-                                cache.login(username, uuid);
+                                cache.login(username, uuid, idSatusehat);
                                 JOptionPane.showMessageDialog(Register.this, "Selamat Datang " + getData.get("nama_lengkap"), (String) getData.get("message"), JOptionPane.INFORMATION_MESSAGE);
                                 new Drawer().setVisible(true);
                                 if (parentFrame != null) {
