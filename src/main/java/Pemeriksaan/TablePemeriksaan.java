@@ -270,11 +270,13 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
                         JOptionPane.showMessageDialog(panel, "User dokter belum terdaftar di SATUSEHAT. Tidak bisa melakukan pemeriksaan!", "Error", JOptionPane.ERROR_MESSAGE);
                         return;
                     } else {
-                        boolean encounterSuccess = API.EncounterSatusehatApi.createEncounter(
+                        String encounterIdSatusehat = API.EncounterSatusehatApi.createEncounter(
                             idSatusehatPasien, namaPasien, idSatusehatDokter, namaDokter
                         );
-                        System.out.println("Encounter success: " + encounterSuccess);
-                        if (encounterSuccess) {
+                        if (encounterIdSatusehat != null && !encounterIdSatusehat.isEmpty()) {
+                            // Simpan ke database (misal ke tabel antrian)
+                            String updateQuery = "UPDATE antrian SET id_Encounter_Satusehat = ? WHERE id_antrian = ?";
+                            QueryExecutor.executeUpdateQuery(updateQuery, new Object[]{encounterIdSatusehat, dataForTransaksiDiagnosa[0]});
                             JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT berhasil dikirim.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
                         } else {
                             JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT gagal.", "Error", JOptionPane.ERROR_MESSAGE);

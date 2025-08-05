@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EncounterSatusehatApi {
-    public static boolean createEncounter(String idSatusehatPasien, String namaPasien, String idSatusehatDokter, String namaDokter) {
+    public static String createEncounter(String idSatusehatPasien, String namaPasien, String idSatusehatDokter, String namaDokter) {
         try {
             Map<String, Object> encounter = new HashMap<>();
             encounter.put("resourceType", "Encounter");
@@ -71,10 +71,13 @@ public class EncounterSatusehatApi {
             String response = api.post("/Encounter", encounter);
             org.json.JSONObject json = new org.json.JSONObject(response);
             System.out.println("Response Encounter: " + json);
-            return json.has("id");
+            if (json.has("id")) {
+                return json.getString("id"); // Kembalikan Encounter ID dari SATUSEHAT
+            }
+            return null;
         } catch (Exception ex) {
             ex.printStackTrace();
-            return false;
+            return null;
         }
     }
 }

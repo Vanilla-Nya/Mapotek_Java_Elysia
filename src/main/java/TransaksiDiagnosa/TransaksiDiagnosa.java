@@ -38,6 +38,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
+import API.ConditionSatusehatApi;
 import Components.CustomDialog;
 import Components.CustomPanel;
 import Components.CustomTabbedPane;
@@ -460,26 +461,21 @@ public class TransaksiDiagnosa extends JPanel {
                     }
 
                     // Masukkan data ke tabel detail_pemeriksaan
-                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_pemeriksaan_obat, harga_jasa, total, id_detail_pemeriksaan) VALUES (?, ?, ?, ?)";
-                    Object[] detailPemeriksaanParams = new Object[]{lastInsertObat, i == 0 ? Double.parseDouble(hargaJasa.getText()) : 0.0, i == 0 ? total : 0.0, idValue};
-                    System.out.println("Detail Pemeriksaan Params: " + Arrays.toString(detailPemeriksaanParams)); // Debugging
+                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?)";
+                    Object[] detailPemeriksaanParams = new Object[]{lastInsertObat, i == 0 ? Double.parseDouble(hargaJasa.getText()) : 0.0, i == 0 ? total : 0.0};
                     boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
-                    if (isDetailInserted) {
-                        System.out.println("Data berhasil dimasukkan ke tabel detail_pemeriksaan.");
-                    } else {
-                        System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
-                    }
 
                     if (isDetailInserted) {
-                        // Ambil ID detail_pemeriksaan yang baru saja dimasukkan
                         String getLastIdQuery = "SELECT LAST_INSERT_ID() AS id_detail_pemeriksaan";
                         List<Map<String, Object>> lastIdResult = executor.executeSelectQuery(getLastIdQuery, new Object[]{});
                         if (!lastIdResult.isEmpty()) {
                             idDetailPemeriksaan = ((Number) lastIdResult.get(0).get("id_detail_pemeriksaan")).intValue();
-                            System.out.println("ID Detail Pemeriksaan: " + idDetailPemeriksaan); // Debugging
+                            System.out.println("ID Detail Pemeriksaan: " + idDetailPemeriksaan);
                         } else {
                             System.err.println("Gagal mendapatkan ID detail_pemeriksaan.");
                         }
+                    } else {
+                        System.err.println("Gagal memasukkan data ke tabel detail_pemeriksaan.");
                     }
                 }
 
@@ -505,6 +501,57 @@ public class TransaksiDiagnosa extends JPanel {
 
                             if (isPemeriksaanInserted) {
                                 System.out.println("Data berhasil dimasukkan ke tabel pemeriksaan.");
+
+                                // Kirim ICDX dan ICDIX ke SATUSEHAT setelah data berhasil disimpan
+
+                                // Ambil id_satusehat pasien dari dataFromParent (misal index 8, sesuaikan dengan struktur Anda)
+                                String idSatusehatPasien = dataFromParent[8].toString();
+
+                                // Ambil id Encounter SATUSEHAT dari database (bukan dari response Encounter lokal)
+                                String getEncounterIdQuery = "SELECT id_Encounter_Satusehat FROM antrian WHERE id_antrian = ?";
+                                List<Map<String, Object>> encounterResult = executor.executeSelectQuery(getEncounterIdQuery, new Object[]{idAntrian});
+                                String idEncounterSatusehat = "";
+                                if (!encounterResult.isEmpty()) {
+                                    idEncounterSatusehat = (String) encounterResult.get(0).get("id_Encounter_Satusehat");
+                                }
+                                if (idEncounterSatusehat == null || idEncounterSatusehat.isEmpty()) {
+                                    JOptionPane.showMessageDialog(this, "Encounter SATUSEHAT belum tersedia. Silakan lakukan proses Encounter terlebih dahulu.", "Error", JOptionPane.ERROR_MESSAGE);
+                                    return;
+                                }
+
+                                // Kirim ICDX (ICD-10) ke Condition
+                                for (int i = 0; i < icdxTableModel.getRowCount(); i++) {
+                                    String kodeICDX = (String) icdxTableModel.getValueAt(i, 0);
+                                    String deskripsiICDX = (String) icdxTableModel.getValueAt(i, 1);
+                                    boolean icdxSuccess = API.ConditionSatusehatApi.createCondition(
+                                        idSatusehatPasien,
+                                        idEncounterSatusehat,
+                                        kodeICDX,
+                                        deskripsiICDX
+                                    );
+                                    if (icdxSuccess) {
+                                        JOptionPane.showMessageDialog(this, "ICDX " + kodeICDX + " berhasil dikirim ke SATUSEHAT.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                                    } else {
+                                        JOptionPane.showMessageDialog(this, "ICDX " + kodeICDX + " gagal dikirim ke SATUSEHAT.", "Error", JOptionPane.ERROR_MESSAGE);
+                                    }
+                                }
+
+                                // Kirim ICDIX (ICD-9) ke Procedure (jika ingin dikirim)
+                                for (int i = 0; i < icdixTableModel.getRowCount(); i++) {
+                                    String kodeICDIX = (String) icdixTableModel.getValueAt(i, 0);
+                                    String deskripsiICDIX = (String) icdixTableModel.getValueAt(i, 1);
+                                    boolean icdixSuccess = API.ProcedureSatusehatApi.createProcedure(
+                                        idSatusehatPasien,
+                                        idEncounterSatusehat,
+                                        kodeICDIX,
+                                        deskripsiICDIX
+                                    );
+                                    if (icdixSuccess) {
+                                        JOptionPane.showMessageDialog(this, "ICDIX " + kodeICDIX + " berhasil dikirim ke SATUSEHAT.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                                    } else {
+                                        JOptionPane.showMessageDialog(this, "ICDIX " + kodeICDIX + " gagal dikirim ke SATUSEHAT.", "Error", JOptionPane.ERROR_MESSAGE);
+                                    }
+                                }
 
                                 // Update status antrian menjadi "Selesai Diperiksa"
                                 String updateAntrianQuery = "UPDATE antrian SET status_antrian = 'Selesai Diperiksa' WHERE id_antrian = ?";

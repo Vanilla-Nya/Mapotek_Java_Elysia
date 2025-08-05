@@ -240,8 +240,8 @@ public class RegisterPasien extends JPanel {
 
                 String tanggalLahir = (hasilTanggalLahir == null || hasilTanggalLahir.isEmpty()) ? "1970-01-01" : hasilTanggalLahir;
 
-                String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,0,0,?)";
-                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat, "BPJS"};
+                String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,?,?,?)";
+                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat, 0, 0, "BPJS"};
                 Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
                 if (isInserted != 404) {
                     JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);

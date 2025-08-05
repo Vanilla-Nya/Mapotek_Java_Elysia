@@ -1,15 +1,4 @@
 ============================================================
-Nama Pasien  : Vanilla
+Nama Pasien  : Dr. Alan Bagus Prasetya
 Nama Pelayan : Elysia
 ============================================================
-CHLORAMFECORT CREAM 10 G
-Jumlah: 10
-Harga Obat: Rp120.000
-  Signa: 3 x 1
-------------------------------------------------------------
-Harga Jasa:                                Rp80.000
-Total:                                    Rp200.000
-Payment:                                  Rp200.000
-Change:                                         Rp0
-============================================================
-Kami Peduli Kesehatan Anda, Semoga Kesehatan Anda Segera Pulih, Tetap Semangat!
