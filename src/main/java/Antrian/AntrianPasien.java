@@ -150,11 +150,35 @@ public class AntrianPasien extends JPanel {
     }
 
     public void refreshTableData() {
-        // Clear the existing data
+        // Ambil ulang data dari database
+        QueryExecutor executor = new QueryExecutor();
+        String query = "CALL all_antrian(?)";
+        List<Map<String, Object>> results = executor.executeSelectQuery(query, new Object[]{uuid});
+
+        // Kosongkan data lama
         data = new Object[][]{};
         idList.clear();
 
-        // Define the column names based on the role
+        // Isi ulang data dan idList
+        if (!results.isEmpty()) {
+            for (Map<String, Object> result : results) {
+                Object[] dataFromDatabase = new Object[]{
+                    result.get("tanggal_antrian"),
+                    result.get("no_antrian"),
+                    result.get("nama_pasien"),
+                    result.get("status_antrian"),
+                    ""
+                };
+                idList.add(result.get("id_antrian"));
+
+                Object[][] newData = new Object[data.length + 1][];
+                System.arraycopy(data, 0, newData, 0, data.length);
+                newData[data.length] = dataFromDatabase;
+                data = newData;
+            }
+        }
+
+        // Update kolom sesuai role
         String[] columnNames;
         if (role == 1) {
             columnNames = new String[]{"TANGGAL ANTRIAN", "NO ANTRIAN", "NAMA PASIEN", "STATUS"};
@@ -162,16 +186,15 @@ public class AntrianPasien extends JPanel {
             columnNames = new String[]{"TANGGAL ANTRIAN", "NO ANTRIAN", "NAMA PASIEN", "STATUS", "AKSI"};
         }
 
-        // Update the table model with the refreshed data
+        // Update model
         model.setDataVector(data, columnNames);
 
-        // Reapply the button rendering and editing to the "AKSI" column if the role allows it
+        // Reapply renderer/editor jika perlu
         if (role != 1) {
             table.getColumn("AKSI").setCellRenderer(new ActionCellRenderer(model));
             table.getColumn("AKSI").setCellEditor(new ActionCellEditor(model));
         }
 
-        // Repaint and revalidate the table to reflect changes
         table.repaint();
         table.revalidate();
     }
