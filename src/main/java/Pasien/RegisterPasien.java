@@ -394,7 +394,9 @@ public class RegisterPasien extends JPanel {
                 return;
             }
 
-            cbKelurahan.setItems(getListKelurahan(kodeProvinsi, kodeKota, kodeKecamatan), false, true, null);
+            String kodeKotaLokal = getKodeKotaLokal(cbKota.getSelectedItem().toString(), kodeProvinsi);
+            String kodeKecamatanLokal = getKodeKecamatanLokal(cbKecamatan.getSelectedItem().toString(), kodeProvinsi, kodeKotaLokal);
+            cbKelurahan.setItems(getListKelurahan(kodeProvinsi, kodeKotaLokal, kodeKecamatanLokal), false, true, null);
         });
 
         // Submit button
@@ -671,6 +673,20 @@ public class RegisterPasien extends JPanel {
         }
         return "";
     }
+    private String getKodeKotaLokal(String namaKota, String kodeProvinsi) {
+        try {
+            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json"));
+            JSONObject obj = new JSONObject(jsonStr);
+            for (String key : obj.keySet()) {
+                if (obj.getString(key).equalsIgnoreCase(namaKota)) {
+                    return key; // kode lokal, misal "02"
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
     private List<String> getListKecamatan(String kodeProvinsi, String kodeKota) {
         try {
             // Coba beberapa kemungkinan nama file
@@ -699,7 +715,11 @@ public class RegisterPasien extends JPanel {
     }
     private String getKodeKecamatan(String namaKecamatan, String kodeProvinsi, String kodeKota) {
         try {
-            String path = "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeKota + "-" + kodeProvinsi + ".json";
+            // Mendapatkan kode kota lokal dari nama kota dan kode provinsi
+            String kodeKotaLokal = getKodeKotaLokal(cbKota != null && cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            // Mendapatkan kode kecamatan lokal dari nama kecamatan, kode provinsi, dan kode kota lokal
+            String kodeKecamatanLokal = getKodeKecamatanLokal(namaKecamatan, kodeProvinsi, kodeKotaLokal);
+            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
             for (String key : obj.keySet()) {
                 if (obj.getString(key).equalsIgnoreCase(namaKecamatan)) {
@@ -711,19 +731,19 @@ public class RegisterPasien extends JPanel {
         }
         return "";
     }
-    private List<String> getListKelurahan(String kodeProvinsi, String kodeKota, String kodeKecamatan) {
+    private String getKodeKecamatanLokal(String namaKecamatan, String kodeProvinsi, String kodeKotaLokal) {
         try {
-            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
+            String path = "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKotaLokal + ".json";
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            List<String> kelurahanList = new ArrayList<>();
             for (String key : obj.keySet()) {
-                kelurahanList.add(obj.getString(key));
+                if (obj.getString(key).equalsIgnoreCase(namaKecamatan)) {
+                    return key; // kode lokal, misal "010"
+                }
             }
-            return kelurahanList;
         } catch (Exception e) {
             e.printStackTrace();
-            return List.of();
         }
+        return "";
     }
     private String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
         try {
@@ -738,5 +758,19 @@ public class RegisterPasien extends JPanel {
             e.printStackTrace();
         }
         return "";
+    }
+    private List<String> getListKelurahan(String kodeProvinsi, String kodeKotaLokal, String kodeKecamatanLokal) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            List<String> kelurahanList = new ArrayList<>();
+            for (String key : obj.keySet()) {
+                kelurahanList.add(obj.getString(key));
+            }
+            return kelurahanList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
     }
 }

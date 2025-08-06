@@ -53,6 +53,7 @@ public class Dropdown extends JComboBox<String> {
     public void setItems(List<String> newItems, boolean isSearchable, boolean register, String selectedItem) {
         items.clear();
         items.addAll(newItems);
+        isFirstTime = true; // Tambahkan ini agar updateComboBox menampilkan semua item saat pertama kali
         updateComboBox(isSearchable, register, selectedItem);
     }
 
