@@ -72,6 +72,15 @@ public class TransaksiDiagnosa extends JPanel {
     private List<Object[]> drugData;
     private Stepper stepper; // Tambahkan instance Stepper
 
+    // Tambahkan deklarasi field instance untuk semua vital
+    private CustomTextField bodyWeightField;
+    private CustomTextField oxygenField;
+    private CustomTextField heightField;
+    private CustomTextField temperatureField;
+    private CustomTextField bloodPressureField;
+    private CustomTextField heartRateField;
+    private CustomTextField respRateField;
+
     public TransaksiDiagnosa(OnPemeriksaanUpdatedListener listener, String idAntrian, Object[] dataFromParent) {
         System.out.println(Arrays.toString(dataFromParent));
         QueryExecutor executor = new QueryExecutor();
@@ -553,6 +562,15 @@ public class TransaksiDiagnosa extends JPanel {
                                     }
                                 }
 
+                                // Kirim Observasi ke SATUSEHAT
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "29463-7", "Body weight — Measured", bodyWeightField.getText(), "kg", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "59408-5", "Oxygen saturation in Arterial blood", oxygenField.getText(), "%", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8302-2", "Body height — Measured", heightField.getText(), "cm", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8310-5", "Body temperature — Measured", temperatureField.getText(), "°C", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "85354-9", "Blood pressure panel", bloodPressureField.getText(), "mmHg", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8867-4", "Heart rate", heartRateField.getText(), "bpm", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "9279-1", "Respiratory rate", respRateField.getText(), "x/min", "");
+
                                 // Update status antrian menjadi "Selesai Diperiksa"
                                 String updateAntrianQuery = "UPDATE antrian SET status_antrian = 'Selesai Diperiksa' WHERE id_antrian = ?";
                                 Object[] updateParams = new Object[]{idAntrian};
@@ -625,11 +643,64 @@ public class TransaksiDiagnosa extends JPanel {
         // Initially set the drug panel to be invisible
         drugDataPanel.setVisible(false);
 
+        // Panel untuk Data Vital/Ionic
+        CustomPanel ionicPanel = new CustomPanel(30);
+        ionicPanel.setBorder(border);
+        ionicPanel.setLayout(new GridBagLayout());
+        ionicPanel.setBackground(Color.WHITE);
+
+        GridBagConstraints gbcIonic = new GridBagConstraints();
+        gbcIonic.insets = new Insets(8, 8, 8, 8);
+        gbcIonic.anchor = GridBagConstraints.WEST;
+        gbcIonic.gridx = 0; gbcIonic.gridy = 0;
+
+        ionicPanel.add(new JLabel("Body weight — Measured (kg):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        bodyWeightField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(bodyWeightField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Oxygen saturation in Arterial blood (%):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        oxygenField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(oxygenField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Body height — Measured (cm):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        heightField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(heightField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Body temperature — Measured (°C):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        temperatureField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(temperatureField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Blood pressure panel (mmHg):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        bloodPressureField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(bloodPressureField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Heart rate (bpm):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        heartRateField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(heartRateField, gbcIonic);
+
+        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        ionicPanel.add(new JLabel("Respiratory rate (x/min):"), gbcIonic);
+        gbcIonic.gridx = 1;
+        respRateField = new CustomTextField("", 20, 30, Optional.empty());
+        ionicPanel.add(respRateField, gbcIonic);
+
         // Inisialisasi Stepper
         stepper = new Stepper();
 
         // Tambahkan langkah-langkah ke Stepper
         stepper.addStep("Informasi Pasien", patientDataPanel);
+        stepper.addStep("Data Vital", ionicPanel);
         stepper.addStep("Diagnosa Pasien", diagnosisPanel);
         stepper.addStep("Obat", drugDataPanel);
 

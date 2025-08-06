@@ -31,7 +31,12 @@ public class EncounterSatusehatApi {
             // Tambahkan period sesuai waktu sekarang (WIB, +07:00)
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"));
             String periodStart = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-            encounter.put("period", Map.of("start", periodStart));
+            ZonedDateTime endTime = now.plusMinutes(15);
+            String periodEnd = endTime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            encounter.put("period", Map.of(
+                "start", periodStart,
+                "end", periodEnd
+            ));
 
             // Tambahkan location sesuai permintaan
             encounter.put("location", new Object[]{

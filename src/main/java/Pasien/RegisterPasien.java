@@ -14,6 +14,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -40,6 +44,7 @@ import org.json.JSONObject;
 
 public class RegisterPasien extends JPanel {
     private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID, txtBPJS[];
+    private Dropdown cbProvinsi, cbKota, cbKecamatan, cbKelurahan;
     private Dropdown txtGender;
     private OnPasienAddedListener listener;
     private CustomDatePicker customDatePicker;
@@ -52,17 +57,8 @@ public class RegisterPasien extends JPanel {
         setLayout(new BorderLayout());
 
         // Panel Pasien Umum
-        JPanel umumPanel = createFormPanel(model, false);
-
-        // Panel Pasien BPJS
-        JPanel bpjsPanel = createFormPanel(model, true);
-
-        // TabbedPane
-        String[] titles = { "Pasien Umum", "Pasien BPJS" };
-        JComponent[] contents = { umumPanel, bpjsPanel };
-        Components.CustomTabbedPane tabbedPane = new Components.CustomTabbedPane(titles, contents);
-
-        add(tabbedPane, BorderLayout.CENTER);
+        JPanel formPanel = createFormPanel(model, false);
+        add(formPanel, BorderLayout.CENTER);
     }
 
     // Method untuk membuat panel form, isBPJS=true jika panel BPJS
@@ -331,6 +327,76 @@ public class RegisterPasien extends JPanel {
         ((AbstractDocument) txtPhone.getTextField().getDocument()).setDocumentFilter(new TypeNumberHelper(13));
         formPanel.add(txtPhone, gbc);
 
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        formPanel.add(new JLabel("Provinsi:"), gbc);
+        gbc.gridx = 1;
+        cbProvinsi = new Dropdown(false, true, null);
+        cbProvinsi.setItems(getListProvinsi(), false, true, null); // List<String> nama provinsi
+        formPanel.add(cbProvinsi, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        formPanel.add(new JLabel("Kota/Kabupaten:"), gbc);
+        gbc.gridx = 1;
+        cbKota = new Dropdown(false, true, null);
+        formPanel.add(cbKota, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        formPanel.add(new JLabel("Kecamatan:"), gbc);
+        gbc.gridx = 1;
+        cbKecamatan = new Dropdown(false, true, null);
+        formPanel.add(cbKecamatan, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        formPanel.add(new JLabel("Kelurahan/Desa:"), gbc);
+        gbc.gridx = 1;
+        cbKelurahan = new Dropdown(false, true, null);
+        formPanel.add(cbKelurahan, gbc);
+
+        // Tambahkan ActionListener untuk dropdown provinsi, kota, kecamatan
+        cbProvinsi.addActionListener(e -> {
+            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
+            if (kodeProvinsi.isEmpty()) {
+                cbKota.setItems(List.of(), false, true, null);
+                cbKecamatan.setItems(List.of(), false, true, null);
+                cbKelurahan.setItems(List.of(), false, true, null);
+                return;
+            }
+            cbKota.setItems(getListKota(kodeProvinsi), false, true, null);
+            cbKecamatan.setItems(List.of(), false, true, null);
+            cbKelurahan.setItems(List.of(), false, true, null);
+        });
+
+        cbKota.addActionListener(e -> {
+            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
+            String kodeKota = getKodeKota(cbKota.getSelectedItem().toString(), kodeProvinsi);
+            if (kodeKota.isEmpty()) {
+                cbKecamatan.setItems(List.of(), false, true, null);
+                cbKelurahan.setItems(List.of(), false, true, null);
+                return;
+            }
+            List<String> kecamatanList = getListKecamatan(kodeProvinsi, kodeKota);
+            System.out.println("Isi kecamatan: " + kecamatanList);
+            cbKecamatan.setItems(kecamatanList, false, true, null);
+            cbKelurahan.setItems(List.of(), false, true, null);
+        });
+
+        cbKecamatan.addActionListener(e -> {
+            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
+            String kodeKota = getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            String kodeKecamatan = getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+
+            if (kodeProvinsi.isEmpty() || kodeKota.isEmpty() || kodeKecamatan.isEmpty()) {
+                cbKelurahan.setItems(List.of(), false, true, null);
+                return;
+            }
+
+            cbKelurahan.setItems(getListKelurahan(kodeProvinsi, kodeKota, kodeKecamatan), false, true, null);
+        });
+
         // Submit button
         gbc.gridx = 0;
         gbc.gridy = row;
@@ -340,79 +406,146 @@ public class RegisterPasien extends JPanel {
         submitButton.setBackground(new Color(0, 150, 136));
         submitButton.setForeground(Color.WHITE);
         submitButton.addActionListener(e -> {
-            String id = String.valueOf(model.getRowCount() + 1);
-            String nik = txtnik.getText();
-            String rfid = txtRFID.getText().trim(); // Ambil nilai RFID
-            String name = txtName.getText();
-            String age = txtAge.getText();
+            String nik = txtnik.getText().trim();
+            String name = txtName.getText().trim();
+            String birthDate = txtAge.getText().trim();
             String gender = (String) txtGender.getSelectedItem();
-            String address = txtAddress.getText();
-            String phone = txtPhone.getText();
-            String bpjs = isBPJS ? txtBPJS[0].getText().trim() : null;
+            String address = txtAddress.getText().trim();
+            String phone = txtPhone.getText().trim();
 
-            // Validasi input
-            if (isBPJS && (bpjs == null || bpjs.isEmpty())) {
-                JOptionPane.showMessageDialog(this, "Nomor BPJS wajib diisi untuk pasien BPJS!", "Peringatan", JOptionPane.WARNING_MESSAGE);
+            if (nik.isEmpty() || name.isEmpty() || birthDate.isEmpty() || gender.isEmpty() || address.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Semua field wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // Validasi input sebelum menambahkan
-            if (id.isEmpty() || nik.isEmpty() || name.isEmpty() || age == null || gender.isEmpty() || address.isEmpty() || phone.isEmpty()) {
-                JOptionPane.showMessageDialog(RegisterPasien.this, "Semua field harus diisi kecuali RFID!", "Peringatan", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+            // Ambil kode wilayah dari dropdown
+            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
+            String kodeKota = getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            String kodeKecamatan = getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+            String kodeKelurahan = getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
 
-            // Jika RFID kosong, atur ke null
-            if (rfid.isEmpty()) {
-                rfid = null;
-            }
-
-            if (bpjs != null && bpjs.isEmpty()) bpjs = null; // Jika kosong, simpan null
-
-            // Use DateTimeFormatter to parse the string into LocalDate
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            LocalDate selectedBirthDate = null;
+            // Ambil string tanggal dari field input (misal dari date picker)
+            String inputDate = txtAge.getText().trim();
+            final String birthDateSatusehat;
             try {
-                selectedBirthDate = LocalDate.parse(age, formatter); // Parsing the date string
-            } catch (Exception error) {
-                JOptionPane.showMessageDialog(this, "Tanggal Lahir Tidak Valid", "Peringatan", JOptionPane.WARNING_MESSAGE);
-                return; // Exit if the date is not valid
-            }
-
-            LocalDate currentDate = LocalDate.now();
-
-            if (selectedBirthDate.isAfter(currentDate)) {
-                JOptionPane.showMessageDialog(this, "Tanggal Lahir Tidak Valid", "Peringatan", JOptionPane.WARNING_MESSAGE);
-            } else {
-                // Notify the listener with updated data
-                if (listener != null) {
-                    String checknik = "SELECT nik, nama FROM pasien WHERE nik = ?";
-                    Object[] parameterCheck = new Object[]{nik};
-                    java.util.List<Map<String, Object>> resultCheck = new QueryExecutor().executeSelectQuery(checknik, parameterCheck);
-                    if (resultCheck.isEmpty()) {
-                        String Query = "INSERT INTO pasien (nik, rfid, nama, jenis_kelamin, tanggal_lahir, no_telepon, alamat, nomor_bpjs, status) VALUES (?,?,?,?,?,?,?,?,?)";
-                        Object[] parameter = new Object[]{nik, rfid, name, gender, selectedBirthDate, phone, address, 0, "Umum"};
-                        Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
-                        if (isInserted != 404) {
-                            Period period = Period.between(selectedBirthDate, currentDate);
-                            String BirthDate = period.getYears() + " Tahun " + period.getMonths() + " Bulan " + period.getDays() + " Hari";
-                            listener.onPasienAdded(isInserted.toString(), nik, name, BirthDate, gender, phone, address, rfid);
-                            JOptionPane.showMessageDialog(this, "Insert Success with Name: " + name, "Success", JOptionPane.INFORMATION_MESSAGE);
-                            System.out.println("Insert successful!");
-
-                            // Tutup modal setelah proses selesai
-                            ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Insert failed.", "Error", JOptionPane.ERROR_MESSAGE);
-                            System.out.println("Insert failed.");
-                        }
-                    } else {
-                        Map<String, Object> data = resultCheck.get(0);
-                        JOptionPane.showMessageDialog(null, "NIK Sudah Terdaftar dengan Nama: " + data.get("nama"), "NIK Sudah Terdaftar", JOptionPane.ERROR_MESSAGE);
-                        System.out.println("Insert failed.");
-                    }
+                if (inputDate.contains("/")) {
+                    // Format dd/MM/yyyy
+                    DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                    LocalDate date = LocalDate.parse(inputDate, inputFormatter);
+                    birthDateSatusehat = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } else if (inputDate.contains("-")) {
+                    // Format yyyy-MM-dd
+                    DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    LocalDate date = LocalDate.parse(inputDate, inputFormatter);
+                    birthDateSatusehat = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                } else {
+                    throw new Exception("Format tanggal tidak dikenali!");
                 }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Format tanggal lahir salah! Gunakan dd/MM/yyyy atau yyyy-MM-dd", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+
+            new Thread(() -> {
+                ApiClient api = new ApiClient();
+                try {
+                    // 1. Cari pasien by NIK
+                    String identifier = "https://fhir.kemkes.go.id/id/nik|" + nik;
+                    String response = api.get(api.encodeUrl("/Patient?identifier=", identifier));
+                    JSONObject json = new JSONObject(response);
+                    JSONArray entries = json.optJSONArray("entry");
+
+                    if (entries != null && entries.length() > 0) {
+                        // Pasien ditemukan by NIK
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Pasien sudah terdaftar di SATUSEHAT!", "Info", JOptionPane.INFORMATION_MESSAGE));
+                        // ...ambil id_satusehat, simpan ke DB lokal...
+                    } else {
+                        // 2. Cari pasien by Nama, Tgl Lahir, Gender
+                        String url = "/Patient?name=" + java.net.URLEncoder.encode(name, "UTF-8")
+                            + "&birthdate=" + java.net.URLEncoder.encode(birthDate, "UTF-8")
+                            + "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
+                        String response2 = api.get(url);
+                        JSONObject json2 = new JSONObject(response2);
+                        JSONArray entries2 = json2.optJSONArray("entry");
+
+                        if (entries2 != null && entries2.length() > 0) {
+                            // Pasien ditemukan by Nama, Tgl Lahir, Gender
+                            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Pasien sudah terdaftar di SATUSEHAT!", "Info", JOptionPane.INFORMATION_MESSAGE));
+                            // ...ambil id_satusehat, simpan ke DB lokal...
+                        } else {
+                            // 3. Tidak ditemukan, lakukan POST ke SATUSEHAT
+                            Map<String, Object> patient = new HashMap<>();
+                            patient.put("resourceType", "Patient");
+                            patient.put("identifier", new Object[]{
+                                Map.of("system", "https://fhir.kemkes.go.id/id/nik", "value", nik)
+                            });
+                            patient.put("name", new Object[]{
+                                Map.of("text", name)
+                            });
+                            patient.put("birthDate", birthDateSatusehat);
+                            patient.put("gender", gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
+
+                            Map<String, Object> addressMap = new HashMap<>();
+                            addressMap.put("use", "home");
+                            addressMap.put("line", new Object[]{address}); // address = input user, misal "Jl. Contoh No. 123"
+                            addressMap.put("city", "KOTA BANDUNG");
+                            addressMap.put("postalCode", "40123");
+                            addressMap.put("country", "ID");
+
+                            // Extension array untuk kode wilayah administrasi
+                            addressMap.put("extension", new Object[]{
+                                Map.of(
+                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-province",
+                                    "valueCode", kodeProvinsi // dari input user
+                                ),
+                                Map.of(
+                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-city",
+                                    "valueCode", kodeKota // dari input user
+                                ),
+                                Map.of(
+                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-district",
+                                    "valueCode", kodeKecamatan // dari input user
+                                ),
+                                Map.of(
+                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-village",
+                                    "valueCode", kodeKelurahan // dari input user
+                                )
+                            });
+
+                            // Masukkan ke array address di body Patient
+                            patient.put("address", new Object[]{addressMap});
+
+                            patient.put("telecom", new Object[]{
+                                Map.of("system", "phone", "value", phone)
+                            });
+                            patient.put("multipleBirthBoolean", false);
+
+                            String postResponse = api.post("/Patient", patient);
+                            System.out.println("Response POST Patient: " + postResponse);
+
+                            JSONObject postJson = new JSONObject(postResponse);
+                            if (postJson.has("id")) {
+                                String idSatusehat = postJson.getString("id");
+                                SwingUtilities.invokeLater(() -> {
+                                    JOptionPane.showMessageDialog(this, 
+                                        "Pasien berhasil didaftarkan ke SATUSEHAT!\nID SATUSEHAT: " + idSatusehat, 
+                                        "Sukses", 
+                                        JOptionPane.INFORMATION_MESSAGE
+                                    );
+                                });
+                                // ...ambil id_satusehat, simpan ke DB lokal...
+                            } else {
+                                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Gagal mendaftarkan pasien ke SATUSEHAT!", "Error", JOptionPane.ERROR_MESSAGE));
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Gagal proses ke SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE));
+                } finally {
+                    try { api.close(); } catch (Exception ignore) {}
+                }
+            }).start();
         });
         formPanel.add(submitButton, gbc);
 
@@ -479,5 +612,131 @@ public class RegisterPasien extends JPanel {
             System.out.println(hasil);
             SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
         }
+    }
+
+    // Dummy data, ganti dengan data asli dari referensi wilayah
+    private List<String> getListProvinsi() {
+        try {
+            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/provinsi/provinsi.json"));
+            JSONObject obj = new JSONObject(jsonStr);
+            List<String> provinsiList = new ArrayList<>();
+            for (String key : obj.keySet()) {
+                provinsiList.add(obj.getString(key));
+            }
+            return provinsiList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+    private String getKodeProvinsi(String namaProvinsi) {
+        try {
+            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/provinsi/provinsi.json"));
+            JSONObject obj = new JSONObject(jsonStr);
+            for (String key : obj.keySet()) {
+                if (obj.getString(key).equalsIgnoreCase(namaProvinsi)) {
+                    return key;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+    private List<String> getListKota(String kodeProvinsi) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            List<String> kotaList = new ArrayList<>();
+            for (String key : obj.keySet()) {
+                kotaList.add(obj.getString(key));
+            }
+            return kotaList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+    private String getKodeKota(String namaKota, String kodeProvinsi) {
+        try {
+            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json"));
+            JSONObject obj = new JSONObject(jsonStr);
+            for (String key : obj.keySet()) {
+                if (obj.getString(key).equalsIgnoreCase(namaKota)) {
+                    return key;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+    private List<String> getListKecamatan(String kodeProvinsi, String kodeKota) {
+        try {
+            // Coba beberapa kemungkinan nama file
+            String[] possiblePaths = {
+                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKota + ".json",
+                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeKota + ".json",
+                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKota.substring(2) + ".json"
+            };
+            for (String path : possiblePaths) {
+                if (Files.exists(Paths.get(path))) {
+                    System.out.println("Path kecamatan: " + path);
+                    JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+                    List<String> kecamatanList = new ArrayList<>();
+                    for (String key : obj.keySet()) {
+                        kecamatanList.add(obj.getString(key));
+                    }
+                    return kecamatanList;
+                }
+            }
+            System.out.println("Tidak ditemukan file kecamatan untuk kode: " + kodeKota + " provinsi: " + kodeProvinsi);
+            return List.of();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+    private String getKodeKecamatan(String namaKecamatan, String kodeProvinsi, String kodeKota) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeKota + "-" + kodeProvinsi + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            for (String key : obj.keySet()) {
+                if (obj.getString(key).equalsIgnoreCase(namaKecamatan)) {
+                    return key;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+    private List<String> getListKelurahan(String kodeProvinsi, String kodeKota, String kodeKecamatan) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            List<String> kelurahanList = new ArrayList<>();
+            for (String key : obj.keySet()) {
+                kelurahanList.add(obj.getString(key));
+            }
+            return kelurahanList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+    private String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            for (String key : obj.keySet()) {
+                if (obj.getString(key).equalsIgnoreCase(namaKelurahan)) {
+                    return key;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }
