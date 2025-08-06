@@ -386,16 +386,16 @@ public class RegisterPasien extends JPanel {
 
         cbKecamatan.addActionListener(e -> {
             String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
-            String kodeKota = getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-            String kodeKecamatan = getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+            String kodeKotaLokal = getKodeKotaLokal(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            String kodeKecamatanLokal = getKodeKecamatanLokal(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKotaLokal);
 
-            if (kodeProvinsi.isEmpty() || kodeKota.isEmpty() || kodeKecamatan.isEmpty()) {
+            System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKotaLokal=" + kodeKotaLokal + ", kodeKecamatanLokal=" + kodeKecamatanLokal);
+
+            if (kodeProvinsi.isEmpty() || kodeKotaLokal.isEmpty() || kodeKecamatanLokal.isEmpty()) {
                 cbKelurahan.setItems(List.of(), false, true, null);
                 return;
             }
 
-            String kodeKotaLokal = getKodeKotaLokal(cbKota.getSelectedItem().toString(), kodeProvinsi);
-            String kodeKecamatanLokal = getKodeKecamatanLokal(cbKecamatan.getSelectedItem().toString(), kodeProvinsi, kodeKotaLokal);
             cbKelurahan.setItems(getListKelurahan(kodeProvinsi, kodeKotaLokal, kodeKecamatanLokal), false, true, null);
         });
 
@@ -720,9 +720,10 @@ public class RegisterPasien extends JPanel {
             // Mendapatkan kode kecamatan lokal dari nama kecamatan, kode provinsi, dan kode kota lokal
             String kodeKecamatanLokal = getKodeKecamatanLokal(namaKecamatan, kodeProvinsi, kodeKotaLokal);
             String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
+            System.out.println("Path kelurahan: " + path);
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
             for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaKecamatan)) {
+                if (obj.getString(key).trim().equalsIgnoreCase(namaKecamatan.trim())) {
                     return key;
                 }
             }
@@ -735,8 +736,10 @@ public class RegisterPasien extends JPanel {
         try {
             String path = "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKotaLokal + ".json";
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            System.out.println("Cari kecamatan: '" + namaKecamatan + "'");
             for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaKecamatan)) {
+                System.out.println("Key: " + key + ", Value: '" + obj.getString(key) + "'");
+                if (normalize(obj.getString(key)).equals(normalize(namaKecamatan))) {
                     return key; // kode lokal, misal "010"
                 }
             }
@@ -748,9 +751,11 @@ public class RegisterPasien extends JPanel {
     private String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
         try {
             String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
+            System.out.println("Path kelurahan: " + path);
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
             for (String key : obj.keySet()) {
                 if (obj.getString(key).equalsIgnoreCase(namaKelurahan)) {
+                    System.out.println("Isi kelurahan: " + namaKelurahan);
                     return key;
                 }
             }
@@ -762,15 +767,21 @@ public class RegisterPasien extends JPanel {
     private List<String> getListKelurahan(String kodeProvinsi, String kodeKotaLokal, String kodeKecamatanLokal) {
         try {
             String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
+            System.out.println("Path kelurahan: " + path);
             JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
             List<String> kelurahanList = new ArrayList<>();
             for (String key : obj.keySet()) {
                 kelurahanList.add(obj.getString(key));
             }
+            System.out.println("Isi kelurahan: " + kelurahanList);
             return kelurahanList;
         } catch (Exception e) {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    private String normalize(String s) {
+        return s.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 }
