@@ -136,7 +136,7 @@ public class ObservationSatusehatApi {
 
     public static void main(String[] args) {
         Global.UserSessionCache cache = new Global.UserSessionCache();
-        String idSatusehatDokter = cache.getIdSatusehat(); // Harus ada nilainya!
+        String idSatusehatDokter = cache.getIdSatusehat(); // Ambil dari session
 
         if (idSatusehatDokter == null || idSatusehatDokter.isEmpty()) {
             JOptionPane.showMessageDialog(null, "ID SATUSEHAT dokter belum tersedia. Tidak bisa kirim Observation!", "Error", JOptionPane.ERROR_MESSAGE);
