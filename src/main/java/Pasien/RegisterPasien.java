@@ -8,6 +8,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
@@ -30,7 +32,13 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
-import API.ApiClient;
+import org.apache.http.HttpEntity;
+import org.apache.http.ParseException;
+import org.apache.http.client.methods.*;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.*;
+import org.apache.http.util.EntityUtils;
+
 import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
@@ -38,11 +46,19 @@ import Components.RoundedButton;
 import Components.ShowModalCenter;
 import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
+import Helpers.Region;
 import Helpers.TypeNumberHelper;
+
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import API.ApiClient;
+
 public class RegisterPasien extends JPanel {
+
+    private final CloseableHttpClient httpClient = HttpClients.createDefault();
+    private final Region region = new Region();
     private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID, txtBPJS[];
     private Dropdown cbProvinsi, cbKota, cbKecamatan, cbKelurahan;
     private Dropdown txtGender;
@@ -78,7 +94,7 @@ public class RegisterPasien extends JPanel {
             gbc.gridx = 0;
             gbc.gridy = row++;
             Dropdown searchMethodDropdown = new Dropdown(false, true, null);
-            searchMethodDropdown.setItems(List.of( "","NIK", "Nama, Tanggal Lahir, Gender"), false, true, null);
+            searchMethodDropdown.setItems(List.of("", "NIK", "Nama, Tanggal Lahir, Gender"), false, true, null);
             formPanel.add(searchMethodDropdown, gbc);
 
             // Panel untuk input pencarian
@@ -117,7 +133,8 @@ public class RegisterPasien extends JPanel {
             searchMethodDropdown.addActionListener(e -> {
                 String selectedMethod = (String) searchMethodDropdown.getSelectedItem();
                 searchInputPanel.removeAll();
-                searchGbc.gridx = 0; searchGbc.gridy = 0;
+                searchGbc.gridx = 0;
+                searchGbc.gridy = 0;
                 if ("NIK".equals(selectedMethod)) {
                     searchInputPanel.add(new JLabel("NIK:"), searchGbc);
                     searchGbc.gridx = 1;
@@ -126,11 +143,13 @@ public class RegisterPasien extends JPanel {
                     searchInputPanel.add(new JLabel("Nama:"), searchGbc);
                     searchGbc.gridx = 1;
                     searchInputPanel.add(txtNama, searchGbc);
-                    searchGbc.gridx = 0; searchGbc.gridy = 1;
+                    searchGbc.gridx = 0;
+                    searchGbc.gridy = 1;
                     searchInputPanel.add(new JLabel("Tanggal Lahir:"), searchGbc);
                     searchGbc.gridx = 1;
                     searchInputPanel.add(txtTanggalLahir, searchGbc);
-                    searchGbc.gridx = 0; searchGbc.gridy = 2;
+                    searchGbc.gridx = 0;
+                    searchGbc.gridy = 2;
                     searchInputPanel.add(new JLabel("Gender:"), searchGbc);
                     searchGbc.gridx = 1;
                     searchInputPanel.add(txtGenderSearch, searchGbc);
@@ -186,11 +205,14 @@ public class RegisterPasien extends JPanel {
                             tampilkanDataPasien(response, hasilArea); // <-- gunakan method yang sama
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            SwingUtilities.invokeLater(() -> 
-                                JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
+                            SwingUtilities.invokeLater(()
+                                    -> JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
                             );
                         } finally {
-                            try { api.close(); } catch (Exception ignore) {}
+                            try {
+                                api.close();
+                            } catch (Exception ignore) {
+                            }
                         }
                     }).start();
                 } else if ("Nama, Tanggal Lahir, Gender".equals(method)) {
@@ -208,19 +230,22 @@ public class RegisterPasien extends JPanel {
                         ApiClient api = new ApiClient();
                         try {
                             // Sesuaikan parameter query dengan spesifikasi API SATUSEHAT
-                            String url = "/Patient?name=" + 
-                                java.net.URLEncoder.encode(nama, "UTF-8") +
-                                "&birthdate=" + java.net.URLEncoder.encode(tglLahir, "UTF-8") +
-                                "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
+                            String url = "/Patient?name="
+                                    + java.net.URLEncoder.encode(nama, "UTF-8")
+                                    + "&birthdate=" + java.net.URLEncoder.encode(tglLahir, "UTF-8")
+                                    + "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
                             String response = api.get(url);
                             tampilkanDataPasien(response, hasilArea);
                         } catch (Exception ex) {
                             ex.printStackTrace();
-                            SwingUtilities.invokeLater(() -> 
-                                JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
+                            SwingUtilities.invokeLater(()
+                                    -> JOptionPane.showMessageDialog(this, "Gagal mengambil data dari API SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE)
                             );
                         } finally {
-                            try { api.close(); } catch (Exception ignore) {}
+                            try {
+                                api.close();
+                            } catch (Exception ignore) {
+                            }
                         }
                     }).start();
                 }
@@ -245,14 +270,14 @@ public class RegisterPasien extends JPanel {
                     // Panggil listener agar tabel refresh
                     if (listener != null) {
                         listener.onPasienAdded(
-                            isInserted.toString(),
-                            hasilNIK,
-                            hasilNama,
-                            tanggalLahir,
-                            hasilGender,
-                            "0", // no_telepon (default)
-                            hasilAlamat,
-                            null // rfid (default)
+                                isInserted.toString(),
+                                hasilNIK,
+                                hasilNama,
+                                tanggalLahir,
+                                hasilGender,
+                                "0", // no_telepon (default)
+                                hasilAlamat,
+                                null // rfid (default)
                         );
                     }
 
@@ -332,7 +357,7 @@ public class RegisterPasien extends JPanel {
         formPanel.add(new JLabel("Provinsi:"), gbc);
         gbc.gridx = 1;
         cbProvinsi = new Dropdown(false, true, null);
-        cbProvinsi.setItems(getListProvinsi(), false, true, null); // List<String> nama provinsi
+        cbProvinsi.setItems(region.getListProvinsi(), false, true, null); // List<String> nama provinsi
         formPanel.add(cbProvinsi, gbc);
 
         gbc.gridx = 0;
@@ -358,36 +383,35 @@ public class RegisterPasien extends JPanel {
 
         // Tambahkan ActionListener untuk dropdown provinsi, kota, kecamatan
         cbProvinsi.addActionListener(e -> {
-            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
+            String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
             if (kodeProvinsi.isEmpty()) {
                 cbKota.setItems(List.of(), false, true, null);
                 cbKecamatan.setItems(List.of(), false, true, null);
                 cbKelurahan.setItems(List.of(), false, true, null);
                 return;
             }
-            cbKota.setItems(getListKota(kodeProvinsi), false, true, null);
+            cbKota.setItems(region.getListKota(kodeProvinsi), false, true, null);
             cbKecamatan.setItems(List.of(), false, true, null);
             cbKelurahan.setItems(List.of(), false, true, null);
         });
 
         cbKota.addActionListener(e -> {
-            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
-            String kodeKota = getKodeKota(cbKota.getSelectedItem().toString(), kodeProvinsi);
+            String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem().toString());
+            String kodeKota = region.getKodeKota(cbKota.getSelectedItem().toString(), kodeProvinsi);
             if (kodeKota.isEmpty()) {
                 cbKecamatan.setItems(List.of(), false, true, null);
                 cbKelurahan.setItems(List.of(), false, true, null);
                 return;
             }
-            List<String> kecamatanList = getListKecamatan(kodeProvinsi, kodeKota);
-            System.out.println("Isi kecamatan: " + kecamatanList);
+            List<String> kecamatanList = region.getListKecamatan(kodeProvinsi, kodeKota);
             cbKecamatan.setItems(kecamatanList, false, true, null);
             cbKelurahan.setItems(List.of(), false, true, null);
         });
 
         cbKecamatan.addActionListener(e -> {
-            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
-            String kodeKotaLokal = getKodeKotaLokal(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-            String kodeKecamatanLokal = getKodeKecamatanLokal(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKotaLokal);
+            String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
+            String kodeKotaLokal = region.getKodeKotaLokal(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            String kodeKecamatanLokal = region.getKodeKecamatanLokal(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKotaLokal);
 
             System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKotaLokal=" + kodeKotaLokal + ", kodeKecamatanLokal=" + kodeKecamatanLokal);
 
@@ -396,7 +420,7 @@ public class RegisterPasien extends JPanel {
                 return;
             }
 
-            cbKelurahan.setItems(getListKelurahan(kodeProvinsi, kodeKotaLokal, kodeKecamatanLokal), false, true, null);
+            cbKelurahan.setItems(region.getListKelurahan(kodeProvinsi, kodeKotaLokal, kodeKecamatanLokal), false, true, null);
         });
 
         // Submit button
@@ -421,10 +445,10 @@ public class RegisterPasien extends JPanel {
             }
 
             // Ambil kode wilayah dari dropdown
-            String kodeProvinsi = getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
-            String kodeKota = getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-            String kodeKecamatan = getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
-            String kodeKelurahan = getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
+            String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
+            String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+            String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+            String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
 
             // Ambil string tanggal dari field input (misal dari date picker)
             String inputDate = txtAge.getText().trim();
@@ -464,8 +488,8 @@ public class RegisterPasien extends JPanel {
                     } else {
                         // 2. Cari pasien by Nama, Tgl Lahir, Gender
                         String url = "/Patient?name=" + java.net.URLEncoder.encode(name, "UTF-8")
-                            + "&birthdate=" + java.net.URLEncoder.encode(birthDate, "UTF-8")
-                            + "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
+                                + "&birthdate=" + java.net.URLEncoder.encode(birthDate, "UTF-8")
+                                + "&gender=" + (gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
                         String response2 = api.get(url);
                         JSONObject json2 = new JSONObject(response2);
                         JSONArray entries2 = json2.optJSONArray("entry");
@@ -497,20 +521,20 @@ public class RegisterPasien extends JPanel {
                             // Extension array untuk kode wilayah administrasi
                             addressMap.put("extension", new Object[]{
                                 Map.of(
-                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-province",
-                                    "valueCode", kodeProvinsi // dari input user
+                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-province",
+                                "valueCode", kodeProvinsi // dari input user
                                 ),
                                 Map.of(
-                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-city",
-                                    "valueCode", kodeKota // dari input user
+                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-city",
+                                "valueCode", kodeKota // dari input user
                                 ),
                                 Map.of(
-                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-district",
-                                    "valueCode", kodeKecamatan // dari input user
+                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-district",
+                                "valueCode", kodeKecamatan // dari input user
                                 ),
                                 Map.of(
-                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-village",
-                                    "valueCode", kodeKelurahan // dari input user
+                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-village",
+                                "valueCode", kodeKelurahan // dari input user
                                 )
                             });
 
@@ -529,10 +553,10 @@ public class RegisterPasien extends JPanel {
                             if (postJson.has("id")) {
                                 String idSatusehat = postJson.getString("id");
                                 SwingUtilities.invokeLater(() -> {
-                                    JOptionPane.showMessageDialog(this, 
-                                        "Pasien berhasil didaftarkan ke SATUSEHAT!\nID SATUSEHAT: " + idSatusehat, 
-                                        "Sukses", 
-                                        JOptionPane.INFORMATION_MESSAGE
+                                    JOptionPane.showMessageDialog(this,
+                                            "Pasien berhasil didaftarkan ke SATUSEHAT!\nID SATUSEHAT: " + idSatusehat,
+                                            "Sukses",
+                                            JOptionPane.INFORMATION_MESSAGE
                                     );
                                 });
                                 // ...ambil id_satusehat, simpan ke DB lokal...
@@ -545,7 +569,10 @@ public class RegisterPasien extends JPanel {
                     ex.printStackTrace();
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Gagal proses ke SATUSEHAT", "Error", JOptionPane.ERROR_MESSAGE));
                 } finally {
-                    try { api.close(); } catch (Exception ignore) {}
+                    try {
+                        api.close();
+                    } catch (Exception ignore) {
+                    }
                 }
             }).start();
         });
@@ -616,169 +643,76 @@ public class RegisterPasien extends JPanel {
         }
     }
 
-    // Dummy data, ganti dengan data asli dari referensi wilayah
-    private List<String> getListProvinsi() {
+    private JSONArray getProvince() {
         try {
-            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/provinsi/provinsi.json"));
-            JSONObject obj = new JSONObject(jsonStr);
-            List<String> provinsiList = new ArrayList<>();
-            for (String key : obj.keySet()) {
-                provinsiList.add(obj.getString(key));
-            }
-            return provinsiList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of();
-        }
-    }
-    private String getKodeProvinsi(String namaProvinsi) {
-        try {
-            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/provinsi/provinsi.json"));
-            JSONObject obj = new JSONObject(jsonStr);
-            for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaProvinsi)) {
-                    return key;
+            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/provinces.json");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String jsonStr = EntityUtils.toString(entity);
+                    JSONArray jsonArray = new JSONArray(jsonStr);
+                    return jsonArray;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return "";
+        return null;
     }
-    private List<String> getListKota(String kodeProvinsi) {
+
+    private JSONArray getKota(String kodeProvinsi) {
         try {
-            String path = "src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json";
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            List<String> kotaList = new ArrayList<>();
-            for (String key : obj.keySet()) {
-                kotaList.add(obj.getString(key));
-            }
-            return kotaList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of();
-        }
-    }
-    private String getKodeKota(String namaKota, String kodeProvinsi) {
-        try {
-            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json"));
-            JSONObject obj = new JSONObject(jsonStr);
-            for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaKota)) {
-                    return key;
+            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/regencies/" + kodeProvinsi + ".json");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String jsonStr = EntityUtils.toString(entity);
+                    JSONArray jsonArray = new JSONArray(jsonStr);
+                    return jsonArray;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return "";
+        return null;
     }
-    private String getKodeKotaLokal(String namaKota, String kodeProvinsi) {
+
+    private JSONArray getKecamatan(String kodeKota) {
         try {
-            String jsonStr = Files.readString(Paths.get("src/main/resources/WilayahIndonesia/kabupaten_kota/kab-" + kodeProvinsi + ".json"));
-            JSONObject obj = new JSONObject(jsonStr);
-            for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaKota)) {
-                    return key; // kode lokal, misal "02"
+            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/districts/" + kodeKota + ".json");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String jsonStr = EntityUtils.toString(entity);
+                    JSONArray jsonArray = new JSONArray(jsonStr);
+                    return jsonArray;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return "";
+        return null;
     }
-    private List<String> getListKecamatan(String kodeProvinsi, String kodeKota) {
+
+    private JSONArray getKelurahan(String kodeKecamatan) {
         try {
-            // Coba beberapa kemungkinan nama file
-            String[] possiblePaths = {
-                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKota + ".json",
-                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeKota + ".json",
-                "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKota.substring(2) + ".json"
-            };
-            for (String path : possiblePaths) {
-                if (Files.exists(Paths.get(path))) {
-                    System.out.println("Path kecamatan: " + path);
-                    JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-                    List<String> kecamatanList = new ArrayList<>();
-                    for (String key : obj.keySet()) {
-                        kecamatanList.add(obj.getString(key));
-                    }
-                    return kecamatanList;
-                }
-            }
-            System.out.println("Tidak ditemukan file kecamatan untuk kode: " + kodeKota + " provinsi: " + kodeProvinsi);
-            return List.of();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of();
-        }
-    }
-    private String getKodeKecamatan(String namaKecamatan, String kodeProvinsi, String kodeKota) {
-        try {
-            // Mendapatkan kode kota lokal dari nama kota dan kode provinsi
-            String kodeKotaLokal = getKodeKotaLokal(cbKota != null && cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-            // Mendapatkan kode kecamatan lokal dari nama kecamatan, kode provinsi, dan kode kota lokal
-            String kodeKecamatanLokal = getKodeKecamatanLokal(namaKecamatan, kodeProvinsi, kodeKotaLokal);
-            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
-            System.out.println("Path kelurahan: " + path);
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            for (String key : obj.keySet()) {
-                if (obj.getString(key).trim().equalsIgnoreCase(namaKecamatan.trim())) {
-                    return key;
+            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/villages/" + kodeKecamatan + ".json");
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String jsonStr = EntityUtils.toString(entity);
+                    JSONArray jsonArray = new JSONArray(jsonStr);
+                    return jsonArray;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return "";
-    }
-    private String getKodeKecamatanLokal(String namaKecamatan, String kodeProvinsi, String kodeKotaLokal) {
-        try {
-            String path = "src/main/resources/WilayahIndonesia/kecamatan/kec-" + kodeProvinsi + "-" + kodeKotaLokal + ".json";
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            System.out.println("Cari kecamatan: '" + namaKecamatan + "'");
-            for (String key : obj.keySet()) {
-                System.out.println("Key: " + key + ", Value: '" + obj.getString(key) + "'");
-                if (normalize(obj.getString(key)).equals(normalize(namaKecamatan))) {
-                    return key; // kode lokal, misal "010"
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-    private String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
-        try {
-            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
-            System.out.println("Path kelurahan: " + path);
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            for (String key : obj.keySet()) {
-                if (obj.getString(key).equalsIgnoreCase(namaKelurahan)) {
-                    System.out.println("Isi kelurahan: " + namaKelurahan);
-                    return key;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-    private List<String> getListKelurahan(String kodeProvinsi, String kodeKotaLokal, String kodeKecamatanLokal) {
-        try {
-            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKotaLokal + "-" + kodeKecamatanLokal + ".json";
-            System.out.println("Path kelurahan: " + path);
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            List<String> kelurahanList = new ArrayList<>();
-            for (String key : obj.keySet()) {
-                kelurahanList.add(obj.getString(key));
-            }
-            System.out.println("Isi kelurahan: " + kelurahanList);
-            return kelurahanList;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return List.of();
-        }
+        return null;
     }
 
     private String normalize(String s) {

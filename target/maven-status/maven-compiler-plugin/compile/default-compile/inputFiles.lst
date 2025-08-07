@@ -4,6 +4,10 @@ C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Antrian\Antr
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Antrian\EditAntrian.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Antrian\TambahkanAntrian.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\API\ApiClient.java
+C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\API\ConditionSatusehatApi.java
+C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\API\EncounterSatusehatApi.java
+C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\API\ObservationSatusehatApi.java
+C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\API\ProcedureSatusehatApi.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Auth\Auth_Animations\LoginSuccessAnimation.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Auth\AuthFrame.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Auth\Login.java
@@ -50,6 +54,7 @@ C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\OnOb
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\OnObatUpdateListener.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\OnPasienAddedListener.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\OnUserAddedListener.java
+C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\Region.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Helpers\TypeNumberHelper.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\LoginTest.java
 C:\Users\Server\Documents\Project\Mapotek_Java_Elysia\src\main\java\Main\Drawer.java

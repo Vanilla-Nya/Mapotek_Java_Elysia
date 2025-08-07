@@ -26,7 +26,7 @@ import javax.swing.border.MatteBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-    
+
 import com.formdev.flatlaf.FlatLightLaf;
 
 import Auth.Auth_Animations.LoginSuccessAnimation;
@@ -41,9 +41,7 @@ import Main.Drawer;
 /**
  *
  * @author asuna
- */ 
-
-
+ */
 public class Login extends JPanel {
 
     // Tambahkan referensi ke AuthFrame (atau callback)
@@ -54,7 +52,6 @@ public class Login extends JPanel {
         this.parentFrame = parentFrame;
 
         // Hilangkan setTitle, setSize, setDefaultCloseOperation, setLocationRelativeTo
-
         setLayout(new BorderLayout());
 
         // Set FlatLaf theme with custom rounded corners
@@ -237,7 +234,7 @@ public class Login extends JPanel {
                         Object expiredObj = getData.get("is_expired");
                         boolean isExpired = false;
                         if (expiredObj == null) {
-                            isExpired = true; // Jika null, anggap expired
+                            isExpired = false; // Jika null, anggap expired
                         } else if (expiredObj instanceof Boolean) {
                             isExpired = (Boolean) expiredObj;
                         } else if (expiredObj instanceof Number) {
@@ -346,7 +343,6 @@ public class Login extends JPanel {
                             animationFrame.add(new LoginSuccessAnimation(animationFrame, welcomeMessage, afterAnimation));
                             animationFrame.setVisible(true);
 
-                            
                             SwingUtilities.invokeLater(() -> parentFrame.dispose());
                         } else {
                             JOptionPane.showMessageDialog(Login.this, "Login gagal", (String) getData.get("message"), JOptionPane.ERROR_MESSAGE);
@@ -366,5 +362,5 @@ public class Login extends JPanel {
                         new EmptyBorder(5, 0, 5, 0)
                 ), title, TitledBorder.LEFT, TitledBorder.ABOVE_TOP, null, Color.WHITE
         );
-    }    
+    }
 }
