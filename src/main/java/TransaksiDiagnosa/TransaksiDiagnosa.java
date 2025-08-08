@@ -71,6 +71,7 @@ public class TransaksiDiagnosa extends JPanel {
     private Object[] patientData;
     private List<Object[]> drugData;
     private Stepper stepper; // Tambahkan instance Stepper
+    private String idSatusehatDokter;
 
     // Tambahkan deklarasi field instance untuk semua vital
     private CustomTextField bodyWeightField;
@@ -375,6 +376,7 @@ public class TransaksiDiagnosa extends JPanel {
                 // Initialize the row array with the correct size
                 UserSessionCache cache = new UserSessionCache();
                 String uuid = (String) cache.getUUID();
+                String idSatusehatDokter = cache.getIdSatusehat(); // Ambil dari session
                 int rowCount = model.getRowCount();
                 Object[][] row = new Object[rowCount][6];  // 6 columns (name, type, jumlah, harga, signa, signa)
                 boolean isDone = false;
@@ -561,13 +563,13 @@ public class TransaksiDiagnosa extends JPanel {
                                 }
 
                                 // Kirim Observasi ke SATUSEHAT
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "29463-7", "Body weight — Measured", bodyWeightField.getText(), "kg", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "59408-5", "Oxygen saturation in Arterial blood", oxygenField.getText(), "%", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8302-2", "Body height — Measured", heightField.getText(), "cm", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8310-5", "Body temperature — Measured", temperatureField.getText(), "°C", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "85354-9", "Blood pressure panel", bloodPressureField.getText(), "mmHg", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8867-4", "Heart rate", heartRateField.getText(), "bpm", "");
-                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "9279-1", "Respiratory rate", respRateField.getText(), "x/min", "");
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "29463-7", "Body weight — Measured", bodyWeightField.getText(), "kg", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "59408-5", "Oxygen saturation in Arterial blood", oxygenField.getText(), "%", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8302-2", "Body height — Measured", heightField.getText(), "cm", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8310-5", "Body temperature — Measured", temperatureField.getText(), "°C", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "85354-9", "Blood pressure panel", bloodPressureField.getText(), "mmHg", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "8867-4", "Heart rate", heartRateField.getText(), "bpm", idSatusehatDokter);
+                                API.ObservationSatusehatApi.createObservation(idSatusehatPasien, idEncounterSatusehat, "9279-1", "Respiratory rate", respRateField.getText(), "x/min", idSatusehatDokter);
 
                                 // Update status antrian menjadi "Selesai Diperiksa"
                                 String updateAntrianQuery = "UPDATE antrian SET status_antrian = 'Selesai Diperiksa' WHERE id_antrian = ?";
