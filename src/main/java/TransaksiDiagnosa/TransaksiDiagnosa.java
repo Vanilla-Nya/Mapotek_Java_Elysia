@@ -393,7 +393,6 @@ public class TransaksiDiagnosa extends JPanel {
                     JOptionPane.showMessageDialog(this, "Harga Jasa harus berupa angka yang valid!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                
 
                 // Validasi apakah no_antrian valid
                 String checkAntrianQuery = "SELECT COUNT(*) AS count FROM antrian WHERE id_antrian = ?";
@@ -451,18 +450,18 @@ public class TransaksiDiagnosa extends JPanel {
                         for (int countIcdX = 0; countIcdX < icdxTableModel.getRowCount(); countIcdX++) {
                             String kodeICDX = (String) icdxTableModel.getValueAt(countIcdX, 0);
                             String deskripsiICDX = (String) icdxTableModel.getValueAt(countIcdX, 1);
-    
+
                             String insertICDXQuery = "INSERT INTO diagnosis_icdx (id_pemeriksaan, kode_icdx, deskripsi) VALUES (?, ?, ?)";
                             Object[] icdxParams = new Object[]{id_pemeriksaan, kodeICDX, deskripsiICDX};
                             executor.executeInsertQuery(insertICDXQuery, icdxParams);
                         }
                         // Test
-    
+
                         // Simpan data ICDIX
                         for (int countIcdIX = 0; countIcdIX < icdixTableModel.getRowCount(); countIcdIX++) {
                             String kodeICDIX = (String) icdixTableModel.getValueAt(countIcdIX, 0);
                             String deskripsiICDIX = (String) icdixTableModel.getValueAt(countIcdIX, 1);
-    
+
                             String insertICDIXQuery = "INSERT INTO diagnosis_icdix (id_pemeriksaan, kode_icdix, deskripsi) VALUES (?, ?, ?)";
                             Object[] icdixParams = new Object[]{id_pemeriksaan, kodeICDIX, deskripsiICDIX};
                             executor.executeInsertQuery(insertICDIXQuery, icdixParams);
@@ -470,8 +469,8 @@ public class TransaksiDiagnosa extends JPanel {
                     }
 
                     // Masukkan data ke tabel detail_pemeriksaan
-                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?)";
-                    Object[] detailPemeriksaanParams = new Object[]{lastInsertObat, i == 0 ? Double.parseDouble(hargaJasa.getText()) : 0.0, i == 0 ? total : 0.0};
+                    String insertDetailPemeriksaanQuery = "INSERT INTO detail_pemeriksaan (id_detail_pemeriksaan, id_pemeriksaan_obat, harga_jasa, total) VALUES (?, ?, ?, ?)";
+                    Object[] detailPemeriksaanParams = new Object[]{id_pemeriksaan, lastInsertObat, i == 0 ? Double.parseDouble(hargaJasa.getText()) : 0.0, i == 0 ? total : 0.0};
                     boolean isDetailInserted = QueryExecutor.executeInsertQuery(insertDetailPemeriksaanQuery, detailPemeriksaanParams);
 
                     if (isDetailInserted) {
@@ -512,7 +511,6 @@ public class TransaksiDiagnosa extends JPanel {
                                 System.out.println("Data berhasil dimasukkan ke tabel pemeriksaan.");
 
                                 // Kirim ICDX dan ICDIX ke SATUSEHAT setelah data berhasil disimpan
-
                                 // Ambil id_satusehat pasien dari dataFromParent (misal index 8, sesuaikan dengan struktur Anda)
                                 String idSatusehatPasien = dataFromParent[8].toString();
 
@@ -533,10 +531,10 @@ public class TransaksiDiagnosa extends JPanel {
                                     String kodeICDX = (String) icdxTableModel.getValueAt(i, 0);
                                     String deskripsiICDX = (String) icdxTableModel.getValueAt(i, 1);
                                     boolean icdxSuccess = API.ConditionSatusehatApi.createCondition(
-                                        idSatusehatPasien,
-                                        idEncounterSatusehat,
-                                        kodeICDX,
-                                        deskripsiICDX
+                                            idSatusehatPasien,
+                                            idEncounterSatusehat,
+                                            kodeICDX,
+                                            deskripsiICDX
                                     );
                                     if (icdxSuccess) {
                                         JOptionPane.showMessageDialog(this, "ICDX " + kodeICDX + " berhasil dikirim ke SATUSEHAT.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
@@ -550,10 +548,10 @@ public class TransaksiDiagnosa extends JPanel {
                                     String kodeICDIX = (String) icdixTableModel.getValueAt(i, 0);
                                     String deskripsiICDIX = (String) icdixTableModel.getValueAt(i, 1);
                                     boolean icdixSuccess = API.ProcedureSatusehatApi.createProcedure(
-                                        idSatusehatPasien,
-                                        idEncounterSatusehat,
-                                        kodeICDIX,
-                                        deskripsiICDIX
+                                            idSatusehatPasien,
+                                            idEncounterSatusehat,
+                                            kodeICDIX,
+                                            deskripsiICDIX
                                     );
                                     if (icdixSuccess) {
                                         JOptionPane.showMessageDialog(this, "ICDIX " + kodeICDIX + " berhasil dikirim ke SATUSEHAT.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
@@ -652,44 +650,51 @@ public class TransaksiDiagnosa extends JPanel {
         GridBagConstraints gbcIonic = new GridBagConstraints();
         gbcIonic.insets = new Insets(8, 8, 8, 8);
         gbcIonic.anchor = GridBagConstraints.WEST;
-        gbcIonic.gridx = 0; gbcIonic.gridy = 0;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy = 0;
 
         ionicPanel.add(new JLabel("Body weight — Measured (kg):"), gbcIonic);
         gbcIonic.gridx = 1;
         bodyWeightField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(bodyWeightField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Oxygen saturation in Arterial blood (%):"), gbcIonic);
         gbcIonic.gridx = 1;
         oxygenField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(oxygenField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Body height — Measured (cm):"), gbcIonic);
         gbcIonic.gridx = 1;
         heightField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(heightField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Body temperature — Measured (°C):"), gbcIonic);
         gbcIonic.gridx = 1;
         temperatureField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(temperatureField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Blood pressure panel (mmHg):"), gbcIonic);
         gbcIonic.gridx = 1;
         bloodPressureField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(bloodPressureField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Heart rate (bpm):"), gbcIonic);
         gbcIonic.gridx = 1;
         heartRateField = new CustomTextField("", 20, 30, Optional.empty());
         ionicPanel.add(heartRateField, gbcIonic);
 
-        gbcIonic.gridx = 0; gbcIonic.gridy++;
+        gbcIonic.gridx = 0;
+        gbcIonic.gridy++;
         ionicPanel.add(new JLabel("Respiratory rate (x/min):"), gbcIonic);
         gbcIonic.gridx = 1;
         respRateField = new CustomTextField("", 20, 30, Optional.empty());
@@ -712,7 +717,6 @@ public class TransaksiDiagnosa extends JPanel {
         // mainPanel.add(patientDataPanel);
         // mainPanel.add(diagnosisPanel);
         // mainPanel.add(drugDataPanel);
-
         // Tambahkan scrollPane jika diperlukan
         scrollPane = new JScrollPane(stepper);
         add(scrollPane, BorderLayout.CENTER);
@@ -802,6 +806,7 @@ public class TransaksiDiagnosa extends JPanel {
 
     // Renderer untuk kolom "Hapus"
     class DeleteButtonRenderer extends JPanel implements TableCellRenderer {
+
         public DeleteButtonRenderer() {
             JButton deleteButton = new RoundedButton("Hapus");
             deleteButton.setBackground(new Color(255, 51, 51));
@@ -819,6 +824,7 @@ public class TransaksiDiagnosa extends JPanel {
 
     // Editor untuk kolom "Hapus"
     class DeleteButtonEditor extends AbstractCellEditor implements TableCellEditor {
+
         private JPanel panel;
         private JButton deleteButton;
         private DefaultTableModel tableModel;

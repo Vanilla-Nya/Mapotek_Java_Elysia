@@ -74,18 +74,18 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
                 // Data lengkap untuk TransaksiDiagnosa
                 Object[] dataForTransaksiDiagnosa = new Object[]{
-                    result.get("id_antrian"),         // 0
-                    result.get("no_antrian"),         // 1
-                    result.get("id_pasien"),          // 2
-                    result.get("nama_pasien"),        // 3
-                    result.get("status_antrian"),     // 4
-                    result.get("umur"),               // 5
+                    result.get("id_antrian"), // 0
+                    result.get("no_antrian"), // 1
+                    result.get("id_pasien"), // 2
+                    result.get("nama_pasien"), // 3
+                    result.get("status_antrian"), // 4
+                    result.get("umur"), // 5
                     result.get("jenis_kelamin_pasien"),// 6
-                    result.get("tanggal_antrian"),    // 7
-                    result.get("jam_antrian"),        // 8
-                    result.get("id_user"),            // 9
-                    result.get("nama_user"),          // 10
-                    result.get("role_user")           // 11
+                    result.get("tanggal_antrian"), // 7
+                    result.get("jam_antrian"), // 8
+                    result.get("id_user"), // 9
+                    result.get("nama_user"), // 10
+                    result.get("role_user") // 11
                 };
 
                 // Tambahkan data lengkap ke fullData
@@ -135,19 +135,19 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
 
                 // Data lengkap untuk TransaksiDiagnosa
                 Object[] dataForTransaksiDiagnosa = new Object[]{
-                    result.get("id_antrian"),         // 0
-                    result.get("no_antrian"),         // 1
-                    result.get("id_pasien"),          // 2
-                    result.get("nama_pasien"),        // 3
-                    result.get("status_antrian"),     // 4
-                    result.get("umur"),               // 5
+                    result.get("id_antrian"), // 0
+                    result.get("no_antrian"), // 1
+                    result.get("id_pasien"), // 2
+                    result.get("nama_pasien"), // 3
+                    result.get("status_antrian"), // 4
+                    result.get("umur"), // 5
                     result.get("jenis_kelamin_pasien"),// 6
-                    result.get("tanggal_antrian"),    // 7
-                    result.get("id_satusehat"),        // 8
-                    result.get("jam_antrian"),        // 9
-                    result.get("id_user"),            // 10
-                    result.get("nama_user"),          // 11
-                    result.get("role_user")           // 12
+                    result.get("tanggal_antrian"), // 7
+                    result.get("id_satusehat"), // 8
+                    result.get("jam_antrian"), // 9
+                    result.get("id_user"), // 10
+                    result.get("nama_user"), // 11
+                    result.get("role_user") // 12
                 };
 
                 // Tambahkan data lengkap ke fullData
@@ -266,29 +266,32 @@ public class TablePemeriksaan extends JFrame implements OnPemeriksaanUpdatedList
                     // Validasi dan kirim Encounter ke SATUSEHAT
                     if (idSatusehatPasien == null || idSatusehatPasien.isEmpty()) {
                         JOptionPane.showMessageDialog(panel, "Pasien belum terdaftar di SATUSEHAT. Encounter tidak dikirim ke SATUSEHAT.", "Info", JOptionPane.INFORMATION_MESSAGE);
-                    } else if (idSatusehatDokter == null || idSatusehatDokter.isEmpty()) {
+                        return;
+                    }
+                    if (idSatusehatDokter == null || idSatusehatDokter.isEmpty()) {
                         JOptionPane.showMessageDialog(panel, "User dokter belum terdaftar di SATUSEHAT. Tidak bisa melakukan pemeriksaan!", "Error", JOptionPane.ERROR_MESSAGE);
                         return;
-                    } else {
-                        String encounterIdSatusehat = API.EncounterSatusehatApi.createEncounter(
+                    }
+
+                    String encounterIdSatusehat = API.EncounterSatusehatApi.createEncounter(
                             idSatusehatPasien, namaPasien, idSatusehatDokter, namaDokter
-                        );
-                        if (encounterIdSatusehat != null && !encounterIdSatusehat.isEmpty()) {
-                            // Simpan ke database (misal ke tabel antrian)
-                            String updateQuery = "UPDATE antrian SET id_Encounter_Satusehat = ? WHERE id_antrian = ?";
-                            QueryExecutor.executeUpdateQuery(updateQuery, new Object[]{encounterIdSatusehat, dataForTransaksiDiagnosa[0]});
-                            JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT berhasil dikirim.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                        } else {
-                            JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT gagal.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
+                    );
+                    System.out.println("Encounter ID SATUSEHAT: " + encounterIdSatusehat);
+                    if (encounterIdSatusehat != null && !encounterIdSatusehat.isEmpty()) {
+                        // Simpan ke database (misal ke tabel antrian)
+                        String updateQuery = "UPDATE antrian SET id_Encounter_Satusehat = ? WHERE id_antrian = ?";
+                        QueryExecutor.executeUpdateQuery(updateQuery, new Object[]{encounterIdSatusehat, dataForTransaksiDiagnosa[0]});
+                        JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT berhasil dikirim.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(panel, "Encounter ke SATUSEHAT gagal.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
 
                     // Tampilkan TransaksiDiagnosa sebagai modal
                     TransaksiDiagnosa transaksiDiagnosa = new TransaksiDiagnosa(TablePemeriksaan.this, dataForTransaksiDiagnosa[0].toString(), dataForTransaksiDiagnosa);
                     ShowModalCenter.showCenterModal(
-                        (JFrame) SwingUtilities.getWindowAncestor(panel),
-                        transaksiDiagnosa,
-                        true
+                            (JFrame) SwingUtilities.getWindowAncestor(panel),
+                            transaksiDiagnosa,
+                            true
                     );
                 });
             });

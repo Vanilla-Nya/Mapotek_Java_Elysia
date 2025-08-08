@@ -234,7 +234,7 @@ public class Login extends JPanel {
                         Object expiredObj = getData.get("is_expired");
                         boolean isExpired = false;
                         if (expiredObj == null) {
-                            isExpired = false; // Jika null, anggap expired
+                            isExpired = true; // Jika null, anggap expired
                         } else if (expiredObj instanceof Boolean) {
                             isExpired = (Boolean) expiredObj;
                         } else if (expiredObj instanceof Number) {

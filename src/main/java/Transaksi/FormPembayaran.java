@@ -24,6 +24,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,7 +69,7 @@ public class FormPembayaran extends JPanel {
     private BigDecimal total;
     private Object[] patientData;
     private List<Object[]> drugData;
-    private  UserSessionCache cache = new UserSessionCache();;
+    private UserSessionCache cache = new UserSessionCache();
     private String Username = (String) cache.getusername();
 
     public FormPembayaran(Object[] patientData, String idAntrian, String status, AntrianPasien antrianPasien) {
@@ -330,7 +331,7 @@ public class FormPembayaran extends JPanel {
                 signa,
                 hargaObat, // Harga obat
                 hargaJasa, // Harga jasa
-                total       // Total
+                total // Total
             };
             drugData.add(drug);
         }
@@ -355,13 +356,13 @@ public class FormPembayaran extends JPanel {
         }
 
         BillPrinter.printBill(
-            filePath,
-            (String) patientData[1], // Patient's name
-            Username,           // Logged-in user's name
-            drugData,                // Drug data
-            total,                   // Total amount
-            payment,                 // Payment amount
-            change                   // Change amount
+                filePath,
+                (String) patientData[1], // Patient's name
+                Username, // Logged-in user's name
+                drugData, // Drug data
+                total, // Total amount
+                payment, // Payment amount
+                change // Change amount
         );
     }
 
@@ -401,6 +402,7 @@ public class FormPembayaran extends JPanel {
 
     // Inner class to handle the printing of the bill
     private class PrintableBill implements Printable {
+
         private String filePath;
         private Image logo;
 
