@@ -2,27 +2,19 @@ package Pasien;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import javax.swing.BorderFactory;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -32,13 +24,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.AbstractDocument;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.ParseException;
-import org.apache.http.client.methods.*;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.*;
-import org.apache.http.util.EntityUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import API.ApiClient;
 import Components.CustomDatePicker;
 import Components.CustomTextField;
 import Components.Dropdown;
@@ -48,12 +39,6 @@ import DataBase.QueryExecutor;
 import Helpers.OnPasienAddedListener;
 import Helpers.Region;
 import Helpers.TypeNumberHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import API.ApiClient;
 
 public class RegisterPasien extends JPanel {
 
@@ -457,6 +442,9 @@ public class RegisterPasien extends JPanel {
 
             // Gabungkan kode wilayah
             String alamatGabungan = String.join(",", kodeProvinsi, kodeKota, kodeKecamatan, kodeKelurahan);
+            String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi).replace(".", "");
+            String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota).replace(".", "");
+            String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan).replace(".", "");
 
             // Ambil string tanggal dari field input (misal dari date picker)
             String inputDate = txtAge.getText().trim();

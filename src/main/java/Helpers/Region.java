@@ -2,6 +2,7 @@ package Helpers;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -14,10 +15,11 @@ import org.json.JSONObject;
 public class Region {
 
     public final CloseableHttpClient httpClient = HttpClients.createDefault();
+    public final String BASE_URL = "https://sig.bps.go.id/rest-bridging-dagri/getwilayah";
 
     public JSONArray getProvince() {
         try {
-            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/provinces.json");
+            HttpGet request = new HttpGet(BASE_URL + "?level=provinsi");
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
@@ -35,7 +37,7 @@ public class Region {
 
     public JSONArray getKota(String kodeProvinsi) {
         try {
-            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/regencies/" + kodeProvinsi + ".json");
+            HttpGet request = new HttpGet(BASE_URL + "?level=kabupaten&parent=" + kodeProvinsi);
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
@@ -53,7 +55,7 @@ public class Region {
 
     public JSONArray getKecamatan(String kodeKota) {
         try {
-            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/districts/" + kodeKota + ".json");
+            HttpGet request = new HttpGet(BASE_URL + "?level=kecamatan&parent=" + kodeKota);
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
@@ -71,7 +73,7 @@ public class Region {
 
     public JSONArray getKelurahan(String kodeKecamatan) {
         try {
-            HttpGet request = new HttpGet("https://miharin.github.io/api-wilayah-indonesia/api/villages/" + kodeKecamatan + ".json");
+            HttpGet request = new HttpGet(BASE_URL + "?level=desa&parent=" + kodeKecamatan);
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 HttpEntity entity = response.getEntity();
                 if (entity != null) {
@@ -95,7 +97,7 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject provinsi = jsonArray.getJSONObject(i);
-                    provinsiList.add(provinsi.getString("name"));
+                    provinsiList.add(provinsi.getString("nama_dagri"));
                 }
             }
             return provinsiList;
@@ -111,8 +113,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject provinsi = jsonArray.getJSONObject(i);
-                    if (provinsi.getString("name").equalsIgnoreCase(namaProvinsi)) {
-                        return provinsi.getString("id");
+                    if (provinsi.getString("nama_dagri").equalsIgnoreCase(namaProvinsi)) {
+                        return provinsi.getString("kode_dagri");
                     }
                 }
             }
@@ -129,7 +131,7 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    kotaList.add(kota.getString("name"));
+                    kotaList.add(kota.getString("nama_dagri"));
                 }
             }
             return kotaList;
@@ -145,8 +147,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    if (kota.getString("name").equalsIgnoreCase(namaKota)) {
-                        return kota.getString("id");
+                    if (kota.getString("nama_dagri").equalsIgnoreCase(namaKota)) {
+                        return kota.getString("kode_dagri");
                     }
                 }
             }
@@ -162,8 +164,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    if (kota.getString("name").equalsIgnoreCase(namaKota)) {
-                        return kota.getString("id");
+                    if (kota.getString("nama_dagri").equalsIgnoreCase(namaKota)) {
+                        return kota.getString("kode_dagri");
                     }
                 }
             }
@@ -180,7 +182,7 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    kecamatanList.add(kota.getString("name"));
+                    kecamatanList.add(kota.getString("nama_dagri"));
                 }
             }
             return kecamatanList;
@@ -196,8 +198,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    if (kota.getString("name").equalsIgnoreCase(namaKecamatan)) {
-                        return kota.getString("id");
+                    if (kota.getString("nama_dagri").equalsIgnoreCase(namaKecamatan)) {
+                        return kota.getString("kode_dagri");
                     }
                 }
             }
@@ -213,8 +215,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject kota = jsonArray.getJSONObject(i);
-                    if (kota.getString("name").equalsIgnoreCase(namaKecamatan)) {
-                        return kota.getString("id");
+                    if (kota.getString("nama_dagri").equalsIgnoreCase(namaKecamatan)) {
+                        return kota.getString("kode_dagri");
                     }
                 }
             }
@@ -230,8 +232,8 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject provinsi = jsonArray.getJSONObject(i);
-                    if (provinsi.getString("name").equalsIgnoreCase(namaKelurahan)) {
-                        return provinsi.getString("id");
+                    if (provinsi.getString("nama_dagri").equalsIgnoreCase(namaKelurahan)) {
+                        return provinsi.getString("kode_dagri");
                     }
                 }
             }
@@ -248,7 +250,7 @@ public class Region {
             if (jsonArray != null) {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject provinsi = jsonArray.getJSONObject(i);
-                    kelurahanList.add(provinsi.getString("name"));
+                    kelurahanList.add(provinsi.getString("nama_dagri"));
                 }
             }
             return kelurahanList;
