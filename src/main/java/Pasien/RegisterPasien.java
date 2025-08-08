@@ -7,8 +7,11 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -249,7 +252,7 @@ public class RegisterPasien extends JPanel {
                 // Ambil kode wilayah dari dropdown
                 String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
                 String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-                String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+                String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "",kodeProvinsi,kodeKota);
                 String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
                 // Gabungkan kode wilayah
                 String alamatGabungan = String.join(",", kodeProvinsi, kodeKota, kodeKecamatan, kodeKelurahan);
@@ -403,7 +406,6 @@ public class RegisterPasien extends JPanel {
             String kodeKotaLokal = region.getKodeKotaLokal(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
             String kodeKecamatanLokal = region.getKodeKecamatanLokal(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKotaLokal);
 
-            System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKotaLokal=" + kodeKotaLokal + ", kodeKecamatanLokal=" + kodeKecamatanLokal);
 
             if (kodeProvinsi.isEmpty() || kodeKotaLokal.isEmpty() || kodeKecamatanLokal.isEmpty()) {
                 cbKelurahan.setItems(List.of(), false, true, null);
@@ -411,6 +413,7 @@ public class RegisterPasien extends JPanel {
             }
 
             cbKelurahan.setItems(region.getListKelurahan(kodeProvinsi, kodeKotaLokal, kodeKecamatanLokal), false, true, null);
+            System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKotaLokal=" + kodeKotaLokal + ", kodeKecamatanLokal=" + kodeKecamatanLokal + ", kelurahanList=" + kodeKecamatanLokal);
         });
 
         // Submit button
@@ -434,17 +437,23 @@ public class RegisterPasien extends JPanel {
             }
 
             // Ambil kode wilayah dari dropdown
-            String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
-            String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
-            String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
-            String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
-            System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKota=" + kodeKota + ", kodeKecamatan=" + kodeKecamatan + ", kodeKelurahan=" + kodeKelurahan);
+            String namaProvinsi   = cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "";
+            String namaKota       = cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "";
+            String namaKecamatan  = cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "";
+            String namaKelurahan  = cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "";
 
-            // Gabungkan kode wilayah
-            String alamatGabungan = String.join(",", kodeProvinsi, kodeKota, kodeKecamatan, kodeKelurahan);
-            String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi).replace(".", "");
-            String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota).replace(".", "");
-            String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan).replace(".", "");
+            String kodeProvinsi   = region.getKodeProvinsi(namaProvinsi).replace(".", "");
+            String kodeKota       = region.getKodeKota(namaKota, kodeProvinsi).replace(".", "");
+            String kodeKecamatanRaw = region.getKodeKecamatan(namaKecamatan, kodeProvinsi, kodeKota);
+            // Setelah dapat hasil, baru hapus titik
+            String kodeKelurahan  = region.getKodeKelurahan(namaKelurahan, kodeProvinsi, kodeKota, kodeKecamatanRaw).replace(".", "");
+            String kodeKecamatan = kodeKelurahan.length() >= 6 ? kodeKelurahan.substring(0, 6) : ""; // Ambil 6 digit pertama
+
+            System.out.println("kodeProvinsi: " + kodeProvinsi);
+            System.out.println("kodeKota: " + kodeKota);
+            System.out.println("kodeKecamatan: " + kodeKecamatan);
+            System.out.println("kodeKelurahan: " + kodeKelurahan);
+            System.out.println("getKodeKecamatan() called with namaKecamatan=[" + namaKecamatan + "], kodeProvinsi=[" + kodeProvinsi + "], kodeKota=[" + kodeKota + "]");
 
             // Ambil string tanggal dari field input (misal dari date picker)
             String inputDate = txtAge.getText().trim();
@@ -508,6 +517,13 @@ public class RegisterPasien extends JPanel {
                             patient.put("gender", gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
 
                             // Extension array untuk kode wilayah administrasi
+                            // Gabungkan nama wilayah sebagai alamatGabungan
+                            String alamatGabungan = String.join(", ",
+                                cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "",
+                                cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "",
+                                cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "",
+                                cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : ""
+                            );
                             Map<String, Object> addressMap = new HashMap<>();
                             addressMap.put("use", "home");
                             addressMap.put("line", new Object[]{ alamatGabungan }); // atau gabungan nama wilayah
@@ -519,10 +535,10 @@ public class RegisterPasien extends JPanel {
                                 Map.of(
                                     "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode",
                                     "extension", new Object[]{
-                                        Map.of("url", "province", "valueCode", kodeProvinsi),   // 2 digit
-                                        Map.of("url", "city", "valueCode", kodeKota),           // 4 digit
-                                        Map.of("url", "district", "valueCode", kodeKecamatan),  // 6 digit
-                                        Map.of("url", "village", "valueCode", kodeKelurahan)    // 10 digit
+                                        Map.of("url", "province", "valueCode", kodeProvinsi),
+                                        Map.of("url", "city", "valueCode", kodeKota),
+                                        Map.of("url", "district", "valueCode", kodeKecamatan),
+                                        Map.of("url", "village", "valueCode", kodeKelurahan)
                                     }
                                 )
                             });
@@ -635,24 +651,5 @@ public class RegisterPasien extends JPanel {
             System.out.println(hasil);
             SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
         }
-    }
-
-    private String normalize(String s) {
-        return s.trim().replaceAll("\\s+", " ").toLowerCase();
-    }
-
-    public String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
-        try {
-            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
-            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
-            for (String key : obj.keySet()) {
-                if (normalize(obj.getString(key)).equals(normalize(namaKelurahan))) {
-                    return key; // key di sini harus kode BPS 10 digit
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
     }
 }
