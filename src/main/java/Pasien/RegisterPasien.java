@@ -261,8 +261,20 @@ public class RegisterPasien extends JPanel {
 
                 String tanggalLahir = (hasilTanggalLahir == null || hasilTanggalLahir.isEmpty()) ? "1970-01-01" : hasilTanggalLahir;
 
+                // Ambil kode wilayah dari dropdown
+                String kodeProvinsi = region.getKodeProvinsi(cbProvinsi.getSelectedItem() != null ? cbProvinsi.getSelectedItem().toString() : "");
+                String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
+                String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
+                String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
+                // Gabungkan kode wilayah
+                String alamatGabungan = String.join(",", kodeProvinsi, kodeKota, kodeKecamatan, kodeKelurahan);
+
                 String Query = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,?,?,?)";
-                Object[] parameter = new Object[]{hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir, hasilAlamat, 0, 0, "BPJS"};
+                Object[] parameter = new Object[]{
+                    hasilIdSatuSehat, hasilNIK, hasilNama, hasilGender, tanggalLahir,
+                    alamatGabungan, // <-- alamat dari kode wilayah
+                    0, 0, "BPJS"
+                };
                 Long isInserted = QueryExecutor.executeInsertQueryWithReturnID(Query, parameter);
                 if (isInserted != 404) {
                     JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
@@ -336,13 +348,6 @@ public class RegisterPasien extends JPanel {
         txtGender = new Dropdown(false, true, null);
         txtGender.setItems(List.of("Laki - Laki", "Perempuan", "Tidak Bisa Dijelaskan"), false, true, null);
         formPanel.add(txtGender, gbc);
-
-        gbc.gridx = 0;
-        gbc.gridy = row++;
-        formPanel.add(new JLabel("Alamat"), gbc);
-        gbc.gridx = 1;
-        txtAddress = new CustomTextField("Masukan Alamat", 20, 15, Optional.empty());
-        formPanel.add(txtAddress, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = row++;
@@ -436,10 +441,9 @@ public class RegisterPasien extends JPanel {
             String name = txtName.getText().trim();
             String birthDate = txtAge.getText().trim();
             String gender = (String) txtGender.getSelectedItem();
-            String address = txtAddress.getText().trim();
             String phone = txtPhone.getText().trim();
 
-            if (nik.isEmpty() || name.isEmpty() || birthDate.isEmpty() || gender.isEmpty() || address.isEmpty()) {
+            if (nik.isEmpty() || name.isEmpty() || birthDate.isEmpty() || gender.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Semua field wajib diisi!", "Peringatan", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -449,6 +453,10 @@ public class RegisterPasien extends JPanel {
             String kodeKota = region.getKodeKota(cbKota.getSelectedItem() != null ? cbKota.getSelectedItem().toString() : "", kodeProvinsi);
             String kodeKecamatan = region.getKodeKecamatan(cbKecamatan.getSelectedItem() != null ? cbKecamatan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota);
             String kodeKelurahan = region.getKodeKelurahan(cbKelurahan.getSelectedItem() != null ? cbKelurahan.getSelectedItem().toString() : "", kodeProvinsi, kodeKota, kodeKecamatan);
+            System.out.println("DEBUG: kodeProvinsi=" + kodeProvinsi + ", kodeKota=" + kodeKota + ", kodeKecamatan=" + kodeKecamatan + ", kodeKelurahan=" + kodeKelurahan);
+
+            // Gabungkan kode wilayah
+            String alamatGabungan = String.join(",", kodeProvinsi, kodeKota, kodeKecamatan, kodeKelurahan);
 
             // Ambil string tanggal dari field input (misal dari date picker)
             String inputDate = txtAge.getText().trim();
@@ -511,40 +519,38 @@ public class RegisterPasien extends JPanel {
                             patient.put("birthDate", birthDateSatusehat);
                             patient.put("gender", gender.equalsIgnoreCase("Laki - Laki") ? "male" : "female");
 
+                            // Extension array untuk kode wilayah administrasi
                             Map<String, Object> addressMap = new HashMap<>();
                             addressMap.put("use", "home");
-                            addressMap.put("line", new Object[]{address}); // address = input user, misal "Jl. Contoh No. 123"
-                            addressMap.put("city", "KOTA BANDUNG");
-                            addressMap.put("postalCode", "40123");
+                            addressMap.put("line", new Object[]{ alamatGabungan }); // atau gabungan nama wilayah
+                            addressMap.put("city", cbKota.getSelectedItem().toString());
                             addressMap.put("country", "ID");
+                            // addressMap.put("postalCode", "12950"); // jika ada
 
-                            // Extension array untuk kode wilayah administrasi
                             addressMap.put("extension", new Object[]{
                                 Map.of(
-                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-province",
-                                "valueCode", kodeProvinsi // dari input user
-                                ),
-                                Map.of(
-                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-city",
-                                "valueCode", kodeKota // dari input user
-                                ),
-                                Map.of(
-                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-district",
-                                "valueCode", kodeKecamatan // dari input user
-                                ),
-                                Map.of(
-                                "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode-village",
-                                "valueCode", kodeKelurahan // dari input user
+                                    "url", "https://fhir.kemkes.go.id/r4/StructureDefinition/administrativeCode",
+                                    "extension", new Object[]{
+                                        Map.of("url", "province", "valueCode", kodeProvinsi),   // 2 digit
+                                        Map.of("url", "city", "valueCode", kodeKota),           // 4 digit
+                                        Map.of("url", "district", "valueCode", kodeKecamatan),  // 6 digit
+                                        Map.of("url", "village", "valueCode", kodeKelurahan)    // 10 digit
+                                    }
                                 )
                             });
 
-                            // Masukkan ke array address di body Patient
-                            patient.put("address", new Object[]{addressMap});
+                            // Optionally, you can add address line or other fields if needed
+                            // addressMap.put("line", new Object[]{alamatGabungan});
 
+                            patient.put("address", new Object[]{addressMap});
                             patient.put("telecom", new Object[]{
                                 Map.of("system", "phone", "value", phone)
                             });
                             patient.put("multipleBirthBoolean", false);
+
+                            // Sebelum mengirim ke API, print JSON body-nya
+                            System.out.println("=== JSON BODY YANG DIKIRIM ===");
+                            System.out.println(new JSONObject(patient).toString(2)); // pretty print 2 spasi
 
                             String postResponse = api.post("/Patient", patient);
                             System.out.println("Response POST Patient: " + postResponse);
@@ -645,5 +651,20 @@ public class RegisterPasien extends JPanel {
 
     private String normalize(String s) {
         return s.trim().replaceAll("\\s+", " ").toLowerCase();
+    }
+
+    public String getKodeKelurahan(String namaKelurahan, String kodeProvinsi, String kodeKota, String kodeKecamatan) {
+        try {
+            String path = "src/main/resources/WilayahIndonesia/kelurahan_desa/keldesa-" + kodeProvinsi + "-" + kodeKota + "-" + kodeKecamatan + ".json";
+            JSONObject obj = new JSONObject(Files.readString(Paths.get(path)));
+            for (String key : obj.keySet()) {
+                if (normalize(obj.getString(key)).equals(normalize(namaKelurahan))) {
+                    return key; // key di sini harus kode BPS 10 digit
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 }
