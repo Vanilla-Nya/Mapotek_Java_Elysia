@@ -14,11 +14,15 @@ import java.util.Map;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.util.Base64;
 
 public class ProfileForm extends JPanel {
+
+    java.time.LocalDate mulaiBaru, berakhirBaru;
+
     public ProfileForm(UserSessionCache sessionCache) {
         setLayout(new BorderLayout());
 
@@ -136,7 +140,6 @@ public class ProfileForm extends JPanel {
             String sqlLast = "SELECT MAX(tanggal_berakhir) AS tanggal_berakhir FROM langganan WHERE status = 'aktif' AND is_expired = 0";
             List<Map<String, Object>> res = executor.executeSelectQuery(sqlLast, new Object[]{});
             java.time.LocalDate today = java.time.LocalDate.now();
-            java.time.LocalDate mulaiBaru, berakhirBaru;
 
             if (!res.isEmpty() && res.get(0).get("tanggal_berakhir") != null) {
                 java.sql.Date berakhir = (java.sql.Date) res.get(0).get("tanggal_berakhir");
@@ -222,30 +225,72 @@ public class ProfileForm extends JPanel {
 
                 org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
                 String statusCode = resp.optString("status_code", "");
-                String id = resp.optString("id", "");
+                String transactionStatus = resp.optString("transaction_status", "");
 
-                System.out.println("Status Code: " + statusCode);
-                System.out.println("ID: " + id);
+                if ("200".equals(statusCode) && "settlement".equals(transactionStatus)) {
+                    // Insert langganan ke database
+                    try {
+                        String sqlInsert = "INSERT INTO langganan (order_id, tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, ?, 'aktif')";
+                        
+                        // Ambil tanggal langganan baru sebelum insert
+                        String sqlLast = "SELECT MAX(tanggal_berakhir) AS tanggal_berakhir FROM langganan WHERE status = 'aktif' AND is_expired = 0";
+                        List<Map<String, Object>> res = executor.executeSelectQuery(sqlLast, new Object[]{});
+                        java.time.LocalDate today = java.time.LocalDate.now();
+                        java.time.LocalDate mulaiBaru, berakhirBaru;
+                        boolean masihAktif = false;
 
-                JOptionPane.showMessageDialog(this, "Status Code: " + statusCode + "\nID: " + id);
+                        if (!res.isEmpty() && res.get(0).get("tanggal_berakhir") != null) {
+                            java.sql.Date berakhir = (java.sql.Date) res.get(0).get("tanggal_berakhir");
+                            java.time.LocalDate lastExpired = berakhir.toLocalDate();
+                            if (today.isAfter(lastExpired)) {
+                                mulaiBaru = today;
+                                berakhirBaru = today.plusDays(30);
+                                masihAktif = true;
+                            } else {
+                                mulaiBaru = lastExpired;
+                                berakhirBaru = lastExpired.plusDays(30);
+                            }
+                        } else {
+                            mulaiBaru = today;
+                            berakhirBaru = today.plusDays(30);
+                        }
 
-                if (!"200".equals(statusCode)) {
-                    JOptionPane.showMessageDialog(this, "Transaksi tidak ditemukan atau belum selesai. Status Code: " + statusCode);
-                    return;
-                }
+                        if (masihAktif) {
+                            JOptionPane.showMessageDialog(this, "Langganan Anda masih aktif. Silakan perpanjang setelah masa aktif habis.");
+                            return;
+                        }
 
-                if (resp.has("transaction_status")) {
-                    String status = resp.getString("transaction_status");
-                    if ("settlement".equals(status)) {
-                        String sqlInsert = "INSERT INTO langganan (tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, 'aktif')";
+                        // Cek apakah orderId sudah pernah dipakai
+                        String sqlCheckOrder = "SELECT COUNT(*) AS total FROM langganan WHERE order_id = ?";
+                        List<Map<String, Object>> resOrder = executor.executeSelectQuery(sqlCheckOrder, new Object[]{orderId});
+                        int total = 0;
+                        if (!resOrder.isEmpty()) {
+                            total = ((Number) resOrder.get(0).get("total")).intValue();
+                        }
+                        if (total > 0) {
+                            JOptionPane.showMessageDialog(this, "Transaksi ini sudah pernah digunakan untuk perpanjang langganan.");
+                            return;
+                        }
+
+                        // Insert langganan
                         executor.executeUpdateQuery(sqlInsert, new Object[]{
-                            java.sql.Date.valueOf(java.time.LocalDate.now()),
-                            java.sql.Date.valueOf(java.time.LocalDate.now().plusDays(30))
+                            orderId,
+                            java.sql.Date.valueOf(mulaiBaru),
+                            java.sql.Date.valueOf(berakhirBaru)
                         });
                         JOptionPane.showMessageDialog(this, "Pembayaran sukses! Langganan aktif.");
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Pembayaran belum selesai. Status: " + status);
+                        SwingUtilities.invokeLater(() -> {
+                            removeAll();
+                            add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+                            revalidate();
+                            repaint();
+                        });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Gagal insert langganan: " + ex.getMessage());
                     }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Pembayaran belum selesai atau gagal.\nStatus Code: " + statusCode + "\nTransaction Status: " + transactionStatus);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -369,11 +414,9 @@ private String createMidtransTransaction(String orderId, int amount, String cust
         .getJSONObject(1)
         .getString("url");
         
-    // Buka halaman pembayaran Snap di browser
+    // Buka halaman pembayaran di browser
     Desktop.getDesktop().browse(new java.net.URI(deeplinkUrl));
-
-    
-    return resp.getString("transaction_id");
+    return orderId; // <-- Ubah dari resp.getString("transaction_id") ke orderId
 }
 
     public String orderId; // Simpan orderId di sini
