@@ -70,6 +70,14 @@ public class UserSessionCache {
         return cache.getOrDefault("id_satusehat", null);
     }
 
+    public void setOrderId(String orderId) {
+        cache.put("orderId", orderId);
+    }
+
+    public String getOrderId() {
+        return cache.getOrDefault("orderId", null);
+    }
+
     // Clear All Cache
     public void clearCache() {
         cache.clear();

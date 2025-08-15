@@ -11,6 +11,12 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.util.List;
 import java.util.Map;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
+import java.io.InputStream;
+import java.util.Base64;
 
 public class ProfileForm extends JPanel {
     public ProfileForm(UserSessionCache sessionCache) {
@@ -29,7 +35,8 @@ public class ProfileForm extends JPanel {
         List<Map<String, Object>> results = executor.executeSelectQuery(sql, new Object[]{});
 
         // Ambil data profile dari prosedur
-        String namaLengkap = "";
+        final String[] namaLengkapArr = {""};
+        final String[] emailArr = {""};
         String jenisKelamin = "";
         String alamat = "";
         String noTelp = "";
@@ -41,7 +48,8 @@ public class ProfileForm extends JPanel {
             List<Map<String, Object>> resultsProfile = queryExecutor.executeSelectQuery(sqlProfile, params);
             if (!resultsProfile.isEmpty()) {
                 Map<String, Object> row = resultsProfile.get(0);
-                namaLengkap = row.getOrDefault("nama_lengkap", "").toString();
+                namaLengkapArr[0] = row.getOrDefault("nama_lengkap", "").toString();
+                emailArr[0] = row.getOrDefault("email", "").toString();
                 jenisKelamin = row.getOrDefault("jenis_kelamin", "").toString();
                 alamat = row.getOrDefault("alamat", "").toString();
                 noTelp = row.getOrDefault("no_telp", "").toString();
@@ -63,7 +71,7 @@ public class ProfileForm extends JPanel {
         gbc.gridwidth = 1; gbc.gridy++;
         profilePanel.add(new JLabel("Nama Lengkap:"), gbc);
         gbc.gridx = 1;
-        profilePanel.add(new JTextField(namaLengkap, 15) {{ setEditable(false); }}, gbc);
+        profilePanel.add(new JTextField(namaLengkapArr[0], 15) {{ setEditable(false); }}, gbc);
 
         // Jenis Kelamin
         gbc.gridx = 0; gbc.gridy++;
@@ -148,21 +156,101 @@ public class ProfileForm extends JPanel {
                 berakhirBaru = today.plusDays(30);
             }
 
-            // Insert langganan baru
-            String insertSql = "INSERT INTO langganan (tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, 'aktif')";
-            executor.executeUpdateQuery(insertSql, new Object[]{
-                java.sql.Date.valueOf(mulaiBaru),
-                java.sql.Date.valueOf(berakhirBaru)
-            });
-            JOptionPane.showMessageDialog(this, "Langganan berhasil diperpanjang!");
+            try {
+                String orderId = "ORDER-" + System.currentTimeMillis();
+                int amount = 50000; // nominal langganan
+                String customerName = namaLengkapArr[0];
+                String customerEmail = emailArr[0]; // ambil dari profile user
+
+                String token = createMidtransTransaction(orderId, amount, customerName, customerEmail);
+
+                // Simpan orderId untuk keperluan cek status pembayaran
+                // Misal simpan di variabel kelas atau di tempat lain yang sesuai
+                this.orderId = orderId;
+                sessionCache.setOrderId(orderId); // Simpan orderId ke sessionCache
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showToast(this, "Gagal membuat transaksi Midtrans!");
+            }
 
             // Refresh panel agar status langganan ter-update
             SwingUtilities.invokeLater(() -> {
                 removeAll();
                 add(new ProfileForm(sessionCache), BorderLayout.CENTER);
+                System.out.println(orderId);
                 revalidate();
                 repaint();
             });
+        });
+
+        // Tombol cek status pembayaran
+        JButton btnCekStatus = new JButton("Cek Status Pembayaran");
+        btnCekStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCekStatus.addActionListener(e -> {
+            String orderId = sessionCache.getOrderId(); // atau this.orderId jika tidak refresh panel
+            if (orderId == null || orderId.isEmpty()) {
+                System.out.println(orderId);
+                JOptionPane.showMessageDialog(this, "Order ID tidak ditemukan. Silakan lakukan pembayaran terlebih dahulu.");
+                return;
+            }
+            try {
+                String serverKey = "Mid-server-Z1tYnv3xJ_OsSMsqNQX5h3nP";
+                String authString = serverKey + ":";
+                String encodedAuth = Base64.getEncoder().encodeToString(authString.getBytes(StandardCharsets.UTF_8));
+                URL url = new URL("https://api.sandbox.midtrans.com/v2/" + orderId + "/status");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+                conn.setRequestProperty("Content-Type", "application/json");
+                System.out.println(orderId);
+
+                int responseCode = conn.getResponseCode();
+                InputStream is;
+                if (responseCode == 200) {
+                    is = conn.getInputStream();
+                } else {
+                    is = conn.getErrorStream();
+                }
+
+                StringBuilder sb = new StringBuilder();
+                int ch;
+                while ((ch = is.read()) != -1) sb.append((char) ch);
+                is.close();
+
+                System.out.println("Midtrans status response: " + sb.toString());
+                System.out.println("HTTP Response Code: " + responseCode);
+
+                org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
+                String statusCode = resp.optString("status_code", "");
+                String id = resp.optString("id", "");
+
+                System.out.println("Status Code: " + statusCode);
+                System.out.println("ID: " + id);
+
+                JOptionPane.showMessageDialog(this, "Status Code: " + statusCode + "\nID: " + id);
+
+                if (!"200".equals(statusCode)) {
+                    JOptionPane.showMessageDialog(this, "Transaksi tidak ditemukan atau belum selesai. Status Code: " + statusCode);
+                    return;
+                }
+
+                if (resp.has("transaction_status")) {
+                    String status = resp.getString("transaction_status");
+                    if ("settlement".equals(status)) {
+                        String sqlInsert = "INSERT INTO langganan (tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, 'aktif')";
+                        executor.executeUpdateQuery(sqlInsert, new Object[]{
+                            java.sql.Date.valueOf(java.time.LocalDate.now()),
+                            java.sql.Date.valueOf(java.time.LocalDate.now().plusDays(30))
+                        });
+                        JOptionPane.showMessageDialog(this, "Pembayaran sukses! Langganan aktif.");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Pembayaran belum selesai. Status: " + status);
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Gagal cek status pembayaran!");
+            }
         });
 
         // Tambahkan ke panel langganan
@@ -174,6 +262,7 @@ public class ProfileForm extends JPanel {
         langgananPanel.add(lblSisa);
         langgananPanel.add(Box.createVerticalStrut(15));
         langgananPanel.add(btnPerpanjang);
+        langgananPanel.add(btnCekStatus);
         langgananPanel.add(Box.createVerticalGlue());
 
         // Panel pembungkus agar card di tengah
@@ -234,4 +323,58 @@ public class ProfileForm extends JPanel {
         // Timer untuk auto-close
         new Timer(1500, e -> toast.dispose()).start();
     }
+
+private String createMidtransTransaction(String orderId, int amount, String customerName, String customerEmail) throws Exception {
+    String serverKey = "Mid-server-Z1tYnv3xJ_OsSMsqNQX5h3nP";
+    String auth = Base64.getEncoder().encodeToString((serverKey + ":").getBytes());
+    URL url = new URL("https://api.sandbox.midtrans.com/v2/charge");
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("Authorization", "Basic " + auth);
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setDoOutput(true);
+
+    // contoh payment_type bank_transfer BCA
+    String json = "{"
+        + "\"payment_type\":\"gopay\","
+        + "\"transaction_details\":{"
+        + "\"order_id\":\"" + orderId + "\","
+        + "\"gross_amount\":" + amount
+        + "},"
+        + "\"bank_transfer\":{"
+        + "\"bank\":\"bca\""
+        + "},"
+        + "\"customer_details\":{"
+        + "\"first_name\":\"" + customerName + "\","
+        + "\"email\":\"" + customerEmail + "\""
+        + "}"
+        + "}";
+
+    try (OutputStream os = conn.getOutputStream()) {
+        os.write(json.getBytes());
+    }
+
+    InputStream is = conn.getInputStream();
+    StringBuilder sb = new StringBuilder();
+    int ch;
+    while ((ch = is.read()) != -1) sb.append((char) ch);
+    is.close();
+
+    System.out.println("Midtrans response: " + sb.toString());
+    System.out.println("HTTP Response Code: " + conn.getResponseCode());
+
+    // Ambil transaction_id dari response JSON
+    org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
+    String deeplinkUrl = resp.getJSONArray("actions")
+        .getJSONObject(1)
+        .getString("url");
+        
+    // Buka halaman pembayaran Snap di browser
+    Desktop.getDesktop().browse(new java.net.URI(deeplinkUrl));
+
+    
+    return resp.getString("transaction_id");
+}
+
+    public String orderId; // Simpan orderId di sini
 }
