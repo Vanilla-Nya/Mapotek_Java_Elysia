@@ -197,10 +197,10 @@ public class ProfileForm extends JPanel {
                 return;
             }
             try {
-                String serverKey = "Mid-server-Z1tYnv3xJ_OsSMsqNQX5h3nP";
+                String serverKey = "Mid-server-LFMmTQZfFPK-B8AmLW1g4V-m";
                 String authString = serverKey + ":";
                 String encodedAuth = Base64.getEncoder().encodeToString(authString.getBytes(StandardCharsets.UTF_8));
-                URL url = new URL("https://api.sandbox.midtrans.com/v2/" + orderId + "/status");
+                URL url = new URL("https://api.midtrans.com/v2/" + orderId + "/status");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
@@ -370,9 +370,9 @@ public class ProfileForm extends JPanel {
     }
 
 private String createMidtransTransaction(String orderId, int amount, String customerName, String customerEmail) throws Exception {
-    String serverKey = "Mid-server-Z1tYnv3xJ_OsSMsqNQX5h3nP";
+    String serverKey = "Mid-server-LFMmTQZfFPK-B8AmLW1g4V-m";
     String auth = Base64.getEncoder().encodeToString((serverKey + ":").getBytes());
-    URL url = new URL("https://api.sandbox.midtrans.com/v2/charge");
+    URL url = new URL("https://api.midtrans.com/v2/charge");
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");
     conn.setRequestProperty("Authorization", "Basic " + auth);
@@ -381,19 +381,16 @@ private String createMidtransTransaction(String orderId, int amount, String cust
 
     // contoh payment_type bank_transfer BCA
     String json = "{"
-        + "\"payment_type\":\"gopay\","
-        + "\"transaction_details\":{"
-        + "\"order_id\":\"" + orderId + "\","
-        + "\"gross_amount\":" + amount
-        + "},"
-        + "\"bank_transfer\":{"
-        + "\"bank\":\"bca\""
-        + "},"
-        + "\"customer_details\":{"
-        + "\"first_name\":\"" + customerName + "\","
-        + "\"email\":\"" + customerEmail + "\""
-        + "}"
-        + "}";
+    + "\"payment_type\":\"gopay\","
+    + "\"transaction_details\":{"
+    + "\"order_id\":\"" + orderId + "\","
+    + "\"gross_amount\":" + amount
+    + "},"
+    + "\"customer_details\":{"
+    + "\"first_name\":\"" + customerName + "\","
+    + "\"email\":\"" + customerEmail + "\""
+    + "}"
+    + "}";
 
     try (OutputStream os = conn.getOutputStream()) {
         os.write(json.getBytes());
@@ -411,7 +408,7 @@ private String createMidtransTransaction(String orderId, int amount, String cust
     // Ambil transaction_id dari response JSON
     org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
     String deeplinkUrl = resp.getJSONArray("actions")
-        .getJSONObject(1)
+        .getJSONObject(0)
         .getString("url");
         
     // Buka halaman pembayaran di browser
