@@ -9,6 +9,7 @@ import Components.CustomCard;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Clipboard;
 import java.util.List;
 import java.util.Map;
 import java.net.HttpURLConnection;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.util.Base64;
+import java.security.MessageDigest;
 
 public class ProfileForm extends JPanel {
 
@@ -160,27 +162,26 @@ public class ProfileForm extends JPanel {
             }
 
             try {
-                String orderId = "ORDER-" + System.currentTimeMillis();
-                int amount = 50000; // nominal langganan
+                String merchantOrderId = "ORDER-" + System.currentTimeMillis();
+                int amount = 150000; // nominal langganan
                 String customerName = namaLengkapArr[0];
                 String customerEmail = emailArr[0]; // ambil dari profile user
 
-                String token = createMidtransTransaction(orderId, amount, customerName, customerEmail);
+                String reference = createDuitkuTransaction(merchantOrderId, amount, customerName, customerEmail);
 
-                // Simpan orderId untuk keperluan cek status pembayaran
-                // Misal simpan di variabel kelas atau di tempat lain yang sesuai
-                this.orderId = orderId;
-                sessionCache.setOrderId(orderId); // Simpan orderId ke sessionCache
+                // Simpan merchantOrderId untuk keperluan cek status pembayaran
+                this.merchantOrderId = merchantOrderId;
+                sessionCache.setOrderId(merchantOrderId); // Simpan merchantOrderId ke sessionCache
             } catch (Exception ex) {
                 ex.printStackTrace();
-                showToast(this, "Gagal membuat transaksi Midtrans!");
+                showToast(this, "Gagal membuat transaksi Duitku!");
             }
 
             // Refresh panel agar status langganan ter-update
             SwingUtilities.invokeLater(() -> {
                 removeAll();
                 add(new ProfileForm(sessionCache), BorderLayout.CENTER);
-                System.out.println(orderId);
+                System.out.println(merchantOrderId);
                 revalidate();
                 repaint();
             });
@@ -190,22 +191,36 @@ public class ProfileForm extends JPanel {
         JButton btnCekStatus = new JButton("Cek Status Pembayaran");
         btnCekStatus.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnCekStatus.addActionListener(e -> {
-            String orderId = sessionCache.getOrderId(); // atau this.orderId jika tidak refresh panel
-            if (orderId == null || orderId.isEmpty()) {
-                System.out.println(orderId);
+            String merchantOrderId = sessionCache.getOrderId(); // atau this.merchantOrderId jika tidak refresh panel
+            if (merchantOrderId == null || merchantOrderId.isEmpty()) {
+                System.out.println(merchantOrderId);
                 JOptionPane.showMessageDialog(this, "Order ID tidak ditemukan. Silakan lakukan pembayaran terlebih dahulu.");
                 return;
             }
             try {
-                String serverKey = "Mid-server-LFMmTQZfFPK-B8AmLW1g4V-m";
-                String authString = serverKey + ":";
-                String encodedAuth = Base64.getEncoder().encodeToString(authString.getBytes(StandardCharsets.UTF_8));
-                URL url = new URL("https://api.midtrans.com/v2/" + orderId + "/status");
+                String merchantCode = "DS24853"; // Ganti dengan merchant code Duitku Anda
+                String apiKey = "605d62af77cf1f18830c961b80cdbe9f"; // Ganti dengan API key Duitku Anda
+                
+                // Create signature for Duitku
+                String signature = generateDuitkuSignature(merchantCode, merchantOrderId, apiKey);
+                
+                URL url = new URL("https://sandbox.duitku.com/webapi/api/merchant/transactionStatus");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+                conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
-                System.out.println(orderId);
+                conn.setDoOutput(true);
+
+                String json = "{"
+                + "\"merchantCode\":\"" + merchantCode + "\","
+                + "\"merchantOrderId\":\"" + merchantOrderId + "\","
+                + "\"signature\":\"" + signature + "\""
+                + "}";
+
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(json.getBytes());
+                }
+
+                System.out.println(merchantOrderId);
 
                 int responseCode = conn.getResponseCode();
                 InputStream is;
@@ -220,14 +235,14 @@ public class ProfileForm extends JPanel {
                 while ((ch = is.read()) != -1) sb.append((char) ch);
                 is.close();
 
-                System.out.println("Midtrans status response: " + sb.toString());
+                System.out.println("Duitku status response: " + sb.toString());
                 System.out.println("HTTP Response Code: " + responseCode);
 
                 org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
-                String statusCode = resp.optString("status_code", "");
-                String transactionStatus = resp.optString("transaction_status", "");
+                String statusCode = resp.optString("statusCode", "");
+                String statusMessage = resp.optString("statusMessage", "");
 
-                if ("200".equals(statusCode) && "settlement".equals(transactionStatus)) {
+                if ("00".equals(statusCode) && "SUCCESS".equals(statusMessage)) {
                     // Insert langganan ke database
                     try {
                         String sqlInsert = "INSERT INTO langganan (order_id, tanggal_mulai, tanggal_berakhir, status) VALUES (?, ?, ?, 'aktif')";
@@ -260,9 +275,9 @@ public class ProfileForm extends JPanel {
                             return;
                         }
 
-                        // Cek apakah orderId sudah pernah dipakai
+                        // Cek apakah merchantOrderId sudah pernah dipakai
                         String sqlCheckOrder = "SELECT COUNT(*) AS total FROM langganan WHERE order_id = ?";
-                        List<Map<String, Object>> resOrder = executor.executeSelectQuery(sqlCheckOrder, new Object[]{orderId});
+                        List<Map<String, Object>> resOrder = executor.executeSelectQuery(sqlCheckOrder, new Object[]{merchantOrderId});
                         int total = 0;
                         if (!resOrder.isEmpty()) {
                             total = ((Number) resOrder.get(0).get("total")).intValue();
@@ -274,7 +289,7 @@ public class ProfileForm extends JPanel {
 
                         // Insert langganan
                         executor.executeUpdateQuery(sqlInsert, new Object[]{
-                            orderId,
+                            merchantOrderId,
                             java.sql.Date.valueOf(mulaiBaru),
                             java.sql.Date.valueOf(berakhirBaru)
                         });
@@ -290,7 +305,7 @@ public class ProfileForm extends JPanel {
                         JOptionPane.showMessageDialog(this, "Gagal insert langganan: " + ex.getMessage());
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Pembayaran belum selesai atau gagal.\nStatus Code: " + statusCode + "\nTransaction Status: " + transactionStatus);
+                    JOptionPane.showMessageDialog(this, "Pembayaran belum selesai atau gagal.\nStatus Code: " + statusCode + "\nStatus Message: " + statusMessage);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -369,52 +384,101 @@ public class ProfileForm extends JPanel {
         new Timer(1500, e -> toast.dispose()).start();
     }
 
-private String createMidtransTransaction(String orderId, int amount, String customerName, String customerEmail) throws Exception {
-    String serverKey = "Mid-server-LFMmTQZfFPK-B8AmLW1g4V-m";
-    String auth = Base64.getEncoder().encodeToString((serverKey + ":").getBytes());
-    URL url = new URL("https://api.midtrans.com/v2/charge");
-    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("Authorization", "Basic " + auth);
-    conn.setRequestProperty("Content-Type", "application/json");
-    conn.setDoOutput(true);
-
-    // contoh payment_type bank_transfer BCA
-    String json = "{"
-    + "\"payment_type\":\"gopay\","
-    + "\"transaction_details\":{"
-    + "\"order_id\":\"" + orderId + "\","
-    + "\"gross_amount\":" + amount
-    + "},"
-    + "\"customer_details\":{"
-    + "\"first_name\":\"" + customerName + "\","
-    + "\"email\":\"" + customerEmail + "\""
-    + "}"
-    + "}";
-
-    try (OutputStream os = conn.getOutputStream()) {
-        os.write(json.getBytes());
+    // Helper method to generate MD5 hash for Duitku signature
+    private String generateMD5(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] digest = md.digest(input.getBytes());
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
-    InputStream is = conn.getInputStream();
-    StringBuilder sb = new StringBuilder();
-    int ch;
-    while ((ch = is.read()) != -1) sb.append((char) ch);
-    is.close();
+    // Generate signature for Duitku transaction status
+    private String generateDuitkuSignature(String merchantCode, String merchantOrderId, String apiKey) throws Exception {
+        String signatureString = merchantCode + merchantOrderId + apiKey;
+        return generateMD5(signatureString);
+    }
 
-    System.out.println("Midtrans response: " + sb.toString());
-    System.out.println("HTTP Response Code: " + conn.getResponseCode());
+    // Generate signature for Duitku create transaction
+    private String generateCreateTransactionSignature(String merchantCode, String merchantOrderId, int paymentAmount, String apiKey) throws Exception {
+        String signatureString = merchantCode + merchantOrderId + paymentAmount + apiKey;
+        return generateMD5(signatureString);
+    }
 
-    // Ambil transaction_id dari response JSON
-    org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
-    String deeplinkUrl = resp.getJSONArray("actions")
-        .getJSONObject(0)
-        .getString("url");
+    private String createDuitkuTransaction(String merchantOrderId, int amount, String customerName, String customerEmail) throws Exception {
+        String merchantCode = "DS24853"; 
+        String apiKey = "605d62af77cf1f18830c961b80cdbe9f"; 
+        String paymentMethod = "A1"; 
         
-    // Buka halaman pembayaran di browser
-    Desktop.getDesktop().browse(new java.net.URI(deeplinkUrl));
-    return orderId; // <-- Ubah dari resp.getString("transaction_id") ke orderId
-}
+        // Generate signature
+        String signature = generateCreateTransactionSignature(merchantCode, merchantOrderId, amount, apiKey);
+        
+        URL url = new URL("https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
 
-    public String orderId; // Simpan orderId di sini
+        String json = "{"
+        + "\"merchantCode\":\"" + merchantCode + "\","
+        + "\"paymentAmount\":" + amount + ","
+        + "\"paymentMethod\":\"" + paymentMethod + "\","
+        + "\"merchantOrderId\":\"" + merchantOrderId + "\","
+        + "\"productDetails\":\"Perpanjang Langganan 30 Hari\","
+        + "\"customerName\":\"" + customerName + "\","
+        + "\"email\":\"" + customerEmail + "\","
+        + "\"callbackUrl\":\"https://your-domain.com/callback\","
+        + "\"returnUrl\":\"https://your-domain.com/return\","
+        + "\"signature\":\"" + signature + "\""
+        + "}";
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(json.getBytes());
+        }
+
+        InputStream is = conn.getInputStream();
+        StringBuilder sb = new StringBuilder();
+        int ch;
+        while ((ch = is.read()) != -1) sb.append((char) ch);
+        is.close();
+
+        System.out.println("Duitku response: " + sb.toString());
+        System.out.println("HTTP Response Code: " + conn.getResponseCode());
+
+        // Parse response JSON
+        org.json.JSONObject resp = new org.json.JSONObject(sb.toString());
+        String statusCode = resp.optString("statusCode", "");
+        
+        if ("00".equals(statusCode)) {
+            String reference = resp.optString("reference", "");
+            String vaNumber = resp.optString("vaNumber", "");
+            String paymentMethodDuitku = resp.optString("paymentMethod", "");
+            String amountDuitku = resp.optString("amount", "");
+            
+            // Show virtual account details to user
+            String message = "Pembayaran Virtual Account berhasil dibuat!\n\n" +
+                           "Metode Pembayaran: " + paymentMethod + "\n" +
+                           "Nomor Virtual Account: " + vaNumber + "\n" +
+                           "Jumlah Transfer: Rp " + String.format("%,d", amount) + "\n" +
+                           "Reference: " + reference + "\n\n" +
+                           "Silakan transfer ke nomor VA di atas,\n" +
+                           "lalu klik 'Cek Status Pembayaran' untuk konfirmasi.";
+            
+            JOptionPane.showMessageDialog(this, message, "Informasi Pembayaran", JOptionPane.INFORMATION_MESSAGE);
+            
+            // Copy VA number to clipboard for user convenience
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                new StringSelection(vaNumber), null);
+            
+            showToast(this, "Nomor VA telah disalin ke clipboard!");
+            
+            return reference;
+        } else {
+            throw new Exception("Failed to create Duitku transaction: " + resp.optString("statusMessage", "Unknown error"));
+        }
+    }
+
+    public String merchantOrderId; // Simpan merchantOrderId di sini
 }
