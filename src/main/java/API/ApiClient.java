@@ -25,13 +25,13 @@ import Global.UserSessionCache;
 public class ApiClient {
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
     private final Gson gson = new Gson();
-    private final String baseUrl = "https://api-satusehat-stg.dto.kemkes.go.id/fhir-r4/v1";
-    private final String authUrl = "https://api-satusehat-stg.dto.kemkes.go.id/oauth2/v1";
-    private final String consentUrl = "https://api-satusehat-stg.dto.kemkes.go.id/consent/v1";
+    private final String baseUrl = "https://api-satusehat.kemkes.go.id/fhir-r4/v1";
+    private final String authUrl = "https://api-satusehat.kemkes.go.id/oauth2/v1";  
+    private final String consentUrl = "https://api-satusehat.kemkes.go.id/consent/v1";
     private final java.util.Map<String, String> requiredAuthentication = java.util.Map.of(
-        "Org_id", "7b4db35e-ea4e-4b46-b389-095472942d34",
-        "client_id", "rsqvpGQYeTGqbgpLHgWSVsbfcCADWJzsTVnUBMxlTXLYgAyt",
-        "client_secret", "w5m5AM61EIzJuSwlhSS8OOyuE1EaTrQXuFxp0uAKf02pcWAReXyTb96Ze2NTGNQ1"
+        "Org_id", "100062510",
+        "client_id", "ySIPFQBNPU16CUAqJLRVerNZgOtJLr3R9yxOOx7SfuebChe5",
+        "client_secret", "MOM8iBktySk0YbMSHd7VnEGCWhKcNgcbYW3dJXDO2uUD6pxA3KiA8rbdjpNqB03J"
     );
 
     // GET request
@@ -127,7 +127,11 @@ public class ApiClient {
     }
 
     public static String getOrgId() {
-        return "7b4db35e-ea4e-4b46-b389-095472942d34";
+        // prefer env var, fallback ke value yang digunakan untuk authentication
+        String env = System.getenv("SATUSEHAT_ORG_ID");
+        if (env != null && !env.isBlank()) return env;
+        // keep in sync with requiredAuthentication "Org_id"
+        return "100062510";
     }
 
     public static void main(String[] args) {

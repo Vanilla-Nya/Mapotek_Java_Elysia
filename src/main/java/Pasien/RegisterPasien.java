@@ -44,7 +44,6 @@ import Helpers.Region;
 import Helpers.TypeNumberHelper;
 
 public class RegisterPasien extends JPanel {
-
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
     private final Region region = new Region();
     private CustomTextField txtnik, txtAge, txtName, txtAddress, txtPhone, txtRFID, txtBPJS[];
@@ -488,8 +487,9 @@ public class RegisterPasien extends JPanel {
 
                     if (entries != null && entries.length() > 0) {
                         // Pasien ditemukan by NIK
-                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Pasien sudah terdaftar di SATUSEHAT!", "Info", JOptionPane.INFORMATION_MESSAGE));
-                        // ...ambil id_satusehat, simpan ke DB lokal...
+                        JSONObject resource = entries.getJSONObject(0).getJSONObject("resource");
+                        // panggil helper untuk simpan/update
+                        saveOrUpdatePatientFromResource(resource);
                     } else {
                         // 2. Cari pasien by Nama, Tgl Lahir, Gender
                         String url = "/Patient?name=" + java.net.URLEncoder.encode(name, "UTF-8")
@@ -501,8 +501,8 @@ public class RegisterPasien extends JPanel {
 
                         if (entries2 != null && entries2.length() > 0) {
                             // Pasien ditemukan by Nama, Tgl Lahir, Gender
-                            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Pasien sudah terdaftar di SATUSEHAT!", "Info", JOptionPane.INFORMATION_MESSAGE));
-                            // ...ambil id_satusehat, simpan ke DB lokal...
+                            JSONObject resource = entries2.getJSONObject(0).getJSONObject("resource");
+                            saveOrUpdatePatientFromResource(resource);
                         } else {
                             // 3. Tidak ditemukan, lakukan POST ke SATUSEHAT
                             Map<String, Object> patient = new HashMap<>();
@@ -562,14 +562,14 @@ public class RegisterPasien extends JPanel {
                             JSONObject postJson = new JSONObject(postResponse);
                             if (postJson.has("id")) {
                                 String idSatusehat = postJson.getString("id");
-                                SwingUtilities.invokeLater(() -> {
-                                    JOptionPane.showMessageDialog(this,
-                                            "Pasien berhasil didaftarkan ke SATUSEHAT!\nID SATUSEHAT: " + idSatusehat,
-                                            "Sukses",
-                                            JOptionPane.INFORMATION_MESSAGE
-                                    );
-                                });
-                                // ...ambil id_satusehat, simpan ke DB lokal...
+                                String patientFull = api.get("/Patient/" + idSatusehat);
+                                JSONObject fullJson = new JSONObject(patientFull);
+                                if (fullJson.has("resource")) {
+                                    saveOrUpdatePatientFromResource(fullJson.getJSONObject("resource"));
+                                } else {
+                                    // kadang direct resource returned di root
+                                    saveOrUpdatePatientFromResource(fullJson);
+                                }
                             } else {
                                 SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Gagal mendaftarkan pasien ke SATUSEHAT!", "Error", JOptionPane.ERROR_MESSAGE));
                             }
@@ -604,46 +604,81 @@ public class RegisterPasien extends JPanel {
         if (entries != null && entries.length() > 0) {
             JSONObject resource = entries.getJSONObject(0).getJSONObject("resource");
 
-            // Ambil id SATUSEHAT
-            hasilIdSatuSehat = resource.optString("id", null);
+            // Ambil data dari resource
+            String idSatusehat = resource.optString("id", null);
+            String namaSatusehat = resource.getJSONArray("name").getJSONObject(0).optString("text");
+            String tanggalLahirSatusehat = resource.optString("birthDate", "");
+            String genderApi = resource.optString("gender", "");
+            String jenisKelamin = "Tidak Bisa Dijelaskan";
+            if ("male".equalsIgnoreCase(genderApi)) jenisKelamin = "Laki - Laki";
+            else if ("female".equalsIgnoreCase(genderApi)) jenisKelamin = "Perempuan";
 
-            hasilNama = resource.getJSONArray("name").getJSONObject(0).optString("text");
-            hasilTanggalLahir = resource.optString("birthDate");
-            String genderApi = resource.optString("gender");
-            // Mapping gender
-            if ("male".equalsIgnoreCase(genderApi)) {
-                hasilGender = "Laki - Laki";
-            } else if ("female".equalsIgnoreCase(genderApi)) {
-                hasilGender = "Perempuan";
-            } else {
-                hasilGender = "Tidak Bisa Dijelaskan";
-            }
-
-            hasilAlamat = "";
-            if (resource.has("address")) {
-                JSONObject address = resource.getJSONArray("address").getJSONObject(0);
-                hasilAlamat = address.getJSONArray("line").getString(0);
-            }
-
-            hasilNIK = "";
-            JSONArray identifiers = resource.getJSONArray("identifier");
-            for (int i = 0; i < identifiers.length(); i++) {
-                JSONObject id = identifiers.getJSONObject(i);
-                if (id.getString("system").equals("https://fhir.kemkes.go.id/id/nik")) {
-                    hasilNIK = id.getString("value");
-                    break;
+            String nikSatusehat = "";
+            if (resource.has("identifier")) {
+                JSONArray identifiers = resource.getJSONArray("identifier");
+                for (int i = 0; i < identifiers.length(); i++) {
+                    JSONObject idObj = identifiers.getJSONObject(i);
+                    if ("https://fhir.kemkes.go.id/id/nik".equals(idObj.optString("system"))) {
+                        nikSatusehat = idObj.optString("value", "");
+                        break;
+                    }
                 }
             }
 
-            String hasil = "=== Data Pasien ===\n"
-                    + "Nama         : " + hasilNama + "\n"
-                    + "Tanggal Lahir: " + hasilTanggalLahir + "\n"
-                    + "Jenis Kelamin: " + hasilGender + "\n"
-                    + "NIK          : " + hasilNIK + "\n"
-                    + "Alamat       : " + hasilAlamat;
-            System.out.println(hasil);
+            String alamatSatusehat = "";
+            if (resource.has("address")) {
+                try {
+                    alamatSatusehat = resource.getJSONArray("address").getJSONObject(0).optString("line", "");
+                } catch (Exception ignore) {}
+            }
 
-            SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
+            final String finalIdSatusehat = idSatusehat;
+            final String finalNik = nikSatusehat;
+            final String finalNama = namaSatusehat;
+            final String finalTgl = tanggalLahirSatusehat.isEmpty() ? "1970-01-01" : tanggalLahirSatusehat;
+            final String finalGender = jenisKelamin;
+            final String finalAlamat = alamatSatusehat;
+
+            // Simpan/Update ke DB lokal
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    // Cek apakah sudah ada berdasarkan id_satusehat atau nik
+                    String sqlCheck = "SELECT id FROM pasien WHERE id_satusehat = ? OR nik = ?";
+                    QueryExecutor queryExecutor = new QueryExecutor();
+                    List<Map<String, Object>> checkRes = queryExecutor.executeSelectQuery(sqlCheck, new Object[]{finalIdSatusehat, finalNik});
+                    if (checkRes != null && !checkRes.isEmpty()) {
+                        // Sudah ada -> lakukan update (opsional)
+                        String sqlUpdate = "UPDATE pasien SET id_satusehat = ?, nik = ?, nama = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id = ?";
+                        Object existingId = checkRes.get(0).get("id");
+                        QueryExecutor.executeUpdateQuery(sqlUpdate, new Object[]{
+                            finalIdSatusehat, finalNik, finalNama, finalGender, finalTgl, finalAlamat, existingId
+                        });
+                        // Panggil listener dengan data terupdate
+                        if (listener != null) {
+                            listener.onPasienAdded(existingId.toString(), finalNik, finalNama, finalTgl, finalGender, "0", finalAlamat, null);
+                        }
+                        JOptionPane.showMessageDialog(this, "Pasien sudah ada di SATUSEHAT. Data lokal diperbarui.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        // Belum ada -> insert
+                        String sqlInsert = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,?,?,?)";
+                        Object[] params = new Object[]{ finalIdSatusehat, finalNik, finalNama, finalGender, finalTgl, finalAlamat, 0, 0, "BPJS" };
+                        Long newId = QueryExecutor.executeInsertQueryWithReturnID(sqlInsert, params);
+                        if (newId != 404) {
+                            if (listener != null) {
+                                listener.onPasienAdded(newId.toString(), finalNik, finalNama, finalTgl, finalGender, "0", finalAlamat, null);
+                            }
+                            JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan ke database lokal.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                            // Tutup modal jika perlu
+                            ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Gagal menyimpan data pasien ke database lokal.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Error saat menyimpan pasien: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
         } else {
             hasilIdSatuSehat = null;
             hasilNIK = hasilNama = hasilTanggalLahir = hasilGender = hasilAlamat = null;
@@ -651,5 +686,128 @@ public class RegisterPasien extends JPanel {
             System.out.println(hasil);
             SwingUtilities.invokeLater(() -> hasilArea.setText(hasil));
         }
+    }
+
+    // tambahkan method ini di dalam class RegisterPasien
+    private void saveOrUpdatePatientFromResource(JSONObject resource) {
+        String idSatusehat = resource.optString("id", null);
+        String namaSatusehat = resource.optJSONArray("name") != null
+                ? resource.getJSONArray("name").getJSONObject(0).optString("text", "")
+                : "";
+        String tanggalLahirSatusehat = resource.optString("birthDate", "");
+        String genderApi = resource.optString("gender", "");
+        String jenisKelamin = "Tidak Bisa Dijelaskan";
+        if ("male".equalsIgnoreCase(genderApi)) jenisKelamin = "Laki - Laki";
+        else if ("female".equalsIgnoreCase(genderApi)) jenisKelamin = "Perempuan";
+
+        String nikSatusehat = "";
+        if (resource.has("identifier")) {
+            JSONArray identifiers = resource.getJSONArray("identifier");
+            for (int i = 0; i < identifiers.length(); i++) {
+                JSONObject idObj = identifiers.getJSONObject(i);
+                if ("https://fhir.kemkes.go.id/id/nik".equals(idObj.optString("system"))) {
+                    nikSatusehat = idObj.optString("value", "");
+                    break;
+                }
+            }
+        }
+
+        String alamatSatusehat = "";
+        if (resource.has("address")) {
+            try {
+                alamatSatusehat = resource.getJSONArray("address").getJSONObject(0).optString("line", "");
+            } catch (Exception ignore) {}
+        }
+
+        // Ambil input form jika ada (prioritas)
+        String formTanggal = null;
+        try {
+            if (txtAge != null) {
+                String inputDate = txtAge.getText().trim();
+                if (!inputDate.isEmpty()) {
+                    if (inputDate.contains("/")) {
+                        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                        LocalDate date = LocalDate.parse(inputDate, inputFormatter);
+                        formTanggal = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                    } else {
+                        LocalDate date = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                        formTanggal = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
+
+        String formGender = null;
+        try {
+            if (txtGender != null && txtGender.getSelectedItem() != null) {
+                formGender = txtGender.getSelectedItem().toString();
+            }
+        } catch (Exception ignore) {}
+
+        final String finalIdSatusehat = idSatusehat;
+        final String finalNik = nikSatusehat;
+        final String finalNama = namaSatusehat;
+        final String finalTgl = (formTanggal != null && !formTanggal.isEmpty()) ? formTanggal
+                : (tanggalLahirSatusehat.isEmpty() ? "1970-01-01" : tanggalLahirSatusehat);
+        final String finalGender = (formGender != null && !formGender.isEmpty()) ? formGender : jenisKelamin;
+        final String finalAlamat = alamatSatusehat;
+
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // Cek apakah sudah ada berdasarkan id_satusehat atau nik
+                String sqlCheck = "SELECT * FROM pasien WHERE id_satusehat = ? OR nik = ? LIMIT 1";
+                QueryExecutor queryExecutor = new QueryExecutor();
+                List<Map<String, Object>> checkRes = queryExecutor.executeSelectQuery(sqlCheck, new Object[]{finalIdSatusehat, finalNik});
+                if (checkRes != null && !checkRes.isEmpty()) {
+                    // Update berdasarkan id_satusehat/nik (tidak mengasumsikan kolom PK bernama 'id')
+                    String sqlUpdate = "UPDATE pasien SET id_satusehat = ?, nik = ?, nama = ?, jenis_kelamin = ?, tanggal_lahir = ?, alamat = ? WHERE id_satusehat = ? OR nik = ?";
+                    QueryExecutor.executeUpdateQuery(sqlUpdate, new Object[]{
+                        finalIdSatusehat, finalNik, finalNama, finalGender, finalTgl, finalAlamat,
+                        finalIdSatusehat, finalNik
+                    });
+
+                    // Ambil kembali record untuk mendapatkan PK lokal (jika perlu untuk listener)
+                    List<Map<String, Object>> after = queryExecutor.executeSelectQuery(sqlCheck, new Object[]{finalIdSatusehat, finalNik});
+                    Object localId = null;
+                    if (after != null && !after.isEmpty()) {
+                        Map<String, Object> row = after.get(0);
+                        // cari kolom PK umum
+                        String[] candidates = {"id", "id_pasien", "pasien_id", "pk"};
+                        for (String c : candidates) {
+                            if (row.containsKey(c)) {
+                                localId = row.get(c);
+                                break;
+                            }
+                        }
+                        if (localId == null) {
+                            // fallback: ambil value dari kolom pertama
+                            localId = row.values().iterator().next();
+                        }
+                    }
+
+                    if (listener != null) {
+                        listener.onPasienAdded(localId != null ? localId.toString() : "", finalNik, finalNama, finalTgl, finalGender, "0", finalAlamat, null);
+                    }
+                    JOptionPane.showMessageDialog(this, "Pasien sudah ada di SATUSEHAT. Data lokal diperbarui.", "Info", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    // Insert baru, simpan id_satusehat ke kolom id_satusehat
+                    String sqlInsert = "INSERT INTO pasien (id_satusehat, nik, nama, jenis_kelamin, tanggal_lahir, alamat, nomor_bpjs, no_telepon, status) VALUES (?,?,?,?,?,?,?,?,?)";
+                    Object[] params = new Object[]{ finalIdSatusehat, finalNik, finalNama, finalGender, finalTgl, finalAlamat, 0, 0, "BPJS" };
+                    Long newId = QueryExecutor.executeInsertQueryWithReturnID(sqlInsert, params);
+                    if (newId != 404) {
+                        if (listener != null) {
+                            listener.onPasienAdded(newId.toString(), finalNik, finalNama, finalTgl, finalGender, "0", finalAlamat, null);
+                        }
+                        JOptionPane.showMessageDialog(this, "Data pasien berhasil disimpan ke database lokal.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                        ShowModalCenter.closeCenterModal((JFrame) SwingUtilities.getWindowAncestor(this));
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Gagal menyimpan data pasien ke database lokal.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error saat menyimpan pasien: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
 }

@@ -12,6 +12,17 @@ public class ObservationSatusehatApi {
 
     public static boolean createObservation(String idSatusehatPasien, String idEncounterSatusehat, String loincCode, String display, String value, String unit, String idSatusehatDokter) {
         try {
+            // Validasi input dasar
+            if (idSatusehatPasien == null || idSatusehatPasien.isBlank() ||
+                idEncounterSatusehat == null || idEncounterSatusehat.isBlank() ||
+                idSatusehatDokter == null || idSatusehatDokter.isBlank() ||
+                loincCode == null || loincCode.isBlank() ||
+                value == null || value.isBlank()) {
+
+                System.err.println("createObservation: missing required parameter");
+                return false;
+            }
+
             Map<String, Object> observation = new HashMap<>();
             observation.put("resourceType", "Observation");
             observation.put("status", "final");
@@ -42,25 +53,44 @@ public class ObservationSatusehatApi {
                 Map.of("reference", "Practitioner/" + idSatusehatDokter)
             });
 
-            // Gunakan waktu lengkap ISO 8601 (waktu sekarang dengan zona)
-            String effectiveDateTime = ZonedDateTime.now().format(isoFormatter);
-            String issuedDateTime = ZonedDateTime.now().format(isoFormatter);
+            // Gunakan waktu lengkap ISO 8601 (waktu sekarang dengan zona) sekali
+            String nowIso = ZonedDateTime.now().format(isoFormatter);
+            observation.put("effectiveDateTime", nowIso);
+            observation.put("issued", nowIso);
 
-            observation.put("effectiveDateTime", effectiveDateTime);
-            observation.put("issued", issuedDateTime);
+            // valueQuantity: kirim sebagai number
+            double numericValue = Double.parseDouble(value);
+            Map<String, Object> valueQuantity = new HashMap<>();
+            valueQuantity.put("value", numericValue);
+            if (unit != null && !unit.isBlank()) {
+                valueQuantity.put("unit", unit);
+            }
+            valueQuantity.put("system", "http://unitsofmeasure.org");
+            // optional: jangan paksa kode unit jika tidak diketahui
+            if (unit != null && !unit.isBlank()) valueQuantity.put("code", unit);
 
-            observation.put("valueQuantity", Map.of(
-                "value", Double.parseDouble(value),
-                "unit", unit,
-                "system", "http://unitsofmeasure.org",
-                "code", "Cel" // untuk suhu
-            ));
+            observation.put("valueQuantity", valueQuantity);
 
             API.ApiClient api = new API.ApiClient();
             String response = api.post("/Observation", observation);
+
+            // Log full response untuk debugging
+            System.out.println("Response Observation raw: " + response);
+
+            // Pastikan ApiClient.post mengembalikan body (jika non-2xx, body error harus dikembalikan juga)
             org.json.JSONObject json = new org.json.JSONObject(response);
-            System.out.println("Response Observation: " + json);
-            return json.has("id");
+            if (json.has("id")) {
+                System.out.println("Observation created id=" + json.getString("id"));
+                return true;
+            } else {
+                // Tampilkan pesan error jika ada
+                String statusMsg = json.optString("status_message", json.optString("message", json.optString("error", "")));
+                System.err.println("Create Observation failed: " + statusMsg + " - full: " + json.toString());
+                return false;
+            }
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace();
+            return false;
         } catch (Exception ex) {
             ex.printStackTrace();
             return false;
@@ -69,6 +99,13 @@ public class ObservationSatusehatApi {
 
     public static boolean createBloodPressureObservation(String idSatusehatPasien, String idEncounterSatusehat, String idSatusehatDokter, double systolicValue, double diastolicValue) {
         try {
+            if (idSatusehatPasien == null || idSatusehatPasien.isBlank() ||
+                idEncounterSatusehat == null || idEncounterSatusehat.isBlank() ||
+                idSatusehatDokter == null || idSatusehatDokter.isBlank()) {
+                System.err.println("createBloodPressureObservation: missing required parameter");
+                return false;
+            }
+
             Map<String, Object> bpObservation = new HashMap<>();
             bpObservation.put("resourceType", "Observation");
             bpObservation.put("status", "final");
@@ -93,11 +130,10 @@ public class ObservationSatusehatApi {
             bpObservation.put("encounter", Map.of("reference", "Encounter/" + idEncounterSatusehat));
             bpObservation.put("performer", new Object[]{Map.of("reference", "Practitioner/" + idSatusehatDokter)});
 
-            // Tambahkan waktu valid ISO 8601
-            String effectiveDateTime = ZonedDateTime.now().format(isoFormatter);
-            bpObservation.put("effectiveDateTime", effectiveDateTime);
+            String nowIso = ZonedDateTime.now().format(isoFormatter);
+            bpObservation.put("effectiveDateTime", nowIso);
+            bpObservation.put("issued", nowIso);
 
-            // Tambahkan 2 komponen: sistolik dan diastolik
             bpObservation.put("component", new Object[]{
                 Map.of(
                     "code", Map.of("coding", new Object[]{
@@ -107,7 +143,7 @@ public class ObservationSatusehatApi {
                         "value", systolicValue,
                         "unit", "mmHg",
                         "system", "http://unitsofmeasure.org",
-                        "code", "mmHg"
+                        "code", "mm[Hg]"
                     )
                 ),
                 Map.of(
@@ -118,16 +154,22 @@ public class ObservationSatusehatApi {
                         "value", diastolicValue,
                         "unit", "mmHg",
                         "system", "http://unitsofmeasure.org",
-                        "code", "mmHg"
+                        "code", "mm[Hg]"
                     )
                 )
             });
 
             API.ApiClient api = new API.ApiClient();
             String response = api.post("/Observation", bpObservation);
+            System.out.println("Response Blood Pressure Observation raw: " + response);
             org.json.JSONObject json = new org.json.JSONObject(response);
-            System.out.println("Response Blood Pressure Observation: " + json);
-            return json.has("id");
+            if (json.has("id")) {
+                System.out.println("Blood pressure Observation created id=" + json.getString("id"));
+                return true;
+            } else {
+                System.err.println("Create BP Observation failed: " + json.toString());
+                return false;
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             return false;
@@ -142,9 +184,5 @@ public class ObservationSatusehatApi {
             JOptionPane.showMessageDialog(null, "ID SATUSEHAT dokter belum tersedia. Tidak bisa kirim Observation!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        // Contoh penggunaan
-        createObservation("123", "456", "789-8", "Blood Pressure", "120", "mmHg", idSatusehatDokter);
-        createBloodPressureObservation("123", "456", idSatusehatDokter, 120, 80);
     }
 }
