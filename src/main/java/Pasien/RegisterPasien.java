@@ -632,12 +632,24 @@ public class RegisterPasien extends JPanel {
                 } catch (Exception ignore) {}
             }
 
+            // If user already entered NIK / Name in the form, prefer those values
+            String formNik = (txtnik != null && !txtnik.getText().trim().isEmpty()) ? txtnik.getText().trim() : null;
+            String formNama = (txtName != null && !txtName.getText().trim().isEmpty()) ? txtName.getText().trim() : null;
+
             final String finalIdSatusehat = idSatusehat;
-            final String finalNik = nikSatusehat;
-            final String finalNama = namaSatusehat;
+            final String finalNik = formNik != null ? formNik : nikSatusehat;
+            final String finalNama = formNama != null ? formNama : namaSatusehat;
             final String finalTgl = tanggalLahirSatusehat.isEmpty() ? "1970-01-01" : tanggalLahirSatusehat;
             final String finalGender = jenisKelamin;
             final String finalAlamat = alamatSatusehat;
+
+            // Save to class-level fields so btnSimpanDB can use them later
+            hasilIdSatuSehat = finalIdSatusehat;
+            hasilNIK = finalNik;
+            hasilNama = finalNama;
+            hasilTanggalLahir = finalTgl;
+            hasilGender = finalGender;
+            hasilAlamat = finalAlamat;
 
             // Simpan/Update ke DB lokal
             SwingUtilities.invokeLater(() -> {
@@ -744,19 +756,37 @@ public class RegisterPasien extends JPanel {
             }
         } catch (Exception ignore) {}
 
+        // Prefer NIK and Name from text fields when available
+        String formNik = null;
+        try {
+            if (txtnik != null && !txtnik.getText().trim().isEmpty()) formNik = txtnik.getText().trim();
+        } catch (Exception ignore) {}
+        String formNama = null;
+        try {
+            if (txtName != null && !txtName.getText().trim().isEmpty()) formNama = txtName.getText().trim();
+        } catch (Exception ignore) {}
+
         final String finalIdSatusehat = idSatusehat;
-        final String finalNik = nikSatusehat;
-        final String finalNama = namaSatusehat;
+        final String finalNik = formNik != null ? formNik : nikSatusehat;
+        final String finalNama = formNama != null ? formNama : namaSatusehat;
         final String finalTgl = (formTanggal != null && !formTanggal.isEmpty()) ? formTanggal
                 : (tanggalLahirSatusehat.isEmpty() ? "1970-01-01" : tanggalLahirSatusehat);
         final String finalGender = (formGender != null && !formGender.isEmpty()) ? formGender : jenisKelamin;
         final String finalAlamat = alamatSatusehat;
 
+        // update class-level hasil* too so other UI actions (e.g. "Simpan ke Database") can use form overrides
+        hasilIdSatuSehat = finalIdSatusehat;
+        hasilNIK = finalNik;
+        hasilNama = finalNama;
+        hasilTanggalLahir = finalTgl;
+        hasilGender = finalGender;
+        hasilAlamat = finalAlamat;
+
         SwingUtilities.invokeLater(() -> {
             try {
                 // Cek apakah sudah ada berdasarkan id_satusehat atau nik
-                String sqlCheck = "SELECT * FROM pasien WHERE id_satusehat = ? OR nik = ? LIMIT 1";
                 QueryExecutor queryExecutor = new QueryExecutor();
+                String sqlCheck = "SELECT * FROM pasien WHERE id_satusehat = ? OR nik = ? LIMIT 1";
                 List<Map<String, Object>> checkRes = queryExecutor.executeSelectQuery(sqlCheck, new Object[]{finalIdSatusehat, finalNik});
                 if (checkRes != null && !checkRes.isEmpty()) {
                     // Update berdasarkan id_satusehat/nik (tidak mengasumsikan kolom PK bernama 'id')

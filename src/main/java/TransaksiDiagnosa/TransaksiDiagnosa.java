@@ -407,9 +407,8 @@ public class TransaksiDiagnosa extends JPanel {
                 }
 
                 // Deklarasikan variabel idDetailPemeriksaan di awal metode
-                int idDetailPemeriksaan = -1; // Inisialisasi dengan nilai default
-                Integer idValue = null;
-                Long lastInsertObat = null; // Variabel untuk menyimpan ID pemeriksaan obat terakhir
+                int idDetailPemeriksaan = -1; 
+                Long lastInsertObat = null; 
 
                 for (int i = 0; i < rowCount; i++) {
                     // Ambil id_obat dari idList
@@ -435,17 +434,7 @@ public class TransaksiDiagnosa extends JPanel {
                     }
 
                     if (i == 0) {
-                        // Lanjutkan proses jika validasi berhasil
-                        String getIdQuery = "SELECT id_detail_pemeriksaan FROM detail_pemeriksaan ORDER BY id_detail_pemeriksaan DESC LIMIT 1";
-                        java.util.List<Map<String, Object>> resultIdPemeriksaan = executor.executeSelectQuery(getIdQuery, new Object[]{});
-                        if (!resultIdPemeriksaan.isEmpty()) {
-                            idValue = (Integer) resultIdPemeriksaan.get(0).get("id_detail_pemeriksaan") + 1;
-                        }
-                        if (idValue != null) {
-                            id_pemeriksaan = ((Number) idValue).intValue(); // Convert to integer safely
-                        } else {
-                            id_pemeriksaan = 0; // or handle as appropriate for your application
-                        }
+                        
                         System.out.println("ID Pemeriksaan: " + id_pemeriksaan); // Debugging
 
                         // Simpan data ICDX
@@ -494,12 +483,13 @@ public class TransaksiDiagnosa extends JPanel {
                 if (isDone) {
                     try {
 
+                        System.out.println(id_pemeriksaan);
                         // Pastikan idDetailPemeriksaan memiliki nilai valid sebelum digunakan
                         if (idDetailPemeriksaan != -1) {
                             // Masukkan data ke tabel pemeriksaan
                             String insertPemeriksaanQuery = "INSERT INTO pemeriksaan (id_detail_pemeriksaan, no_antrian, keluhan, riwayat_penyakit, harga_total, created_at, id_user) VALUES (?, ?, ?, ?, ?, NOW(), ?)";
                             Object[] pemeriksaanParams = new Object[]{
-                                idValue, // id_detail_pemeriksaan
+                                id_pemeriksaan, // id_detail_pemeriksaan
                                 idAntrian, // no_antrian
                                 "", // keluhan
                                 null, // riwayat_penyakit

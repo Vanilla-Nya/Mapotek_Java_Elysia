@@ -23,6 +23,21 @@ public class ObservationSatusehatApi {
                 return false;
             }
 
+            // Special-case: blood pressure values often come as "systolic/diastolic" -> use BP helper
+            if (value.contains("/")) {
+                String[] parts = value.split("/");
+                if (parts.length == 2) {
+                    try {
+                        double systolic = Double.parseDouble(parts[0].trim());
+                        double diastolic = Double.parseDouble(parts[1].trim());
+                        return createBloodPressureObservation(idSatusehatPasien, idEncounterSatusehat, idSatusehatDokter, systolic, diastolic);
+                    } catch (NumberFormatException nfe) {
+                        System.err.println("createObservation: invalid blood pressure format: " + value);
+                        return false;
+                    }
+                }
+            }
+
             Map<String, Object> observation = new HashMap<>();
             observation.put("resourceType", "Observation");
             observation.put("status", "final");
@@ -62,12 +77,21 @@ public class ObservationSatusehatApi {
             double numericValue = Double.parseDouble(value);
             Map<String, Object> valueQuantity = new HashMap<>();
             valueQuantity.put("value", numericValue);
+
+            // normalize unit -> valid UCUM code for valueQuantity.code
+            String ucumCode = normalizeUcum(unit);
+
+            // unit (human readable) prefer original non-empty, otherwise use ucum code
             if (unit != null && !unit.isBlank()) {
                 valueQuantity.put("unit", unit);
+            } else if (ucumCode != null && !ucumCode.isBlank()) {
+                valueQuantity.put("unit", ucumCode);
             }
+
             valueQuantity.put("system", "http://unitsofmeasure.org");
-            // optional: jangan paksa kode unit jika tidak diketahui
-            if (unit != null && !unit.isBlank()) valueQuantity.put("code", unit);
+            if (ucumCode != null && !ucumCode.isBlank()) {
+                valueQuantity.put("code", ucumCode);
+            }
 
             observation.put("valueQuantity", valueQuantity);
 
@@ -185,4 +209,46 @@ public class ObservationSatusehatApi {
             return;
         }
     }
+    
+    // Map common/display units to valid UCUM codes (minimal list, extend if needed)
+    private static String normalizeUcum(String unit) {
+        if (unit == null) return "";
+        String u = unit.trim().toLowerCase();
+        switch (u) {
+            // Heart rate / per minute -> use /min (server accepted)
+            case "bpm":
+            case "beats/min":
+            case "beats per minute":
+            case "x/min":
+            case "per min":
+            case "perminute":
+            case "/min":
+            case "1/min":
+                return "/min";
+            // Temperature -> UCUM for degree Celsius
+            case "°c":
+            case "degc":
+            case "deg c":
+            case "c":
+            case "cel":
+            case "° c":
+                return "Cel";
+             case "mmhg":
+             case "mm hg":
+             case "mm[hg]":
+                 return "mm[Hg]";
+             case "kg":
+                 return "kg";
+             case "cm":
+                 return "cm";
+             case "m":
+                 return "m";
+             case "kg/m2":
+             case "kg/m^2":
+                 return "kg/m2";
+             default:
+                 // return original as fallback — server may still reject if unknown
+                 return unit;
+         }
+     }
 }
